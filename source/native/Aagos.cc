@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     world.DoMutations(1);
 
     // Keep the best individual.
-    if (ELITE_COUNT) emp::EliteSelect(world, config.ELITE_COUNT(), 1);
+    if (config.ELITE_COUNT()) emp::EliteSelect(world, config.ELITE_COUNT(), 1);
 
     // Run a tournament for the rest...
     emp::TournamentSelect(world, config.TOURNAMENT_SIZE(), config.POP_SIZE()-config.ELITE_COUNT());

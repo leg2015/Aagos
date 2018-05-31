@@ -63,7 +63,7 @@ public:
       double fitness = 0.0;
       for (size_t gene_id = 0; gene_id < num_genes; gene_id++) {
         const size_t gene_pos = org.gene_starts[gene_id];
-        const size_t gene_val = org.bits.GetUIntAtBit(gene_pos) & gene_mask;
+        size_t gene_val = org.bits.GetUIntAtBit(gene_pos) & gene_mask;
         const size_t tail_bits = num_bits - gene_pos;
 
         // If a gene runs off the end of the bitstring, loop around to the beginning.
