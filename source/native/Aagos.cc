@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
   for (uint32_t i = 0; i < config.POP_SIZE(); i++) {
     AagosOrg next_org(config.NUM_BITS(), config.NUM_GENES(), config.GENE_SIZE());
     next_org.Randomize(random);
-    std::cout << next_org.GetNumBits() << std::endl;
+   // std::cout << next_org.GetNumBits() << std::endl;
     world.Inject(next_org);
   }
 

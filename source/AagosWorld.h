@@ -12,25 +12,29 @@
 EMP_BUILD_CONFIG( AagosConfig,
   GROUP(WORLD_STRUCTURE, "How should each organism's genome be setup?"),
   VALUE(CHANGE_RATE, size_t, 0, "How many changes to fitness tables each generation?"),
-  VALUE(POP_SIZE, size_t, 400, "How many organisms should be in the population?"),
-  VALUE(MAX_GENS, size_t, 10000, "How many generations should the runs go for?"),
+  VALUE(POP_SIZE, size_t, 1000, "How many organisms should be in the population?"),
+  VALUE(MAX_GENS, size_t, 50000, "How many generations should the runs go for?"),
   VALUE(SEED, int, 0, "Random number seed (0 for based on time)"),
   VALUE(ELITE_COUNT, size_t, 0, "How many organisms should be selected via elite selection?"),
-  VALUE(TOURNAMENT_SIZE, size_t, 4, "How many organisms should be chosen for each tournament?"),
+  VALUE(TOURNAMENT_SIZE, size_t, 2, "How many organisms should be chosen for each tournament?"),
 
   GROUP(GENOME_STRUCTURE, "How should each organism's genome be setup?"),
-  VALUE(NUM_BITS, size_t, 64, "Starting number of bits in each organism"),
-  VALUE(NUM_GENES, size_t, 64, "Number of genes in each organism"),
+  VALUE(NUM_BITS, size_t, 128, "Starting number of bits in each organism"),
+  VALUE(NUM_GENES, size_t, 16, "Number of genes in each organism"),
   VALUE(GENE_SIZE, size_t, 8, "Size of each gene in each organism"),
+  VALUE(MAX_SIZE, size_t, 1024, "maxiumum size of a genome"),
+  VALUE(MIN_SIZE, size_t, 8, "minimum size of a genome"),
 
   GROUP(MUTATIONS, "Various mutation rates for Aagos"),
-  VALUE(GENE_MOVE_PROB, double, 0.001, "Probability of each gene moving each generation"),
+  VALUE(GENE_MOVE_PROB, double, 0.01, "Probability of each gene moving each generation"),
   VALUE(BIT_FLIP_PROB, double, 0.01, "Probability of each bit toggling"),
   VALUE(BIT_INS_PROB, double, 0.01, "Probability of a single bit being inserted."),
   VALUE(BIT_DEL_PROB, double, 0.01, "Probability of a single bit being removed."),
 
   GROUP(OUTPUT, "Output rates for Aagos"),
-  VALUE(PRINT_INTERVAL, size_t, 100, "How many updates between prints?")
+  VALUE(PRINT_INTERVAL, size_t, 1000, "How many updates between prints?"),
+  VALUE(STATISTICS_INTERVAL, size_t, 1000, "How many updates between statistic gathering?"),
+  VALUE(SNAPSHOT_INTERVAL, size_t, 10000, "How many updates between snapshots?")
 )
 
 
@@ -59,6 +63,7 @@ public:
     , gene_size(config.GENE_SIZE())
     , gene_mask(emp::MaskLow<size_t>(config.GENE_SIZE()))
   {
+    emp_assert(config.MIN_SIZE() >= config.GENE_SIZE(), "BitSet can't handle a genome smaller than gene_size");
     auto fit_fun = [this](AagosOrg & org){
       double fitness = 0.0;
       for (size_t gene_id = 0; gene_id < num_genes; gene_id++) {
@@ -93,12 +98,21 @@ public:
           org.bits[pos] ^= 1;
         }
 
-        // Check on insertions and deletions.
-        size_t do_insert = random.P(config.BIT_INS_PROB());
-        size_t do_delete = random.P(config.BIT_DEL_PROB());
-
+        // Check on insertions and deletions. Changed to per site mutation for insertion, deletion
+        int num_insert = random.GetRandBinomial(org.GetNumBits(), config.BIT_INS_PROB());
+        int num_delete = random.GetRandBinomial(org.GetNumBits(), config.BIT_DEL_PROB());
+        const int proj_size =  (int) org.bits.GetSize() + num_insert - num_delete;
         // Do insertions.
-        if (do_insert) {
+        if(proj_size > config.MAX_SIZE()) {
+          num_insert -= proj_size - config.MAX_SIZE();
+        } else if(proj_size < config.MIN_SIZE()) {
+          num_delete -= config.MIN_SIZE() - proj_size;
+        }
+
+        emp_assert((int) org.bits.GetSize() + num_insert - num_delete >= config.MIN_SIZE(), "the genome size can't be smaller than the genome length, else BitSet breaks");
+        emp_assert((int) org.bits.GetSize() + num_insert - num_delete <= config.MAX_SIZE(), "some limit on bloat of program");
+
+        for(int i = 0; i < num_insert; i++) {
           const size_t pos = random.GetUInt(org.GetNumBits());  // Figure out position for insertion.
           org.bits.Resize(org.bits.GetSize() + 1);              // Increase size to make room for insertion.
           emp::BitVector mask(pos, 1);                          // Setup a mask to preserve early bits.
@@ -113,7 +127,7 @@ public:
         }
 
         // Do deletions
-        if (do_delete) {
+        for (int i = 0; i < num_delete; i++) {
           size_t pos = random.GetUInt(org.GetNumBits());      // Figure out position to delete.
           emp::BitVector mask(pos, 1);                              // Setup a mask to preserve early bits.
           mask.Resize(org.bits.GetSize());                          // Align mask size.
@@ -126,7 +140,7 @@ public:
           for (auto & x : org.gene_starts) if (x >= pos) x--;
         }
 
-        return num_moves + num_flips + do_insert + do_delete;
+        return num_moves + num_flips + num_insert + num_delete;
       };
     SetMutFun( mut_fun );
 
