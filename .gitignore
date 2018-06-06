@@ -1,2 +1,5 @@
 Aagos
 *.dSYM
+*.json
+*.gitignore
+*.csv
