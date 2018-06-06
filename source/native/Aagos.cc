@@ -22,12 +22,12 @@ int main(int argc, char* argv[])
 
   // Build a random initial population
   for (uint32_t i = 0; i < config.POP_SIZE(); i++) {
-    AagosOrg next_org(config.NUM_BITS(), config.NUM_GENES(), config.GENE_SIZE());
-    next_org.Randomize(random);
-   // std::cout << next_org.GetNumBits() << std::endl;
-    world.Inject(next_org);
+    AagosOrg next_org(config.NUM_BITS(), config.NUM_GENES(), config.GENE_SIZE()); // build org
+    next_org.Randomize(random); // randomize org
+    world.Inject(next_org);     // inject org
   }
 
+  // runs ech generation
   for (size_t gen = 0; gen < config.MAX_GENS(); gen++) {
     // Do mutations on the population.
     world.DoMutations(1);
@@ -38,8 +38,10 @@ int main(int argc, char* argv[])
     // Run a tournament for the rest...
     emp::TournamentSelect(world, config.TOURNAMENT_SIZE(), config.POP_SIZE()-config.ELITE_COUNT());
 
+    // Update world
     world.Update();
 
+    // If it's a generation to print to console, do so
     if (gen % config.PRINT_INTERVAL() == 0) {
       std::cout << gen
                 << " : fitness=" << world.CalcFitnessID(0)
