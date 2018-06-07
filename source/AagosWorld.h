@@ -183,7 +183,8 @@ public:
   {
     if (fittest_id == -1) // only run if fittest individual not yet calculated
     {
-      for (size_t i = 0; i < GetSize(); i++)
+      fittest_id = 0;
+      for (size_t i = 1; i < GetSize(); i++)
       {
         if (!pop[i])
           continue;
@@ -209,6 +210,7 @@ public:
   // includes both snapshots and statistics
   void SetDataTracking()
   {
+    SetupFitnessFile().SetTimingRepeat(config.STATISTICS_INTERVAL()); // set timing to interval
     SetStatsFile();          // sets up all data files for generals stats
     SetRepresentativeFile(); // sets up all data files for representative pop member (stats runs only)
     SetSnapshotFile();       // sets up all data files for snapshots
@@ -217,13 +219,12 @@ public:
   // sets up data tracking nodes for general statistics about population
   void SetStatsFile()
   {
-    SetupFitnessFile().SetTimingRepeat(config.STATISTICS_INTERVAL()); // set timing to interval
-    auto gene_stats_file = SetupFile("gene_stats.csv");
+    emp::DataFile & gene_stats_file = SetupFile("gene_stats.csv");
     gene_stats_file.AddVar(update, "update", "update of current gen"); // tracks which update stats calc on
 
     // data node to track number of neutral sites
     // num neutral sites is the size of 0 bin for each org
-    auto neutral_node = manager.New("neutral_sites");
+    auto & neutral_node = manager.New("neutral_sites");
     neutral_node.AddPullSet([this]() {
       emp::vector<double> pop_neut;
       for (emp::Ptr<AagosOrg> org : pop)
@@ -237,7 +238,7 @@ public:
 
     // data node to track number of single gene sites
     // size of 1 bin for each org
-    auto one_gene_node = manager.New("one_gene_sites");
+    auto & one_gene_node = manager.New("one_gene_sites");
     one_gene_node.AddPullSet([this]() {
       emp::vector<double> pop_one;
       for (emp::Ptr<AagosOrg> org : pop)
@@ -251,7 +252,7 @@ public:
 
     // node to track number of multiple overlap sites
     // all bins of size > 1
-    auto multi_gene_node = manager.New("multi_gene_sites");
+    auto & multi_gene_node = manager.New("multi_gene_sites");
     multi_gene_node.AddPullSet([this]() {
       emp::vector<double> pop_multi;
       for (emp::Ptr<AagosOrg> org : pop)
@@ -272,8 +273,8 @@ public:
     // avg overlap is average number of genes per site
     // measure amount of overlap in a genome
     // calculated as mean of histogram
-    auto overlap_node = manager.New("avg_overlap");
-    overlap_node.AddPullSet([this]() { //TODO: could addpullset be why node fn not getting triggered ever?
+    auto & overlap_node = manager.New("avg_overlap");
+    overlap_node.AddPullSet([this]() { 
       emp::vector<double> pop_overlap;
       for (emp::Ptr<AagosOrg> org : pop)
       {
@@ -285,7 +286,7 @@ public:
     });
 
     // neighbor node gets mean of gene neighbors for each org
-    auto neighbor_node = manager.New("avg_num_neighbors");
+    auto & neighbor_node = manager.New("avg_num_neighbors");
     neighbor_node.AddPullSet([this]() {
       emp::vector<double> pop_neighbor;
       for (emp::Ptr<AagosOrg> org : pop)
@@ -312,7 +313,7 @@ public:
   void SetRepresentativeFile()
   {
 
-    auto representative_file = SetupFile("representative_org.csv");
+    emp::DataFile & representative_file = SetupFile("representative_org.csv");
     representative_file.AddVar(update, "update", "update of current gen");
 
     // function param to add_fun in data node is a std::fn, not a lambda fn
