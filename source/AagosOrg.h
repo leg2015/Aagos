@@ -119,7 +119,7 @@ public:
     // histogram bins ranges from 0 (no overlap) to num_genes, b/c worst case all
     // genes overlap the same bit. Num bins is then num_genes + 1 b/c need a
     // bin for no overlap.
-    histogram.SetupBins(0, num_genes, num_genes + 1);
+    histogram.SetupBins(0, num_genes + 1, num_genes + 2);
 
     // adds the number of genes associated with each bit to histogram data node
     // first loops through each bit

@@ -48,7 +48,7 @@ private:
   emp::NKLandscape landscape;
   // need a node manager for data tracking since so many different data points to draw
   emp::DataManager<double, emp::data::Log, emp::data::Stats, emp::data::Pull> manager; 
-  emp::ContainerDataFile<emp::vector<emp::Ptr<AagosOrg>>> snapshot_file;
+  emp::Ptr<emp::ContainerDataFile<emp::vector<emp::Ptr<AagosOrg>>>> snapshot_file;
 
   // Configured values
   size_t num_bits;
@@ -64,8 +64,7 @@ public:
       : emp::World<AagosOrg>(world_name)
       , config(_config)
       , landscape(config.NUM_GENES() , config.GENE_SIZE() - 1, GetRandom())
-      , manager()
-      , snapshot_file("snapshot.csv")
+     // , manager()
       , num_bits(config.NUM_BITS())
       , num_genes(config.NUM_GENES())
       , gene_size(config.GENE_SIZE())
@@ -218,7 +217,6 @@ public:
   // sets up data tracking nodes for general statistics about population
   void SetStatsFile()
   {
-
     SetupFitnessFile().SetTimingRepeat(config.STATISTICS_INTERVAL()); // set timing to interval
     auto gene_stats_file = SetupFile("gene_stats.csv");
     gene_stats_file.AddVar(update, "update", "update of current gen"); // tracks which update stats calc on
@@ -275,7 +273,7 @@ public:
     // measure amount of overlap in a genome
     // calculated as mean of histogram
     auto overlap_node = manager.New("avg_overlap");
-    overlap_node.AddPullSet([this]() {
+    overlap_node.AddPullSet([this]() { //TODO: could addpullset be why node fn not getting triggered ever?
       emp::vector<double> pop_overlap;
       for (emp::Ptr<AagosOrg> org : pop)
       {
@@ -322,7 +320,7 @@ public:
 
     // gets bin value for each bin in histogram of representative org
     std::function<double()> gene_overlap_fun;
-    for (size_t b = 0; b < config.NUM_GENES() + 1; b++) // loops through each bin in histogram
+    for (size_t b = 0; b < config.NUM_GENES() + 2; b++) // loops through each bin in histogram
     {
       // fn for current bin of histogram
       gene_overlap_fun = [this, b]() {
@@ -379,19 +377,20 @@ public:
       return GetValidOrgs(GetValidOrgIDs()); // gets ids of all valid orgs
     };
     //create snapshot file
-    snapshot_file = emp::MakeContainerDataFile(snapshot_fun, "snapshot");
+    auto temp_file = emp::MakeContainerDataFile(snapshot_fun, "snapshot.csv");
+    snapshot_file.New(temp_file);
     // lists which update file created on
-    snapshot_file.AddVar(update, "update", "update of current gen");
+    snapshot_file->AddVar(update, "update", "update of current gen");
 
     // gets full histogram of each org
     std::function<int(emp::Ptr<AagosOrg>)> snap_gene_overlap_fun;
-    for (size_t b = 0; b < config.NUM_GENES() + 1; b++) // loop through each bin of hist & get val of bin
+    for (size_t b = 0; b < config.NUM_GENES() + 2; b++) // loop through each bin of hist & get val of bin
     {
       snap_gene_overlap_fun = [this, b](emp::Ptr<AagosOrg> org) {
         return org->GetHistogram().GetHistCount(b);
       };
       // add fn for each bin to file
-      snapshot_file.AddContainerFun(snap_gene_overlap_fun, emp::to_string(b) + "_gene_overlap_frequency",
+      snapshot_file->AddContainerFun(snap_gene_overlap_fun, emp::to_string(b) + "_gene_overlap_frequency",
              "histogram statistics for current population member");
     }
 
@@ -399,26 +398,26 @@ public:
     std::function<std::string(emp::Ptr<AagosOrg>)> snap_gene_starts_fun = [this](emp::Ptr<AagosOrg> org) {
       return emp::to_string(org->GetGeneStarts());
     };
-    snapshot_file.AddContainerFun(snap_gene_starts_fun, "gene_starts",
+    snapshot_file->AddContainerFun(snap_gene_starts_fun, "gene_starts",
            "all gene starts for the representative organism in the population");
 
     // gets genome size of each org
     std::function<double(emp::Ptr<AagosOrg>)> snap_genome_size_fun = [this](emp::Ptr<AagosOrg> org) {
       return org->GetNumBits();
     };
-    snapshot_file.AddContainerFun(snap_genome_size_fun, "genome_size", "genome size of representative organism");
+    snapshot_file->AddContainerFun(snap_genome_size_fun, "genome_size", "genome size of representative organism");
 
     // gets fitness of each org
     std::function<double(emp::Ptr<AagosOrg>)> snap_fitness_fun = [this](emp::Ptr<AagosOrg> org) {
       return CalcFitnessOrg(*org);
     };
-    snapshot_file.AddContainerFun(snap_fitness_fun, "fitness", "fitness of representative org");
+    snapshot_file->AddContainerFun(snap_fitness_fun, "fitness", "fitness of representative org");
 
     // gets mean of gene neighbors of each org
     std::function<double(emp::Ptr<AagosOrg>)> snap_genome_neighbor_fun = [this](emp::Ptr<AagosOrg> org) {
       return emp::Mean(org->GetGeneNeighbors());
     };
-    snapshot_file.AddContainerFun(snap_genome_neighbor_fun, "gene_neighbors", "gene neighbors of representative org");
+    snapshot_file->AddContainerFun(snap_genome_neighbor_fun, "gene_neighbors", "gene neighbors of representative org");
 
     // gets full bitstring genome of each org
     std::function<std::string(emp::Ptr<AagosOrg>)> snap_bitstring_fun = [this](emp::Ptr<AagosOrg> org) {
@@ -426,10 +425,10 @@ public:
       org->GetBits().PrintArray(bit_tostring); // converts bitvector to string in bistream
       return bit_tostring.str();               // must extract bitstring from bistream
     };
-    snapshot_file.AddContainerFun(snap_bitstring_fun, "genome", "genome of current org");
-    snapshot_file.SetTimingRepeat(config.SNAPSHOT_INTERVAL());
-    snapshot_file.PrintHeaderKeys();
-    AddDataFile(&snapshot_file);
+    snapshot_file->AddContainerFun(snap_bitstring_fun, "genome", "genome of current org");
+    snapshot_file->SetTimingRepeat(config.SNAPSHOT_INTERVAL());
+    snapshot_file->PrintHeaderKeys();
+    AddDataFile(snapshot_file);
   }
   // updates world
   void Update()
