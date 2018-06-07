@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
   // runs ech generation
   for (size_t gen = 0; gen < config.MAX_GENS(); gen++) {
     // Do mutations on the population.
-    world.DoMutations(1);
+    world.DoMutations(config.ELITE_COUNT());
 
     // Keep the best individual.
     if (config.ELITE_COUNT()) emp::EliteSelect(world, config.ELITE_COUNT(), 1);
