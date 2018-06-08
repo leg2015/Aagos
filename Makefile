@@ -1,5 +1,6 @@
 # Project-specific settings
 PROJECT := Aagos
+PROJECT_TEST := AagosTests
 EMP_DIR := ../Empirical/source
 
 # Flags to use regardless of compiler
@@ -36,12 +37,20 @@ web-debug:	debug-web
 $(PROJECT):	source/native/$(PROJECT).cc
 	$(CXX_nat) $(CFLAGS_nat) source/native/$(PROJECT).cc -o $(PROJECT)
 	@echo To build the web version use: make web
+	@echo To build the test version use: make $(PROJECT_TEST)
+
+$(PROJECT_TEST): source/native/$(PROJECT_TEST).cc
+	$(CXX_nat) $(CFLAGS_nat) source/native/$(PROJECT_TEST).cc -o $(PROJECT_TEST)	
+
+debugTest:	CFLAGS_nat := $(CFLAGS_nat_debug)
+debugTest: source/native/$(PROJECT_TEST).cc
+	$(CXX_nat) $(CFLAGS_nat) source/native/$(PROJECT_TEST).cc -o $(PROJECT_TEST)	
 
 $(PROJECT).js: source/web/$(PROJECT)-web.cc
 	$(CXX_web) $(CFLAGS_web) source/web/$(PROJECT)-web.cc -o web/$(PROJECT).js
 
 clean:
-	rm -f $(PROJECT) web/$(PROJECT).js web/*.js.map web/*.js.map *~ source/*.o
+	rm -f $(PROJECT) $(PROJECT_TEST) web/$(PROJECT).js web/*.js.map web/*.js.map *~ source/*.o
 
 # Debugging information
 print-%: ; @echo '$(subst ','\'',$*=$($*))'

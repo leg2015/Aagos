@@ -54,6 +54,7 @@ private:
   size_t num_bits;
   size_t num_genes;
   size_t gene_size;
+  size_t num_bins;
 
   // Calculated values
   size_t gene_mask;
@@ -68,10 +69,13 @@ public:
       , num_bits(config.NUM_BITS())
       , num_genes(config.NUM_GENES())
       , gene_size(config.GENE_SIZE())
+      , num_bins(config.NUM_GENES() + 1)
       , gene_mask(emp::MaskLow<size_t>(config.GENE_SIZE()))
       , fittest_id(-1) // set to -1 to indicate fittest individual hasn't been calc yet
 
   {
+
+    GetRandom().ResetSeed(config.SEED());
     emp_assert(config.MIN_SIZE() >= config.GENE_SIZE(), "BitSet can't handle a genome smaller than gene_size");
     // fitness function for aagos orgs
     auto fit_fun = [this](AagosOrg &org) {
@@ -320,8 +324,9 @@ public:
     // so all fn had to be moved to outside scope to work properly
 
     // gets bin value for each bin in histogram of representative org
+    // assumes each gene is same length across genome and across organisms
     std::function<double()> gene_overlap_fun;
-    for (size_t b = 0; b < config.NUM_GENES() + 2; b++) // loops through each bin in histogram
+    for (size_t b = 0; b < num_bins; b++) // loops through each bin in histogram
     {
       // fn for current bin of histogram
       gene_overlap_fun = [this, b]() {
@@ -384,8 +389,9 @@ public:
     snapshot_file->AddVar(update, "update", "update of current gen");
 
     // gets full histogram of each org
+    // assumes each gene is same length across genome and across organisms
     std::function<int(emp::Ptr<AagosOrg>)> snap_gene_overlap_fun;
-    for (size_t b = 0; b < config.NUM_GENES() + 2; b++) // loop through each bin of hist & get val of bin
+    for (size_t b = 0; b < num_bins; b++) // loop through each bin of hist & get val of bin
     {
       snap_gene_overlap_fun = [this, b](emp::Ptr<AagosOrg> org) {
         return org->GetHistogram().GetHistCount(b);

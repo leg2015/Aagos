@@ -17,13 +17,14 @@ private:
   // starting locations of all genes
   emp::vector<size_t> gene_starts;
   // size of each gene in genome
-  size_t gene_size;
+  int gene_size;
   // number of genes in genome
-  size_t num_genes;
+  int num_genes;
+  size_t num_bins;
   // number of neighbors each gene in genome has
   // neighbor is defined as a gene that overlaps the current gene
   // at at least one bit
-  emp::vector<size_t> gene_neighbors;
+  emp::vector<int> gene_neighbors;
   // Histogram object that stores num overlapped genes at each bit in genome
   emp::DataNode<int, emp::data::Histogram, emp::data::Stats> histogram;
   // bool flag to check if histogram has been initialized yet
@@ -35,6 +36,7 @@ public:
       , gene_starts(num_genes, 0)
       , gene_size(in_gene_size)
       , num_genes(num_genes)
+      , num_bins(num_genes + 1)
       , gene_neighbors(num_genes)
       , initialized(false)
   {
@@ -61,6 +63,8 @@ public:
   const emp::BitVector &GetBits() const { return bits; }
   // getter for gene start locations
   const emp::vector<size_t> &GetGeneStarts() const { return gene_starts; }
+  // getter for number of bins in histogram
+  const size_t GetNumBins() { return num_bins; }
 
   // randomizes genome and gene starts
   void Randomize(emp::Random &random)
@@ -77,7 +81,7 @@ public:
   }
 
   // getter function for gene neighbors
-  emp::vector<size_t> &GetGeneNeighbors()
+  emp::vector<int> &GetGeneNeighbors()
   {
     // if the histogram hasn't been set up, calculate
     if (!initialized)
@@ -101,7 +105,7 @@ public:
   {
     // set sentinel
     initialized = true;
-    size_t num_bits = GetNumBits();
+    int num_bits = GetNumBits();
     // set up histogram
     HistogramCalc(num_bits);
     NeighborCalc(num_bits);
@@ -113,36 +117,35 @@ public:
   // the average amount of overlap at each bit (mean of dist.), and finally
   // it gives the amount of multi-overlap (all bins > 1).
   // Taks the size of the genome as an argument
-  void HistogramCalc(size_t num_bits)
+  void HistogramCalc(int num_bits)
   {
 
     // histogram bins ranges from 0 (no overlap) to num_genes, b/c worst case all
     // genes overlap the same bit. Num bins is then num_genes + 1 b/c need a
     // bin for no overlap.
-    histogram.SetupBins(0, num_genes + 1, num_genes + 2);
+    histogram.SetupBins(0, num_bins, num_bins);
 
     // adds the number of genes associated with each bit to histogram data node
     // first loops through each bit
-    for (size_t i = 0; i < bits.size(); i++)
+    for (int i = 0; i < (int) bits.size(); i++)
     {
       // counts number of genes that overlap at given bit
       int overlap = 0;
       // max range that a gene can start in order to overlap current bit
-      int diff = i - gene_size;
+      int diff = i - (gene_size - 1);// off by one error
 
       // loops through each gene to see if it overlaps current bit
       for (size_t j = 0; j < num_genes; j++)
       {
-        // TODO: check this works
         // if current gene starts within diff of the current bit
         // and also if the current gene starts before the current bit
         // then the curr gene must overlap the curr bit
-        if ((diff < gene_starts[j] && gene_starts[j] <= i) //TODO: if((diff <= gene_starts[j] && genestarts[j] <= i)
+        if ((diff <= (int) gene_starts[j] && (int) gene_starts[j] <= i)
             // else if curr gene loops around to front of genome,
             // then if it loops around enough to overlap current bit
             // then diff will be more negative than the
             //  gene start - the number of bits in genome
-            || ((diff < (gene_starts[j] - num_bits)))) // TODO:  && (diff <= gene_starts[j] - num_bits) ))
+            || ((diff <= ((int) gene_starts[j] - num_bits)))) 
         {
           overlap++;
         }
@@ -156,7 +159,7 @@ public:
   // Neighbor genes are defined as genes that share at least 1
   // bit with the curr gene.
   // takes the size of the genome as its argument
-  void NeighborCalc(size_t num_bits)
+  void NeighborCalc(int num_bits)
   {
     // loops through each gene to get its neighbor count
     for (size_t i = 0; i < num_genes; i++)
@@ -169,9 +172,9 @@ public:
         if (i != j)
         {
           // if the current gene starts w/in gene_size on either side of gene in question, must overlap
-          if (abs((int)gene_starts[i] - (int)gene_starts[j]) <= gene_size || // todo clean up these casts
+          if (abs((int)gene_starts[i] - (int)gene_starts[j]) < gene_size || // todo clean up these casts
               // this second check catches genes that overlap only by comparing the ends of both genes to each other modded
-              abs(((int)gene_starts[i] + (int)gene_size) % (int)num_bits - ((int)gene_starts[j] + (int)gene_size) % (int)num_bits) <= gene_size)
+              abs(((int)gene_starts[i] + gene_size) % num_bits - ((int)gene_starts[j] + gene_size) % num_bits) < gene_size)
           {
             count++;
           }

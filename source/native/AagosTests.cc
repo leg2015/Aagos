@@ -20,19 +20,26 @@ int main(int argc, char* argv[])
 
   emp::Random & random = world.GetRandom();
 
-   // Build a random initial population
+  // Build a random initial population
   for (uint32_t i = 0; i < config.POP_SIZE(); i++) {
     AagosOrg next_org(config.NUM_BITS(), config.NUM_GENES(), config.GENE_SIZE()); // build org
     next_org.Randomize(random); // randomize org
     world.Inject(next_org);     // inject org
   }
- 
-  // runs each generation
+
+  // runs ech generation
   for (size_t gen = 0; gen < config.MAX_GENS(); gen++) {
     // Do mutations on the population.
     world.DoMutations(config.ELITE_COUNT());
 
+    // TODO: looks like histogram is still acting up, need to get it working tomorrow so can start runs]
+    // const emp::vector<size_t> & hist = world.GetOrg(1).GetHistogram().GetHistCounts();
+    // std::cout << "bin count in hist bin 0: " << world.GetOrg(1).GetHistogram().GetHistCount(0) << std::endl;
+    // std::cout << "width of hist bin 0: " << world.GetOrg(1).GetHistogram().GetHistWidth(1) << std::endl;
+    // std::cout << "min possible hist val: " << world.GetOrg(1).GetHistogram().GetHistMin() << std::endl;
+    // std::cout << "max possible hist val: " << world.GetOrg(1).GetHistogram().GetHistMax() << std::endl;
     // Keep the best individual.
+
     if (config.ELITE_COUNT()) emp::EliteSelect(world, config.ELITE_COUNT(), 1);
 
     // Run a tournament for the rest...
@@ -43,11 +50,19 @@ int main(int argc, char* argv[])
 
     // If it's a generation to print to console, do so
     if (gen % config.PRINT_INTERVAL() == 0) {
+      std:: cout << "-----------gen" << gen << "----------------" << std::endl;
+       std::cout << "gene neighbors: "<< emp::to_string(world.GetOrg(0).GetGeneNeighbors()) << std::endl;
+      for(size_t i = 0; i < config.POP_SIZE(); i++) {
       std::cout << gen
-                << " : fitness=" << world.CalcFitnessID(0)
-                << " size=" << world[0].GetNumBits()
-                << std::endl;
-      world[0].Print();
+                << " : fitness=" << world.CalcFitnessID(i)
+                << " size=" << world[i].GetNumBits() << std::endl;
+                // << "histogram count=[";
+                // for(int i = 0; i < hist.size(); i++) {
+                //  std::cout << hist[i] << ", ";
+                // }
+                // std::cout  << "]" << std::endl;
+      world[i].Print();
+      }
     }
   }
 }
