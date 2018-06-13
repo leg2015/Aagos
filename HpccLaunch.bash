@@ -268,8 +268,8 @@ cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.bash" #TODO: fix other cat f
 #PBS -M gillespl@southwestern.edu
 #PBS -j oe
 #PBS -o ./OE_Run_$START-$END
-# first cat script
 
+cd /mnt/scratch/f0004516/Aagos
 
 source  variables.bash
 
@@ -334,9 +334,8 @@ cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.bash" #TODO: check that scri
 #PBS -M gillespl@southwestern.edu
 #PBS -j oe
 #PBS -o ./OE_Run_$START-$END
-# second cat script
- 
 
+cd /mnt/scratch/f0004516/Aagos
 source  variables.bash
 
         let IND_2=$IND_2
@@ -370,6 +369,8 @@ EOF
     #    echo "sub "./Run_$START-$END.sub""# TODO: change echo   
 
     qsub ./$OUTPUT_DIR/scripts/Run_$START-$END.qsub
+
+    
 
         let IND_2=1
         let IND_1=IND_1+1
