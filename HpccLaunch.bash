@@ -271,7 +271,7 @@ cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.bash" #TODO: fix other cat f
 # first cat script
 
 
-source  ./bash/variables.bash
+source  variables.bash
 
 
 let IND_TEMP=$IND_TEMP
@@ -337,7 +337,7 @@ cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.bash" #TODO: check that scri
 # second cat script
  
 
-source  ./bash/variables.bash
+source  variables.bash
 
         let IND_2=$IND_2
         while [[ \$IND_2 -lt $SIZE ]]; do #TODO: will the ind 2 break?
