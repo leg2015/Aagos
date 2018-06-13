@@ -289,7 +289,7 @@ let IND_TEMP=$IND_TEMP
 # TODO: make sure file path given to aagos works correctly
 
 let SEED=\$(((${CURR_IND[0]}+1)*1000+(\${CURR_IND[1]}+1)*100+(\${CURR_IND[2]}+1)*10+\$INDEX+1)) 
-echo \$SEED
+# echo \$SEED
 
 
 # TODO: im not sure the params below are correct, may need to escape them....
@@ -310,7 +310,7 @@ EOF
 #in AAGOS
 
 #  echo "sub "./Run_$START-$END.sub"" # TODO: change echo
-bash ./$OUTPUT_DIR/scripts/Run_$START-$END.bash
+qsub ./$OUTPUT_DIR/scripts/Run_$START-$END.qsub
     IND_2=1
         let CURR_IND[0]=$IND_0
     let CURR_IND[1]=$IND_1
@@ -356,7 +356,7 @@ source  variables.bash
         mkdir -vp "./$OUTPUT_DIR/\$START/\$INDEX"
         FILE_PATH=./$OUTPUT_DIR/\$START/\$INDEX/ # TODO: see if this works
         let SEED=\$(((\${CURR_IND[0]}+1)*1000+(\${CURR_IND[1]}+1)*100+(\${CURR_IND[2]}+1)*10+\$INDEX+1)) 
-        echo \$SEED
+        # echo \$SEED
          ./Aagos -GENE_MOVE_PROB \${VALS_TO_TRY[CURR_IND[0]]} -BIT_FLIP_PROB \${VALS_TO_TRY[CURR_IND[1]]} -BIT_INS_PROB \${VALS_TO_TRY[CURR_IND[2]]} -BIT_DEL_PROB \${VALS_TO_TRY[CURR_IND[2]]} -DATA_FILEPATH \$FILE_PATH -SEED \$SEED $CURR_PARAMS # TODO: assumes using the rest of vals as default
  
                let INDEX=INDEX+1
@@ -369,7 +369,7 @@ source  variables.bash
 EOF
     #    echo "sub "./Run_$START-$END.sub""# TODO: change echo   
 
-    bash ./$OUTPUT_DIR/scripts/Run_$START-$END.bash
+    qsub ./$OUTPUT_DIR/scripts/Run_$START-$END.qsub
 
         let IND_2=1
         let IND_1=IND_1+1
