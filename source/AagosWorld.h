@@ -9,6 +9,7 @@
 #include "tools/stats.h"
 #include "tools/string_utils.h"
 #include <sstream>
+#include <string>
 
 #include "AagosOrg.h"
 
@@ -37,7 +38,8 @@ EMP_BUILD_CONFIG(AagosConfig,
                  GROUP(OUTPUT, "Output rates for Aagos"),
                  VALUE(PRINT_INTERVAL, size_t, 1000, "How many updates between prints?"),
                  VALUE(STATISTICS_INTERVAL, size_t, 1000, "How many updates between statistic gathering?"),
-                 VALUE(SNAPSHOT_INTERVAL, size_t, 10000, "How many updates between snapshots?"))
+                 VALUE(SNAPSHOT_INTERVAL, size_t, 10000, "How many updates between snapshots?"),
+                 VALUE(DATA_FILEPATH, std::string, "", "what directory should all data files be written to?"))
 
 class AagosWorld : public emp::World<AagosOrg>
 {
@@ -55,6 +57,7 @@ private:
   size_t num_genes;
   size_t gene_size;
   size_t num_bins;
+  std::string data_filepath;
 
   // Calculated values
   size_t gene_mask;
@@ -70,6 +73,7 @@ public:
       , num_genes(config.NUM_GENES())
       , gene_size(config.GENE_SIZE())
       , num_bins(config.NUM_GENES() + 1)
+      , data_filepath( config.DATA_FILEPATH()) // TODO: only works if subdir is made before runs start... TODO: wouldn't work if subdir not created, runs wouldn't be stored
       , gene_mask(emp::MaskLow<size_t>(config.GENE_SIZE()))
       , fittest_id(-1) // set to -1 to indicate fittest individual hasn't been calc yet
 
@@ -214,7 +218,7 @@ public:
   // includes both snapshots and statistics
   void SetDataTracking()
   {
-    SetupFitnessFile().SetTimingRepeat(config.STATISTICS_INTERVAL()); // set timing to interval
+    SetupFitnessFile(data_filepath + "fitness.csv").SetTimingRepeat(config.STATISTICS_INTERVAL()); // set timing to interval
     SetStatsFile();          // sets up all data files for generals stats
     SetRepresentativeFile(); // sets up all data files for representative pop member (stats runs only)
     SetSnapshotFile();       // sets up all data files for snapshots
@@ -223,7 +227,7 @@ public:
   // sets up data tracking nodes for general statistics about population
   void SetStatsFile()
   {
-    emp::DataFile & gene_stats_file = SetupFile("gene_stats.csv");
+    emp::DataFile & gene_stats_file = SetupFile(data_filepath + "gene_stats.csv");
     gene_stats_file.AddVar(update, "update", "update of current gen"); // tracks which update stats calc on
 
     // data node to track number of neutral sites
@@ -317,7 +321,7 @@ public:
   void SetRepresentativeFile()
   {
 
-    emp::DataFile & representative_file = SetupFile("representative_org.csv");
+    emp::DataFile & representative_file = SetupFile( data_filepath + "representative_org.csv");
     representative_file.AddVar(update, "update", "update of current gen");
 
     // function param to add_fun in data node is a std::fn, not a lambda fn
@@ -383,7 +387,7 @@ public:
       return GetValidOrgs(GetValidOrgIDs()); // gets ids of all valid orgs
     };
     //create snapshot file
-    auto temp_file = emp::MakeContainerDataFile(snapshot_fun, "snapshot.csv");
+    auto temp_file = emp::MakeContainerDataFile(snapshot_fun, data_filepath + "snapshot.csv");
     snapshot_file.New(temp_file);
     // lists which update file created on
     snapshot_file->AddVar(update, "update", "update of current gen");
