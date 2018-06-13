@@ -261,7 +261,7 @@ INDEX=0
 # cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.sub" #TODO: fix other cat file!!
 cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub" #TODO: fix other cat file!!
 #!/bin/bash -login
-#PBS -l walltime=00:04:00
+#PBS -l walltime=04:00:00
 #PBS -l nodes=1:ppn=1
 #PBS -l mem=2gb
 #PBS -N Aagos_Mut_$START_$END
@@ -327,7 +327,7 @@ qsub ./$OUTPUT_DIR/scripts/Run_$START-$END.qsub
 # cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.sub"
 cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub" #TODO: check that script can run correctly
 #!/bin/bash -login
-#PBS -l walltime=00:04:00
+#PBS -l walltime=04:00:00
 #PBS -l nodes=1:ppn=1
 #PBS -l mem=2gb
 #PBS -N Aagos_Mut_$START_$END
