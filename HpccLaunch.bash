@@ -259,7 +259,7 @@ INDEX=0
 # echo "num rep "$NUM_REPLICATES
 # TODO: assuming in output dir
 # cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.sub" #TODO: fix other cat file!!
-cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.bash" #TODO: fix other cat file!!
+cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub" #TODO: fix other cat file!!
 #!/bin/bash -login
 #PBS -l walltime=00:04:00
 #PBS -l nodes=1:ppn=1
@@ -325,7 +325,7 @@ qsub ./$OUTPUT_DIR/scripts/Run_$START-$END.qsub
             memes="memes"
 # echo "cur vals: $CURR_PARAMS"
 # cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.sub"
-cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.bash" #TODO: check that script can run correctly
+cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub" #TODO: check that script can run correctly
 #!/bin/bash -login
 #PBS -l walltime=00:04:00
 #PBS -l nodes=1:ppn=1
