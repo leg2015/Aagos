@@ -10,6 +10,7 @@ CFLAGS_all := -Wall -Wno-unused-function -std=c++14 -I$(EMP_DIR)/
 CXX_nat := g++
 CFLAGS_nat := -O3 -DNDEBUG $(CFLAGS_all)
 CFLAGS_nat_debug := -g -pedantic -DEMP_TRACK_MEM  -Wnon-virtual-dtor -Wcast-align -Woverloaded-virtual -Wconversion -Weffc++ $(CFLAGS_all)
+CFLAGS_nat_profile := -O3 -DNDEBUG $(CFLAGS_all) -pg
 
 # Emscripten compiler information
 CXX_web := emcc
@@ -29,6 +30,8 @@ all: $(PROJECT) $(PROJECT).js
 debug:	CFLAGS_nat := $(CFLAGS_nat_debug)
 debug:	$(PROJECT)
 
+
+
 debug-web:	CFLAGS_web := $(CFLAGS_web_debug)
 debug-web:	$(PROJECT).js
 
@@ -38,6 +41,16 @@ $(PROJECT):	source/native/$(PROJECT).cc
 	$(CXX_nat) $(CFLAGS_nat) source/native/$(PROJECT).cc -o $(PROJECT)
 	@echo To build the web version use: make web
 	@echo To build the test version use: make $(PROJECT_TEST)
+	@echo To build the profile version use: make profile
+
+profile:	CFLAGS_nat_profile := $(CFLAGS_nat_profile)
+profile:    source/native/$(PROJECT).cc
+	$(CXX_nat) $(CFLAGS_nat_profile) source/native/$(PROJECT).cc -o $(PROJECT)
+	@echo To build the web version use: make web
+	@echo To build the test version use: make $(PROJECT_TEST)
+
+
+
 
 $(PROJECT_TEST): source/native/$(PROJECT_TEST).cc
 	$(CXX_nat) $(CFLAGS_nat) source/native/$(PROJECT_TEST).cc -o $(PROJECT_TEST)	
@@ -45,6 +58,8 @@ $(PROJECT_TEST): source/native/$(PROJECT_TEST).cc
 debugTest:	CFLAGS_nat := $(CFLAGS_nat_debug)
 debugTest: source/native/$(PROJECT_TEST).cc
 	$(CXX_nat) $(CFLAGS_nat) source/native/$(PROJECT_TEST).cc -o $(PROJECT_TEST)	
+
+
 
 $(PROJECT).js: source/web/$(PROJECT)-web.cc
 	$(CXX_web) $(CFLAGS_web) source/web/$(PROJECT)-web.cc -o web/$(PROJECT).js

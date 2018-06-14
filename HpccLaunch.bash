@@ -259,7 +259,7 @@ INDEX=0
 # echo "num rep "$NUM_REPLICATES
 # TODO: assuming in output dir
 # cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.sub" #TODO: fix other cat file!!
-cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub" #TODO: fix other cat file!!
+cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.bash" #TODO: fix other cat file!!
 #!/bin/bash -login
 #PBS -l walltime=04:00:00
 #PBS -l nodes=1:ppn=1
@@ -293,7 +293,8 @@ let SEED=\$(((${CURR_IND[0]}+1)*1000+(\${CURR_IND[1]}+1)*100+(\${CURR_IND[2]}+1)
 
 
 # TODO: im not sure the params below are correct, may need to escape them....
- ./Aagos -GENE_MOVE_PROB ${VALS_TO_TRY[CURR_IND[0]]} -BIT_FLIP_PROB \${VALS_TO_TRY[CURR_IND[1]]} -BIT_INS_PROB \${VALS_TO_TRY[CURR_IND[2]]} -BIT_DEL_PROB \${VALS_TO_TRY[CURR_IND[2]]} -DATA_FILEPATH \$FILE_PATH -SEED \$SEED $CURR_PARAMS # TODO: assumes using the rest of vals as default
+>&2 echo "\$START"
+ time ./Aagos -GENE_MOVE_PROB ${VALS_TO_TRY[CURR_IND[0]]} -BIT_FLIP_PROB \${VALS_TO_TRY[CURR_IND[1]]} -BIT_INS_PROB \${VALS_TO_TRY[CURR_IND[2]]} -BIT_DEL_PROB \${VALS_TO_TRY[CURR_IND[2]]} -DATA_FILEPATH \$FILE_PATH -SEED \$SEED $CURR_PARAMS # TODO: assumes using the rest of vals as default
         
         let INDEX=INDEX+1
         done
@@ -310,7 +311,7 @@ EOF
 #in AAGOS
 
 #  echo "sub "./Run_$START-$END.sub"" # TODO: change echo
-qsub ./$OUTPUT_DIR/scripts/Run_$START-$END.qsub
+# bash ./$OUTPUT_DIR/scripts/Run_$START-$END.bash
     IND_2=1
         let CURR_IND[0]=$IND_0
     let CURR_IND[1]=$IND_1
@@ -325,7 +326,7 @@ qsub ./$OUTPUT_DIR/scripts/Run_$START-$END.qsub
             memes="memes"
 # echo "cur vals: $CURR_PARAMS"
 # cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.sub"
-cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub" #TODO: check that script can run correctly
+cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.bash" #TODO: check that script can run correctly
 #!/bin/bash -login
 #PBS -l walltime=04:00:00
 #PBS -l nodes=1:ppn=1
@@ -356,7 +357,8 @@ source  variables.bash
         FILE_PATH=./$OUTPUT_DIR/\$START/\$INDEX/ # TODO: see if this works
         let SEED=\$(((\${CURR_IND[0]}+1)*1000+(\${CURR_IND[1]}+1)*100+(\${CURR_IND[2]}+1)*10+\$INDEX+1)) 
         # echo \$SEED
-         ./Aagos -GENE_MOVE_PROB \${VALS_TO_TRY[CURR_IND[0]]} -BIT_FLIP_PROB \${VALS_TO_TRY[CURR_IND[1]]} -BIT_INS_PROB \${VALS_TO_TRY[CURR_IND[2]]} -BIT_DEL_PROB \${VALS_TO_TRY[CURR_IND[2]]} -DATA_FILEPATH \$FILE_PATH -SEED \$SEED $CURR_PARAMS # TODO: assumes using the rest of vals as default
+        >&2 echo "\$START"
+         time ./Aagos -GENE_MOVE_PROB \${VALS_TO_TRY[CURR_IND[0]]} -BIT_FLIP_PROB \${VALS_TO_TRY[CURR_IND[1]]} -BIT_INS_PROB \${VALS_TO_TRY[CURR_IND[2]]} -BIT_DEL_PROB \${VALS_TO_TRY[CURR_IND[2]]} -DATA_FILEPATH \$FILE_PATH -SEED \$SEED $CURR_PARAMS # TODO: assumes using the rest of vals as default
  
                let INDEX=INDEX+1
         done
@@ -368,7 +370,7 @@ source  variables.bash
 EOF
     #    echo "sub "./Run_$START-$END.sub""# TODO: change echo   
 
-    qsub ./$OUTPUT_DIR/scripts/Run_$START-$END.qsub
+    # bash ./$OUTPUT_DIR/scripts/Run_$START-$END.bash
 
     
 
@@ -441,8 +443,8 @@ let COUNT=COUNT+1
 
 # steps: 
 # 1. create bash file that in turn
-#     2. creates a bunch of *.qsub files
-#     3. each .qsub file looks like the example file given online
+#     2. creates a bunch of *.bash files
+#     3. each .bash file looks like the example file given online
 #     4. that's where the make call and everything will be made
 
 
