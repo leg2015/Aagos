@@ -64,8 +64,8 @@ private:
   int fittest_id;
 
 public:
-  AagosWorld(AagosConfig &_config, const std::string &world_name = "AagosWorld")
-      : emp::World<AagosOrg>(world_name)
+  AagosWorld(emp::Random& rand, AagosConfig &_config, const std::string &world_name = "AagosWorld")
+      : emp::World<AagosOrg>(rand, world_name)
       , config(_config)
       , landscape(config.NUM_GENES() , config.GENE_SIZE() - 1, GetRandom())
      // , manager()
@@ -78,8 +78,6 @@ public:
       , fittest_id(-1) // set to -1 to indicate fittest individual hasn't been calc yet
 
   {
-
-    GetRandom().ResetSeed(config.SEED());
     emp_assert(config.MIN_SIZE() >= config.GENE_SIZE(), "BitSet can't handle a genome smaller than gene_size");
     // fitness function for aagos orgs
     auto fit_fun = [this](AagosOrg &org) {

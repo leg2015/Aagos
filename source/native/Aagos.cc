@@ -16,7 +16,8 @@ int main(int argc, char* argv[])
   if (args.ProcessConfigOptions(config, std::cout, "Aagos.cfg", "Aagos-macros.h") == false) exit(0);
   if (args.TestUnknown() == false) exit(0);  // If there are leftover args, throw an error.
 
-  AagosWorld world(config);
+auto rand = emp::Random(config.SEED());
+  AagosWorld world(rand, config);
 
   emp::Random & random = world.GetRandom();
 
