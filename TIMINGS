@@ -1,0 +1,39 @@
+time ./Aagos -GENE_MOVE_PROB .03 -BIT_FLIP_PROB .1 -BIT_INS_PROB .003 -BIT_DEL_PROB .003 -MAX_GENS 1000
+user 0m2.928s
+user 0m3.547s
+user 0m3.810s
+user 0m2.851s
+
+-- Explore INS/DEL time --
+
+time ./Aagos -GENE_MOVE_PROB .03 -BIT_FLIP_PROB .1 -BIT_INS_PROB .03 -BIT_DEL_PROB .03 -MAX_GENS 1000
+user 0m5.375s
+user 0m3.963s
+user 0m12.070s
+user 0m3.520s
+
+time ./Aagos -GENE_MOVE_PROB .03 -BIT_FLIP_PROB .1 -BIT_INS_PROB .3 -BIT_DEL_PROB .3 -MAX_GENS 1000
+<aborted after 7 min>
+<aborted after 3.5 min>
+<aborted after 3 min>
+<aborted after 2 min>
+
+
+--- Explore Genome size --- (base had 64 bits)
+
+time ./Aagos -GENE_MOVE_PROB .03 -BIT_FLIP_PROB .1 -BIT_INS_PROB .003 -BIT_DEL_PROB .003 -MAX_GENS 1000 -NUM_BITS 64
+user 0m2.581s
+user 0m2.822s
+user 0m1.830s
+user 0m1.929s
+
+time ./Aagos -GENE_MOVE_PROB .03 -BIT_FLIP_PROB .1 -BIT_INS_PROB .003 -BIT_DEL_PROB .003 -MAX_GENS 1000 -NUM_BITS 256
+user 0m6.078s
+user 0m6.395s
+user 0m5.995s
+user 0m6.112s
+
+time ./Aagos -GENE_MOVE_PROB .03 -BIT_FLIP_PROB .1 -BIT_INS_PROB .003 -BIT_DEL_PROB .003 -MAX_GENS 1000 -NUM_BITS 512
+<aborted after 4 min>
+<aborted after 3 min>
+<aborted after 1 min>
