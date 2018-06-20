@@ -5,9 +5,11 @@
 
 #include "Evolve/NK.h"
 #include "Evolve/World.h"
+#include "tools/Binomial.h"
 #include "tools/math.h"
 #include "tools/stats.h"
 #include "tools/string_utils.h"
+
 #include <sstream>
 #include <string>
 
@@ -57,7 +59,12 @@ private:
   size_t num_genes;
   size_t gene_size;
   size_t num_bins;
+
   std::string data_filepath;
+  emp::Binomial gene_moves_binomial;
+  emp::vector<emp::Binomial> bit_flips_binomials;
+  emp::vector<emp::Binomial> inserts_binomials;
+  emp::vector<emp::Binomial> deletes_binomials;
 
   // Calculated values
   size_t gene_mask;
@@ -74,11 +81,19 @@ public:
       , gene_size(config.GENE_SIZE())
       , num_bins(config.NUM_GENES() + 1)
       , data_filepath( config.DATA_FILEPATH()) // TODO: only works if subdir is made before runs start... TODO: wouldn't work if subdir not created, runs wouldn't be stored
+      , gene_moves_binomial(config.GENE_MOVE_PROB(), config.NUM_GENES())
       , gene_mask(emp::MaskLow<size_t>(config.GENE_SIZE()))
       , fittest_id(-1) // set to -1 to indicate fittest individual hasn't been calc yet
 
   {
     emp_assert(config.MIN_SIZE() >= config.GENE_SIZE(), "BitSet can't handle a genome smaller than gene_size");
+
+    for (size_t i = config.MIN_SIZE(); i < config.MAX_SIZE(); i++) {
+      bit_flips_binomials.emplace_back(config.BIT_FLIP_PROB(), i);
+      inserts_binomials.emplace_back(config.BIT_INS_PROB(), i);
+      deletes_binomials.emplace_back(config.BIT_DEL_PROB(), i);
+    }
+
     // fitness function for aagos orgs
     auto fit_fun = [this](AagosOrg &org) {
       double fitness = 0.0;
@@ -102,8 +117,10 @@ public:
     // Setup the mutation function. Per site.
     std::function<size_t(AagosOrg &, emp::Random &)> mut_fun =
         [this](AagosOrg &org, emp::Random &random) {
+          size_t bin_array_offset = org.GetNumGenes() - config.MIN_SIZE();
+
           // Do gene moves.
-          size_t num_moves = random.GetRandBinomial(org.GetNumGenes(), config.GENE_MOVE_PROB());
+          size_t num_moves = gene_moves_binomial.PickRandom(random);
           for (size_t m = 0; m < num_moves; m++)
           {
             size_t gene_id = random.GetUInt(org.GetNumGenes());
@@ -111,7 +128,7 @@ public:
           }
 
           // Do bit flips mutations
-          size_t num_flips = random.GetRandBinomial(org.GetNumBits(), config.BIT_FLIP_PROB());
+          size_t num_flips = bit_flips_binomials[bin_array_offset].PickRandom(random);
           for (size_t m = 0; m < num_flips; m++)
           {
             const size_t pos = random.GetUInt(org.GetNumBits());
@@ -119,8 +136,8 @@ public:
           }
 
           // Get num of insertions and deletions.
-          int num_insert = random.GetRandBinomial(org.GetNumBits(), config.BIT_INS_PROB());
-          int num_delete = random.GetRandBinomial(org.GetNumBits(), config.BIT_DEL_PROB());
+          size_t num_insert = inserts_binomials[bin_array_offset].PickRandom(random);
+          size_t num_delete = deletes_binomials[bin_array_offset].PickRandom(random);
           const int proj_size = (int)org.bits.GetSize() + num_insert - num_delete;
 
           // checks gene size is within range
