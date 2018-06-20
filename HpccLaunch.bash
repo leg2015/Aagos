@@ -11,7 +11,7 @@ key="$1"
 case $key in
 -CHANGE_RATE)
 CHANGE_RATE="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
@@ -25,14 +25,14 @@ shift # shift past curr value
 
 -POP_SIZE)
 POP_SIZE="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -MAX_GENS)
 MAX_GENS="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
@@ -46,116 +46,104 @@ shift # shift past curr value
 
 -ELITE_COUNT)
 ELITE_COUNT="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -TOURNAMENT_SIZE)
 TOURNAMENT_SIZE="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -NUM_GENES)
 NUM_GENES="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -NUM_BITS)
 NUM_BITS="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -GENE_SIZE)
 GENE_SIZE="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -MAX_SIZE)
 MAX_SIZE="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -MIN_SIZE)
 MIN_SIZE="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -GENE_MOVE_PROB)
 GENE_MOVE_PROB="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -BIT_FLIP_PROB)
 BIT_FLIP_PROB="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -BIT_INS_PROB)
 BIT_INS_PROB="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -BIT_DEL_PROB)
 BIT_DEL_PROB="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -PRINT_INTERVAL)
 PRINT_INTERVAL="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -STATISTICS_INTERVAL)
 STATISTICS_INTERVAL="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -SNAPSHOT_INTERVAL)
 SNAPSHOT_INTERVAL="$2"
-CURR_PARAMS=" $CURR_PARAMS $key $2 "
+CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
 -NUM_REPLICATES)
 NUM_REPLICATES="$2"
-shift # shift past curr argument
-shift # shift past curr value
-;; # indicates end of case
-
--NUM_JOBS)
-NUM_JOBS="$2"
-shift # shift past curr argument
-shift # shift past curr value
-;; # indicates end of case
-
--NUM_CONDITIONS)
-NUM_CONDITIONS="$2"
 shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
@@ -174,26 +162,20 @@ shift # shift past curr value
     ;;
 esac
 done
-
-# if [[ $VARIABLES -eq "NULL" ]]; then # TODO: this is complaining
-#    echo "ERROR: must have a file with changing variables as a command line argument"
-#    exit 1
-# fi
-
-if [[ $NUM_REPLICATES -eq "NULL" ]]; then # TODO: this is complaining
+# must have a var file for script to run properly
+if [[ $VARIABLES -eq "NULL" ]]; then 
+   echo "ERROR: must have a file with changing variables as a command line argument"
+   exit 1
+fi
+# must have a val for num replicates
+if [[ $NUM_REPLICATES -eq "NULL" ]]; then 
    echo "no replicate given, defaulting to 10"
    let NUM_REPLICATES=10
 fi
 
-if [[ $SEED -eq "NULL" ]]; then # TODO: this is complaining
-   echo "no Seed given, defaulting to 1"
-   let SEED=1
-fi
-
-
-# now have access to the changing parameters!!!
+# Gives access to changing params
 source ${VARIABLES}
-
+# stores vals from var file
 NUM_VALS=${#VALS_TO_TRY[@]}
 NUM_VARS=${#ALL_VARS[@]}
 TOT_RUNS=$(($NUM_VALS ** $NUM_VARS))
@@ -201,65 +183,30 @@ TOT_RUNS=$(($NUM_VALS ** $NUM_VARS))
 
 
 #TODO: assuming bash script and aagos excecutable are in same directory, maybe add a check to confirm?
-# cd ..
-
-
 mkdir -vp "./$OUTPUT_DIR/scripts" 
-
-# cd  "./$OUTPUT_DIR" # TODO: get rid of this move too!!
-
-
-# mkdir -v "./scripts"
-
-# cd "./scripts"
-
-
-
-CURR=0
-
-# TODO: right now loop only works for the parameters we're checking right now. Not sure how to generalize, need to figure out
-# CURR_IND=()
-# while [[ CURR -lt $NUM_VARS ]]; do
-# CURR_IND+=(0)
-#  let CURR=CURR+1
-# done
-
-# CURR_IND=(0 0 0) #TODO: this is what's inflexible currently
-# echo ${CURR_IND[0]}
-# echo ${CURR_IND[1]}
-# echo ${CURR_IND[2]}
-# echo "number of jobs "
-# echo $NUM_JOBS
-
-# -------------------- combinatorics that works ----------------------------- #
+# Sets up vars that keep track of what mutation to look at currently
 IND_0=0
 IND_1=0
 IND_2=0
 SIZE=${#VALS_TO_TRY[@]}
 COUNT=0
-# echo "current directory before loop: "$PWD #aagos
+# This while loop actually creates the scripts that run on the hpcc.
+# Creates 30 scripts which each launch 10 replicates of either 4 or 5 mutation rate combos
 while [[ $IND_0 -lt  SIZE ]]; do
+    # reset what mutation combo we're looking at right now
     let CURR_IND[0]=$IND_0
     let CURR_IND[1]=$IND_1
     let CURR_IND[2]=$IND_2
     IND_TEMP=0
-    let CURR_IND[1]=IND_TEMP
+    let CURR_IND[1]=IND_TEMP # first loop changes just second mutation rate
     let END_IND=$((SIZE-1))
+    # gets what mutation rates are being explored in this script
     START=m_${VALS_TO_TRY[CURR_IND[0]]}_f_${VALS_TO_TRY[CURR_IND[1]]}_c_${VALS_TO_TRY[CURR_IND[2]]}
-    END=m_${VALS_TO_TRY[CURR_IND[0]]}_f_${VALS_TO_TRY[END_IND]}_c_${VALS_TO_TRY[CURR_IND[2]]} # TODO: not sure if arithmetic is inlinable
-# echo "current directory: "$PWD" count:"$COUNT
-let COUNT=COUNT+1
-INDEX=0
-
-# echo "befire"$PWD
-
-# TODO: move bash calls instead, don't have to be in the directory to run as long as filepath call is correct!!
-# if we run the sub files from output dir then don't have to do weird cd s
-
-# echo "num rep "$NUM_REPLICATES
-# TODO: assuming in output dir
-# cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.sub" #TODO: fix other cat file!!
-cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.bash" #TODO: fix other cat file!!
+    END=m_${VALS_TO_TRY[CURR_IND[0]]}_f_${VALS_TO_TRY[END_IND]}_c_${VALS_TO_TRY[CURR_IND[2]]} 
+    let COUNT=COUNT+1
+    INDEX=0
+    # This cat creates new script in script dir. Assumes in Aagos dir.
+cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub"
 #!/bin/bash -login
 #PBS -l walltime=04:00:00
 #PBS -l nodes=1:ppn=1
@@ -269,64 +216,49 @@ cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.bash" #TODO: fix other cat f
 #PBS -j oe
 #PBS -o ./OE_Run_$START-$END
 
-cd /mnt/scratch/f0004516/Aagos
+cd /mnt/scratch/f0004516/Aagos # make sure in Aagos directory
+source  variables.bash # variables must be in Aagos dir to work
+let IND_TEMP=$IND_TEMP # save var from variables file
 
-source  variables.bash
-
-
-let IND_TEMP=$IND_TEMP
-    # echo "first cat "\${CURR_IND[1]}
-    # echo "first val"\${VALS_TO_TRY[CURR_IND[1]]}
-    while [[ \$IND_TEMP -lt $SIZE ]]; do   # TODO: will the 0 thats ind temp break everything?
-# echo \$(((${CURR_IND[0]}+1)*100+(\${CURR_IND[1]}+1)*10+(\${CURR_IND[2]}+1))) 
-       
+    while [[ \$IND_TEMP -lt $SIZE ]]
+    do
         START=m_${VALS_TO_TRY[CURR_IND[0]]}_f_\${VALS_TO_TRY[CURR_IND[1]]}_c_\${VALS_TO_TRY[CURR_IND[2]]}   
         let INDEX=0
-        while [[ \$INDEX -lt $NUM_REPLICATES ]]; do
-        mkdir -vp "./$OUTPUT_DIR/\$START/\$INDEX" #TODO: change
-        FILE_PATH=./$OUTPUT_DIR/\$START/\$INDEX/ # TODO: change
-
-# TODO: make sure file path given to aagos works correctly
-
-let SEED=\$(((${CURR_IND[0]}+1)*1000+(\${CURR_IND[1]}+1)*100+(\${CURR_IND[2]}+1)*10+\$INDEX+1)) 
-# echo \$SEED
-
-
-# TODO: im not sure the params below are correct, may need to escape them....
->&2 echo "\$START"
- time ./Aagos -GENE_MOVE_PROB ${VALS_TO_TRY[CURR_IND[0]]} -BIT_FLIP_PROB \${VALS_TO_TRY[CURR_IND[1]]} -BIT_INS_PROB \${VALS_TO_TRY[CURR_IND[2]]} -BIT_DEL_PROB \${VALS_TO_TRY[CURR_IND[2]]} -DATA_FILEPATH \$FILE_PATH -SEED \$SEED $CURR_PARAMS # TODO: assumes using the rest of vals as default
-        
-        let INDEX=INDEX+1
+        # does each replicate
+        while [[ \$INDEX -lt $NUM_REPLICATES ]]
+        do
+            mkdir -vp "./$OUTPUT_DIR/\$START/\$INDEX" # create dir for this replicate 
+            FILE_PATH=./$OUTPUT_DIR/\$START/\$INDEX/ # save filepath of new dir to store dat files there
+            # seed based on mutation rate and replicate. Unique seed for each run
+            let SEED=\$(((${CURR_IND[0]}+1)*1000+(\${CURR_IND[1]}+1)*100+(\${CURR_IND[2]}+1)*10+\$INDEX+1))
+            >&2 echo "\$START" # echoes mutation rate for this run to std err
+            >&2 echo "\$SEED"  # echoes seed to std err
+            # time run for performance purposes, pipes to std err automatically
+            time ./Aagos -GENE_MOVE_PROB ${VALS_TO_TRY[CURR_IND[0]]} -BIT_FLIP_PROB \${VALS_TO_TRY[CURR_IND[1]]} -BIT_INS_PROB \${VALS_TO_TRY[CURR_IND[2]]} -BIT_DEL_PROB \${VALS_TO_TRY[CURR_IND[2]]} -DATA_FILEPATH \$FILE_PATH -SEED \$SEED $CURR_PARAMS 
+            let INDEX=INDEX+1
         done
+        #updates loop variables
         let IND_TEMP=IND_TEMP+1
         let CURR_IND[1]=\$IND_TEMP
-        
     done
-
-
 EOF
-# let SEED=$(((\${CURR_IND[0]}+1)*1000+(\${CURR_IND[1]}+1)*100+(\${CURR_IND[2]}+1)*10+\$INDEX+1)) 
 
-# echo "after first cat "$PWD
-#in AAGOS
-
-#  echo "sub "./Run_$START-$END.sub"" # TODO: change echo
-# bash ./$OUTPUT_DIR/scripts/Run_$START-$END.bash
+    # should still be in Aagos here
+    # launch scripts to hpcc scheduler to be run
+    qsub ./$OUTPUT_DIR/scripts/Run_$START-$END.qsub
+    # reset second mut_rate, will always be starting at this val
     IND_2=1
-        let CURR_IND[0]=$IND_0
+    let CURR_IND[0]=$IND_0
     let CURR_IND[1]=$IND_1
     let CURR_IND[2]=$IND_2
+    # reset index var
     let INDEX=0
-    while [[ $IND_1 -lt SIZE ]]; do
-                START=m_${VALS_TO_TRY[CURR_IND[0]]}_f_${VALS_TO_TRY[CURR_IND[1]]}_c_${VALS_TO_TRY[CURR_IND[2]]}
-                END=m_${VALS_TO_TRY[CURR_IND[0]]}_f_${VALS_TO_TRY[CURR_IND[1]]}_c_${VALS_TO_TRY[$END_IND]]} 
-            # echo "current dir in 2nd while loop: "$PWD" count:"$COUNT
-            let COUNT=COUNT+1
-
-            memes="memes"
-# echo "cur vals: $CURR_PARAMS"
-# cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.sub"
-cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.bash" #TODO: check that script can run correctly
+    while [[ $IND_1 -lt SIZE ]]
+    do
+        START=m_${VALS_TO_TRY[CURR_IND[0]]}_f_${VALS_TO_TRY[CURR_IND[1]]}_c_${VALS_TO_TRY[CURR_IND[2]]}
+        END=m_${VALS_TO_TRY[CURR_IND[0]]}_f_${VALS_TO_TRY[CURR_IND[1]]}_c_${VALS_TO_TRY[$END_IND]]} 
+        let COUNT=COUNT+1
+cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub"
 #!/bin/bash -login
 #PBS -l walltime=04:00:00
 #PBS -l nodes=1:ppn=1
@@ -336,115 +268,41 @@ cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.bash" #TODO: check that scri
 #PBS -j oe
 #PBS -o ./OE_Run_$START-$END
 
-cd /mnt/scratch/f0004516/Aagos
-source  variables.bash
-
-        let IND_2=$IND_2
-        while [[ \$IND_2 -lt $SIZE ]]; do #TODO: will the ind 2 break?
-            let CURR_IND[0]=$IND_0
-            let CURR_IND[1]=$IND_1
-            let CURR_IND[2]=\$IND_2
-            START=m_\${VALS_TO_TRY[CURR_IND[0]]}_f_\${VALS_TO_TRY[CURR_IND[1]]}_c_\${VALS_TO_TRY[CURR_IND[2]]}   
-
-        #  echo \$(((\${CURR_IND[0]}+1)*100+(\${CURR_IND[1]}+1)*10+(\${CURR_IND[2]}+1))) 
-       
-        let INDEX=0
-
-        while [[ \$INDEX -lt $NUM_REPLICATES ]]; do
-
- 
-        mkdir -vp "./$OUTPUT_DIR/\$START/\$INDEX"
-        FILE_PATH=./$OUTPUT_DIR/\$START/\$INDEX/ # TODO: see if this works
+cd /mnt/scratch/f0004516/Aagos # make sure in Aagos directory
+source  variables.bash # variables must be in Aagos dir to work
+let IND_2=$IND_2 # save var from variables file
+        
+while [[ \$IND_2 -lt $SIZE ]]
+do 
+    let CURR_IND[0]=$IND_0
+    let CURR_IND[1]=$IND_1
+    let CURR_IND[2]=\$IND_2
+    START=m_\${VALS_TO_TRY[CURR_IND[0]]}_f_\${VALS_TO_TRY[CURR_IND[1]]}_c_\${VALS_TO_TRY[CURR_IND[2]]}   
+    let INDEX=0
+    # runs each replicate
+    while [[ \$INDEX -lt $NUM_REPLICATES ]]
+    do
+        mkdir -vp "./$OUTPUT_DIR/\$START/\$INDEX" # creates dir for current replicate
+        FILE_PATH=./$OUTPUT_DIR/\$START/\$INDEX/ 
         let SEED=\$(((\${CURR_IND[0]}+1)*1000+(\${CURR_IND[1]}+1)*100+(\${CURR_IND[2]}+1)*10+\$INDEX+1)) 
-        # echo \$SEED
-        >&2 echo "\$START"
-         time ./Aagos -GENE_MOVE_PROB \${VALS_TO_TRY[CURR_IND[0]]} -BIT_FLIP_PROB \${VALS_TO_TRY[CURR_IND[1]]} -BIT_INS_PROB \${VALS_TO_TRY[CURR_IND[2]]} -BIT_DEL_PROB \${VALS_TO_TRY[CURR_IND[2]]} -DATA_FILEPATH \$FILE_PATH -SEED \$SEED $CURR_PARAMS # TODO: assumes using the rest of vals as default
- 
-               let INDEX=INDEX+1
-        done
-
-
-    let IND_2=IND_2+1  
+        >&2 echo "\$START" # pipes mut_rate to std err
+        >&2 echo "\$SEED"  # pipes seed to std err
+        # time aagos run for performance 
+         time ./Aagos -GENE_MOVE_PROB \${VALS_TO_TRY[CURR_IND[0]]} -BIT_FLIP_PROB \${VALS_TO_TRY[CURR_IND[1]]} -BIT_INS_PROB \${VALS_TO_TRY[CURR_IND[2]]} -BIT_DEL_PROB \${VALS_TO_TRY[CURR_IND[2]]} -DATA_FILEPATH \$FILE_PATH -SEED \$SEED $CURR_PARAMS 
+        let INDEX=INDEX+1
     done
-
+    let IND_2=IND_2+1  
+done
 EOF
-    #    echo "sub "./Run_$START-$END.sub""# TODO: change echo   
-
-    # bash ./$OUTPUT_DIR/scripts/Run_$START-$END.bash
-
-    
-
+        qsub "./Run_$START-$END.qsub"   
+        # update all variables
         let IND_2=1
         let IND_1=IND_1+1
         let CURR_IND[0]=$IND_0
-    let CURR_IND[1]=$IND_1
-    let CURR_IND[2]=$IND_2
+        let CURR_IND[1]=$IND_1
+        let CURR_IND[2]=$IND_2
     done
     let IND_1=0 
     let IND_2=0
     let IND_0=IND_0+1
 done
-let COUNT=COUNT+1
-# -------------------- combinatorics that works ----------------------------- #
-
-# cat << EOF > "Run_$START-$END.sub"
-
-# #!/bin/bash -login
-
-# #PBS -l walltime=00:04:00
-# #PBS -l nodes=1:ppn=1
-# #PBS -l mem=2gb
-# #PBS -N Aagos_Mut_$START_$END
-# #PBS -M gillespl@southwestern.edu
-# #PBS -j oe
-# #PBS -o ./OE_Run_$START-$END
-
-# SEED=$SEED
-
-# cd .. # move to $OUTPUT_DIR/
-
-# # cd .. # move to Aagos/
-#  # now just need to actually run this version of Aagos 4-5 times
-
-# START=m_${VALS_TO_TRY[CURR_IND[0]]}_f_${VALS_TO_TRY[CURR_IND[1]]}_c_${VALS_TO_TRY[CURR_IND[2]]}
-
-# CURR=0
-#  while [[]]; do # TODO: figure out while loop, updating values correctly
-# mkdir -v "./$START"
-# IN_CURR=0
-
-# while [[ $IN_CURR -lt $NUM_REPLICATES ]]; do
-# mkdir -v "./$START_REP_$IN_CURR"
-# cd "./$START_REP_$IN_CURR"
-# FILE_PATH=pwd # TODO: see if this works
-# echo $FILE_PATH
-# cd .. 
-# cd ..
-# cd ..
-# pwd
-#  # ./Aagos -GENE_MOVE_PROB ${VALS_TO_TRY[CURR_IND[0]]} -BIT_FLIP_PROB ${VALS_TO_TRY[CURR_IND[1]]} -BIT_INS_PROB ${VALS_TO_TRY[CURR_IND[2]]} -BIT_DEL_PROB ${VALS_TO_TRY[CURR_IND[2]]} -OUTPUT_DIR $FILE_PATH - $START -SEED $SEED
-# done
-
-
-# let SEED=SEED+1 # TODO: see if seed increments correctly
-# done # TODO: include 10 replicates for each run
-
-# EOF
-# # make sure there is NO OTHER character with the EOF above!
-# let CURR=CURR+1
-# # echo "seed after"
-# # echo $SEED
-# let SEED=SEED+1 # TODO: this seed update needs to change
-# done
-
-# echo "final seed is "
-# echo $SEED
-
-
-# steps: 
-# 1. create bash file that in turn
-#     2. creates a bunch of *.bash files
-#     3. each .bash file looks like the example file given online
-#     4. that's where the make call and everything will be made
-
-
