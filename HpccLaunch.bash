@@ -206,7 +206,7 @@ while [[ $IND_0 -lt  SIZE ]]; do
     let COUNT=COUNT+1
     INDEX=0
     # This cat creates new script in script dir. Assumes in Aagos dir.
-cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub"
+cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.bash"
 #!/bin/bash -login
 #PBS -l walltime=04:00:00
 #PBS -l nodes=1:ppn=1
@@ -245,7 +245,7 @@ EOF
 
     # should still be in Aagos here
     # launch scripts to hpcc scheduler to be run
-    qsub ./$OUTPUT_DIR/scripts/Run_$START-$END.qsub
+    bash "./$OUTPUT_DIR/scripts/Run_$START-$END.bash"
     # reset second mut_rate, will always be starting at this val
     IND_2=1
     let CURR_IND[0]=$IND_0
@@ -258,7 +258,7 @@ EOF
         START=m_${VALS_TO_TRY[CURR_IND[0]]}_f_${VALS_TO_TRY[CURR_IND[1]]}_c_${VALS_TO_TRY[CURR_IND[2]]}
         END=m_${VALS_TO_TRY[CURR_IND[0]]}_f_${VALS_TO_TRY[CURR_IND[1]]}_c_${VALS_TO_TRY[$END_IND]]} 
         let COUNT=COUNT+1
-cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub"
+cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.bash"
 #!/bin/bash -login
 #PBS -l walltime=04:00:00
 #PBS -l nodes=1:ppn=1
@@ -294,7 +294,7 @@ do
     let IND_2=IND_2+1  
 done
 EOF
-        qsub "./Run_$START-$END.qsub"   
+        bash "./$OUTPUT_DIR/scripts/Run_$START-$END.bash"   
         # update all variables
         let IND_2=1
         let IND_1=IND_1+1
