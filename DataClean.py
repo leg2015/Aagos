@@ -13,7 +13,7 @@ import sys
 import argparse as argp
 
 parser = argp.ArgumentParser(description='Clean and aggregate Aagos data.')
-parser.add_argument("-f", type=str, help="filepath to where aagos data is stored. Should be the path into the dir where all run dirs are stored")
+parser.add_argument("-f", type=str, required=True, help="filepath to where aagos data is stored. Should be the path into the dir where all run dirs are stored")
 # parser.add_argument('f', metavar='filepath', type='string',  default=argparse.SUPPRESS, help='filepath to where aagos data is stored. Should be the path into the dir where all run dirs are stored')
 args = parser.parse_args()
 filepath = args.f
