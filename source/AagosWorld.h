@@ -81,13 +81,14 @@ public:
       , gene_size(config.GENE_SIZE())
       , num_bins(config.NUM_GENES() + 1)
       , data_filepath( config.DATA_FILEPATH()) // TODO: only works if subdir is made before runs start... TODO: wouldn't work if subdir not created, runs wouldn't be stored
-      , gene_moves_binomial(config.GENE_MOVE_PROB(), config.NUM_GENES())
+      , gene_moves_binomial(config.GENE_MOVE_PROB(), config.NUM_GENES()) // since num genes doesn't evolve, can calculate 1 dist
       , gene_mask(emp::MaskLow<size_t>(config.GENE_SIZE()))
       , fittest_id(-1) // set to -1 to indicate fittest individual hasn't been calc yet
 
   {
     emp_assert(config.MIN_SIZE() >= config.GENE_SIZE(), "BitSet can't handle a genome smaller than gene_size");
-
+    // for each possible length of genome, calculate the bin dist for that length
+    // start at smallest possible gene length
     for (size_t i = config.MIN_SIZE(); i < config.MAX_SIZE(); i++) {
       bit_flips_binomials.emplace_back(config.BIT_FLIP_PROB(), i);
       inserts_binomials.emplace_back(config.BIT_INS_PROB(), i);
@@ -117,17 +118,16 @@ public:
     // Setup the mutation function. Per site.
     std::function<size_t(AagosOrg &, emp::Random &)> mut_fun =
         [this](AagosOrg &org, emp::Random &random) {
-          size_t bin_array_offset = org.GetNumGenes() - config.MIN_SIZE();
-
+          size_t bin_array_offset = org.GetNumBits() - config.MIN_SIZE(); // offset is num bits - min size of genome
+          emp_assert(bin_array_offset >= 0, "index of bin dist cannot be negative!!");
           // Do gene moves.
           size_t num_moves = gene_moves_binomial.PickRandom(random);
           for (size_t m = 0; m < num_moves; m++)
           {
-            size_t gene_id = random.GetUInt(org.GetNumGenes());
-            org.gene_starts[gene_id] = random.GetUInt(org.GetNumBits());
+            size_t gene_id = random.GetUInt(org.GetNumGenes()); // get random gene
+            org.gene_starts[gene_id] = random.GetUInt(org.GetNumBits()); // change its start to a random location
           }
 
-          // Do bit flips mutations
           size_t num_flips = bit_flips_binomials[bin_array_offset].PickRandom(random);
           for (size_t m = 0; m < num_flips; m++)
           {

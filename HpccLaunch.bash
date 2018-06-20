@@ -184,6 +184,8 @@ TOT_RUNS=$(($NUM_VALS ** $NUM_VARS))
 
 #TODO: assuming bash script and aagos excecutable are in same directory, maybe add a check to confirm?
 mkdir -vp "./$OUTPUT_DIR/scripts" 
+mkdir -vp "./$OUTPUT_DIR/output"
+mkdir -vp "./$OUTPUT_DIR/error"
 # Sets up vars that keep track of what mutation to look at currently
 IND_0=0
 IND_1=0
@@ -213,8 +215,8 @@ cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub"
 #PBS -l mem=2gb
 #PBS -N Aagos_Mut_$START_$END
 #PBS -M gillespl@southwestern.edu
-#PBS -j oe
-#PBS -o ./OE_Run_$START-$END
+#PBS -e ./$OUTPUT_DIR/error/Run_$START-$END
+#PBS -o ./$OUTPUT_DIR/output/Run_$START-$END
 
 cd /mnt/scratch/f0004516/Aagos # make sure in Aagos directory
 source  variables.bash # variables must be in Aagos dir to work
@@ -265,8 +267,8 @@ cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub"
 #PBS -l mem=2gb
 #PBS -N Aagos_Mut_$START_$END
 #PBS -M gillespl@southwestern.edu
-#PBS -j oe
-#PBS -o ./OE_Run_$START-$END
+#PBS -e ./$OUTPUT_DIR/error/Run_$START-$END
+#PBS -o ./$OUTPUT_DIR/output/Run_$START-$END
 
 cd /mnt/scratch/f0004516/Aagos # make sure in Aagos directory
 source  variables.bash # variables must be in Aagos dir to work
