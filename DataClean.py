@@ -1,9 +1,6 @@
 
 # coding: utf-8
 
-# In[85]:
-
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,40 +8,37 @@ import seaborn as sns
 import glob
 import sys
 import argparse as argp
-
+# Parses command line argument for filepath of data to clean
 parser = argp.ArgumentParser(description='Clean and aggregate Aagos data.')
 parser.add_argument("-f", type=str, required=True, help="filepath to where aagos data is stored. Should be the path into the dir where all run dirs are stored")
-# parser.add_argument('f', metavar='filepath', type='string',  default=argparse.SUPPRESS, help='filepath to where aagos data is stored. Should be the path into the dir where all run dirs are stored')
 args = parser.parse_args()
 filepath = args.f
-if filepath is None:
+if filepath is '':
     sys.exit("No filepath was provided! Please provide filepath to Aagos data")
-print("filepath is ", filepath)
-print(args)
-
-
-# In[71]:
-
-
+# script should look through fitness, representative_org and statistics file
 num_files = 3 # number of files that this data script should clean out
+# get path for all data files
 files = glob.glob(filepath + '/m_*/*')
+# stores all the data in this vector
 dataframes_stats = []
 for f in files:
+        # get each replicate
         replicate = f.split('/')[-1]
         curr = f.split('/')[-2]
         mut_rates = curr.split('_')
         currdata = glob.glob(f + '/*.csv')
         curr_dataframes = []
+        # for each file in replicate, grab the data
         for c in currdata:
-            if('snapshot' in c):
+            if('snapshot' in c): # ignore the snapshot file because not the data we're interested in right now
                 continue
             curr_dataframes.append(pd.read_csv(c, index_col="update"))
-    
-        if len(curr_dataframes) < num_files: # so c is left over from the previous file set! thats why its there
+        # Error check from previous issue I was having, make sure every file is present, otherwise will throw an error
+        if len(curr_dataframes) < num_files:
             num_missing = (num_files - len(curr_dataframes)) 
             error_msg = "there are missing files in the data! " + str(num_missing) + " file[s] are missing from directory " + f
             sys.exit(error_msg)
-            continue
+            # continue
         merged = pd.concat(curr_dataframes, axis=1)
         merged["replicate"] = replicate
         for i in range(0, len(mut_rates), 2):
@@ -52,4 +46,4 @@ for f in files:
         dataframes_stats.append(merged)
 final = pd.concat(dataframes_stats, axis=0)
 final.to_csv(filepath + '/CleanedData.csv')
-
+print("data successfully saved to ", filepath + '/CleanedData.csv')
