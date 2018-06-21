@@ -46,4 +46,4 @@ for f in files:
         dataframes_stats.append(merged)
 final = pd.concat(dataframes_stats, axis=0)
 final.to_csv(filepath + '/CleanedData.csv')
-print("data successfully saved to ", filepath + '/CleanedData.csv')
+print("data successfully saved to ", filepath + '/CleanedDataStatFit.csv')
