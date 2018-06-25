@@ -66,6 +66,11 @@ public:
   // getter for number of bins in histogram
   const size_t GetNumBins() { return num_bins; }
 
+  void ResetHistogram() {
+    histogram.Reset();
+    initialized = false;
+  }
+
   // randomizes genome and gene starts
   void Randomize(emp::Random &random)
   {

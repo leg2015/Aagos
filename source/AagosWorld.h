@@ -191,6 +191,10 @@ public:
                 x--;
           }
 
+          int num_muts = num_moves + num_flips + num_insert + num_delete;
+          if (num_muts > 0) {
+            org.ResetHistogram();
+          }
           return num_moves + num_flips + num_insert + num_delete; // Returns total num mutations
         };
     SetMutFun(mut_fun);       // set mutation function of world to above
