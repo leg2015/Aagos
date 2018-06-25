@@ -89,7 +89,7 @@ public:
     emp_assert(config.MIN_SIZE() >= config.GENE_SIZE(), "BitSet can't handle a genome smaller than gene_size");
     // for each possible length of genome, calculate the bin dist for that length
     // start at smallest possible gene length
-    for (size_t i = config.MIN_SIZE(); i < config.MAX_SIZE(); i++) {
+    for (size_t i = config.MIN_SIZE(); i <= config.MAX_SIZE(); i++) {
       bit_flips_binomials.emplace_back(config.BIT_FLIP_PROB(), i);
       inserts_binomials.emplace_back(config.BIT_INS_PROB(), i);
       deletes_binomials.emplace_back(config.BIT_DEL_PROB(), i);
