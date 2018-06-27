@@ -11,8 +11,10 @@ import argparse as argp
 # Parses command line argument for filepath of data to clean
 parser = argp.ArgumentParser(description='Clean and aggregate Aagos data.')
 parser.add_argument("-f", type=str, required=True, help="filepath to where aagos data is stored. Should be the path into the dir where all run dirs are stored")
+parser.add_argument("-n", type=int, required=True, help="number of replicates for this run of Aagos")
 args = parser.parse_args()
 filepath = args.f
+num_replicates = args.n
 if filepath is '':
     sys.exit("No filepath was provided! Please provide filepath to Aagos data")
 # script should look through fitness, representative_org and statistics file
