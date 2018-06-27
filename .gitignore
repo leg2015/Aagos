@@ -10,7 +10,8 @@ Aagos
 
 
 Mut_Rate_2/BadRuns
-./misc
+misc/
+maymes/
 *.pdf
 
 .ipynb_checkpoints/BoxPlotExample-checkpoint.ipynb

@@ -12,6 +12,7 @@ import argparse as argp
 parser = argp.ArgumentParser(description='Clean and aggregate Aagos data.')
 parser.add_argument("-f", type=str, required=True, help="filepath to where aagos data is stored. Should be the path into the dir where all run dirs are stored")
 parser.add_argument("-n", type=int, required=True, help="number of replicates for this run of Aagos")
+parser.add_argument("-glob", type=str, help=" what should the glob pattern for these files look like. Defaults to mutation parsing", default='/m_*/*')
 args = parser.parse_args()
 filepath = args.f
 num_replicates = args.n
@@ -20,7 +21,11 @@ if filepath is '':
 # script should look through fitness, representative_org and statistics file
 num_files = 2 # number of files that this data script should clean out
 # get path for all data files
-files = glob.glob(filepath + '/m_*/*')
+glob_path = filepath + args.glob
+files = glob.glob(glob_path)
+if len(files) is 0:
+    err_msg = "ERROR: files not found. Either an error with glob path: " + glob_path + " or error with data files"
+    sys.exit(err_msg)
 # stores all the data in this vector
 dataframes_stats = []
 for f in files:

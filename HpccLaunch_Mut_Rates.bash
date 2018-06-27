@@ -163,10 +163,10 @@ shift # shift past curr value
 esac
 done
 # must have a var file for script to run properly
-if [[ $VARIABLES -eq "NULL" ]]; then 
-   echo "ERROR: must have a file with changing variables as a command line argument"
-   exit 1
-fi
+# if [[ $VARIABLES -eq "NULL" ]]; then 
+#    echo "ERROR: must have a file with changing variables as a command line argument"
+#    exit 1
+# fi
 # must have a val for num replicates
 if [[ $NUM_REPLICATES -eq "NULL" ]]; then 
    echo "no replicate given, defaulting to 10"
