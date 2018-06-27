@@ -5,3 +5,11 @@ Aagos
 *.csv
 
 *.txt
+
+*.qsub
+
+*.bash
+
+Mut_Rate_2/BadRuns
+
+*.pdf
