@@ -12,6 +12,7 @@ import argparse as argp
 parser = argp.ArgumentParser(description='Clean and aggregate Aagos data.')
 parser.add_argument("-f", type=str, required=True, help="filepath to where aagos data is stored. Should be the path into the dir where all run dirs are stored")
 parser.add_argument("-n", type=int, required=True, help="number of replicates for this run of Aagos")
+parser.add_argument("-l", help="only selects the last generation of snapshot orgs", action="store_true")
 args = parser.parse_args()
 filepath = args.f
 num_replicates = args.n
@@ -38,10 +39,11 @@ for f in files:
             if('snapshot' not in c): # ignore the snapshot file because not the data we're interested in right now
                 #print("ignoring snap file ", c)
                 continue
-#             if('representative' in c):
-#                 #print("ignoring rep file ", c)
-#                 continue
-            curr_dataframes.append(pd.read_csv(c, index_col="update"))
+            all_dat = pd.read_csv(c, index_col="update")
+            if args.l:
+                curr_dataframes.append(all_dat.loc[40000:])
+            else:
+                curr_dataframes.append(all_dat)
         # Error check from previous issue I was having, make sure every file is present, otherwise will throw an error
         if len(curr_dataframes) < num_files:
             num_missing = (num_files - len(curr_dataframes)) 
