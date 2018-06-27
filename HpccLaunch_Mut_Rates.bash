@@ -219,7 +219,7 @@ cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub"
 #PBS -o ./$OUTPUT_DIR/output/Run_$START-$END
 
 cd /mnt/scratch/f0004516/Aagos # make sure in Aagos directory
-source  variables.bash # variables must be in Aagos dir to work
+source  $VARIABLES # variables must be in Aagos dir to work
 let IND_TEMP=$IND_TEMP # save var from variables file
 
     while [[ \$IND_TEMP -lt $SIZE ]]
@@ -271,7 +271,7 @@ cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub"
 #PBS -o ./$OUTPUT_DIR/output/Run_$START-$END
 
 cd /mnt/scratch/f0004516/Aagos # make sure in Aagos directory
-source  variables.bash # variables must be in Aagos dir to work
+source  $VARIABLES # variables must be in Aagos dir to work
 let IND_2=$IND_2 # save var from variables file
         
 while [[ \$IND_2 -lt $SIZE ]]

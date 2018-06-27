@@ -8,8 +8,19 @@ Aagos
 
 *.qsub
 
-*.bash
 
 Mut_Rate_2/BadRuns
-
+./misc
 *.pdf
+
+.ipynb_checkpoints/BoxPlotExample-checkpoint.ipynb
+
+.ipynb_checkpoints/DataCleanStatFit-checkpoint.py
+
+.ipynb_checkpoints/DataCleanStatFitRep-checkpoint.py
+
+.ipynb_checkpoints/DataVis-checkpoint.ipynb
+
+misc/TIMINGS
+
+SegmentationFaultData/SegFaultRuns
