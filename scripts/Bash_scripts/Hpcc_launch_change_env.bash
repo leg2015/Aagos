@@ -183,7 +183,7 @@ while [[ $IND -lt  NUM_ENV ]]; do
     # This cat creates new script in script dir. Assumes in Aagos dir.
 cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START.qsub"
 #!/bin/bash -login
-#PBS -l walltime=08:00:00
+#PBS -l walltime=04:00:00
 #PBS -l nodes=1:ppn=1
 #PBS -l mem=2gb
 #PBS -N Aagos_Mut_$START_$END

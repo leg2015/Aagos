@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
   auto args = emp::cl::ArgManager(argc, argv);
   if (args.ProcessConfigOptions(config, std::cout, "Aagos.cfg", "Aagos-macros.h") == false) exit(0);
   if (args.TestUnknown() == false) exit(0);  // If there are leftover args, throw an error.
-  // config.Write(std::cout);
+  config.Write(std::cout);
 auto rand = emp::Random(config.SEED());
   AagosWorld world(rand, config);
 
