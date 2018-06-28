@@ -205,7 +205,7 @@ while [[ \$INDEX -lt $NUM_REPLICATES ]]
         >&2 echo "\$START" # echoes mutation rate for this run to std err
         >&2 echo "\$SEED"  # echoes seed to std err
         # time run for performance purposes, pipes to std err automatically
-        time ./Aagos -DATA_FILEPATH \$FILE_PATH -SEED \$SEED $CURR_PARAMS 
+        time ./Aagos -DATA_FILEPATH \$FILE_PATH -SEED \$SEED $CURR_PARAMS -CHANGE_RATE ${CHANGE_TO_TRY[$IND]}
         let INDEX=INDEX+1
     done
 EOF

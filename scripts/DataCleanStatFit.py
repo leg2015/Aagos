@@ -13,6 +13,7 @@ parser = argp.ArgumentParser(description='Clean and aggregate Aagos data.')
 parser.add_argument("-f", type=str, required=True, help="filepath to where aagos data is stored. Should be the path into the dir where all run dirs are stored")
 parser.add_argument("-n", type=int, required=True, help="number of replicates for this run of Aagos")
 parser.add_argument("-glob", type=str, help=" what should the glob pattern for these files look like. Defaults to mutation parsing", default='/m_*/*')
+parser.add_argument("-change", action="store_true", help=" if the file that's being cleaned is for changing environments")
 args = parser.parse_args()
 filepath = args.f
 num_replicates = args.n
@@ -47,7 +48,7 @@ for f in files:
             if('representative' in c):
                 #print("ignoring rep file ", c)
                 continue
-            curr_dataframes.append(pd.read_csv(c, index_col="update"))
+            curr_dataframes.append(pd.read_csv(c, index_col="update")) # this works
         # Error check from previous issue I was having, make sure every file is present, otherwise will throw an error
         if len(curr_dataframes) < num_files:
             num_missing = (num_files - len(curr_dataframes)) 
