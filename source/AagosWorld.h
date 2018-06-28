@@ -288,7 +288,7 @@ public:
           continue;
         int count = 0;
         const emp::vector<size_t> &bins = org->GetHistogram().GetHistCounts(); // get all bins
-        for (size_t i = 2; i < bins.size(); i++)                               // check all bins that are > 1
+        for (size_t i = 2; i < bins.size(); i++)                              // check all bins that are > 1
         {
           count += bins[i]; // assuming bins are in order, sum all bins
         }
@@ -296,7 +296,42 @@ public:
       }
       return pop_multi;
     });
-
+  // node to track the number of sites with at least one gene corresponding to it
+  auto & coding_sites_node = manager.New("coding_sites");
+  coding_sites_node.AddPullSet([this]() {
+    emp::vector<double> pop_coding;
+    for ( emp::Ptr<AagosOrg> org : pop) 
+    {
+      if (!org)
+        continue;
+      int count = 0;
+      const emp::vector<size_t> &bins = org->GetHistogram().GetHistCounts();
+      for (size_t i = 1; i < bins.size(); i++) // start with bin corresponding to one gene
+      {
+        count += bins[i]; // sum all bin counts
+      }
+      pop_coding.emplace_back(count);
+    }
+    return pop_coding;
+  });
+  // node to track the gene length of each organism
+  auto & gene_len_node = manager.New("gene_len");
+  gene_len_node.AddPullSet([this]() {
+        emp::vector<double> pop_len;
+    for ( emp::Ptr<AagosOrg> org : pop) 
+    {
+      if (!org)
+        continue;
+      int count = 0;
+      const emp::vector<size_t> &bins = org->GetHistogram().GetHistCounts();
+      for (size_t i = 0; i < bins.size(); i++) // start with bin corresponding to no gene
+      {
+        count += bins[i]; // sum all bin counts
+      }
+      pop_len.emplace_back(count);
+    }
+    return pop_len;
+  });
     // avg overlap is average number of genes per site
     // measure amount of overlap in a genome
     // calculated as mean of histogram
@@ -312,6 +347,8 @@ public:
       return pop_overlap;
     });
 
+    
+
     // neighbor node gets mean of gene neighbors for each org
     auto & neighbor_node = manager.New("avg_num_neighbors");
     neighbor_node.AddPullSet([this]() {
@@ -326,11 +363,13 @@ public:
     });
 
     // add all data nodes to stats data file
-    gene_stats_file.AddStats(neutral_node, "Neutral_Sites", "sites with no genes associated with them", true, true);
-    gene_stats_file.AddStats(one_gene_node, "One_Gene_Sites", "sites with exactly one gene associated with them", true, true);
-    gene_stats_file.AddStats(multi_gene_node, "Multi_Gene_Sites", "sites with more thone one genes associated with them", true, true);
-    gene_stats_file.AddStats(overlap_node, "Overlap", "Average number of genes per site", true, true);
-    gene_stats_file.AddStats(neighbor_node, "Neighbor_Genes", "Number of genes overlapping each other gene", true, true);
+    gene_stats_file.AddStats(neutral_node, "neutral_sites", "sites with no genes associated with them", true, true);
+    gene_stats_file.AddStats(one_gene_node, "one_gene_sites", "sites with exactly one gene associated with them", true, true);
+    gene_stats_file.AddStats(multi_gene_node, "multi_gene_sites", "sites with more thone one genes associated with them", true, true);
+    gene_stats_file.AddStats(overlap_node, "overlap", "Average number of genes per site", true, true);
+    gene_stats_file.AddStats(neighbor_node, "neighbor_genes", "Number of genes overlapping each other gene", true, true);
+    gene_stats_file.AddStats(coding_sites_node, "coding_sites", "Number of genome sites with at least one corresponding gene", true, true);
+    gene_stats_file.AddStats(gene_len_node, "gene_length", "Length of genome", true, true);
     // set calc update timing
     gene_stats_file.SetTimingRepeat(config.STATISTICS_INTERVAL());
     gene_stats_file.PrintHeaderKeys();
