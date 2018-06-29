@@ -148,7 +148,7 @@ shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
---)
+-VARIABLES)
 VARIABLES="$2"
 shift # shift past curr argument
 shift # shift past curr value
