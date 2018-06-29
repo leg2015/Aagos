@@ -7,6 +7,6 @@
 # echo "var 1 in variables script"
 # echo ${VAR1[1]}
 
-VALS_TO_TRY=(.001 .003 .01 .03 .1)
+VALS_TO_TRY=(0 .00001 .0001 .001 .003)
 CURR_IND=(0 0 0) 
 ALL_VARS=(GENE_MOVE_PROB BIT_FLIP_PROB BIT_CHANGE_PROB)
