@@ -100,7 +100,7 @@ shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
--)BIT_INS_PROB
+-BIT_INS_PROB)
 BIT_INS_PROB="$2"
 CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
