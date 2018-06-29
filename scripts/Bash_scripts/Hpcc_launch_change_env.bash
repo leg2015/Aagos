@@ -100,7 +100,7 @@ shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
--BIT_INS_PROB)
+-)BIT_INS_PROB
 BIT_INS_PROB="$2"
 CURR_PARAMS=" $CURR_PARAMS $key $2 " # add to list of params to include in Aagos run
 shift # shift past curr argument
@@ -186,7 +186,7 @@ cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START.qsub"
 #PBS -l walltime=04:00:00
 #PBS -l nodes=1:ppn=1
 #PBS -l mem=2gb
-#PBS -N Aagos_Mut_$START_$END
+#PBS -N Aagos_Change_$START
 #PBS -M gillespl@southwestern.edu
 #PBS -e ./$OUTPUT_DIR/error/Run_$START
 #PBS -o ./$OUTPUT_DIR/output/Run_$START
