@@ -148,7 +148,7 @@ shift # shift past curr argument
 shift # shift past curr value
 ;; # indicates end of case
 
--VARIABLES)
+--)
 VARIABLES="$2"
 shift # shift past curr argument
 shift # shift past curr value
@@ -192,7 +192,7 @@ while [[ $INDEX -lt  $SIZE ]]; do
     START=m_${GENE_MOVE_PROB}_f_${CURR_FLIP}_c_${BIT_INS_PROB}
     echo $START
     # This cat creates new script in script dir. Assumes in Aagos dir.
-cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START.bash"
+cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START.qsub"
 #!/bin/bash -login
 #PBS -l walltime=12:00:00
 #PBS -l nodes=1:ppn=1
@@ -220,7 +220,7 @@ EOF
     let INDEX=INDEX+1
     # should still be in Aagos here
     # launch scripts to hpcc scheduler to be run
-    bash "./$OUTPUT_DIR/scripts/Run_$START.bash"
+    qsub "./$OUTPUT_DIR/scripts/Run_$START.qsub"
     # reset second mut_rate, will always be starting at this val
 
 done
