@@ -19,7 +19,7 @@ EMP_BUILD_CONFIG(AagosConfig,
                  GROUP(WORLD_STRUCTURE, "How should each organism's genome be setup?"),
                  VALUE(CHANGE_RATE, size_t, 0, "How many changes to fitness tables each generation?"),
                  VALUE(POP_SIZE, size_t, 1000, "How many organisms should be in the population?"),
-                 VALUE(MAX_GENS, size_t, 50000, "How many generations should the runs go for?"),
+                 VALUE(MAX_GENS, size_t, 50001, "How many generations should the runs go for?"),
                  VALUE(SEED, int, 0, "Random number seed (0 for based on time)"),
                  VALUE(ELITE_COUNT, size_t, 0, "How many organisms should be selected via elite selection?"),
                  VALUE(TOURNAMENT_SIZE, size_t, 2, "How many organisms should be chosen for each tournament?"),
@@ -396,7 +396,7 @@ public:
         return pop[fittest_id]->GetHistogram().GetHistCount(b);
       };
       // add current function to file
-      representative_file.AddFun(gene_overlap_fun, emp::to_string(b) + "_gene_overlap_frequency",
+      representative_file.AddFun(gene_overlap_fun, emp::to_string(b) + "_gene_overlap",
            "statistics for representative population member");
     }
 
@@ -408,13 +408,28 @@ public:
     representative_file.AddFun(gene_starts_fun, "gene_starts", 
           "all gene starts for the representative organism in the population");
 
-    // gets genome size for representative org
+    // gets number of coding sites for representative org
+    std::function<double()> coding_sites_fun = [this]() {
+        FindFittest();
+        const emp::vector<size_t> &bins = pop[fittest_id]->GetHistogram().GetHistCounts();
+        int count = 0;
+        for (size_t i = 1; i < bins.size(); i++) // start with bin corresponding to one gene
+          {
+            count += bins[i]; // sum all bin counts
+          }
+          return count;
+    };
+    representative_file.AddFun(coding_sites_fun, "coding_sites", 
+          "number of coding sites for representative organism");
+
+
+    // gets genome length for representative org
     std::function<double()> genome_size_fun = [this]() {
       FindFittest();
       return pop[fittest_id]->GetNumBits();
     };
-    representative_file.AddFun(genome_size_fun, "genome_size",
-           "genome size of representative organism");
+    representative_file.AddFun(genome_size_fun, "genome_length",
+           "genome length of representative organism");
 
     // gets fitness of representative org
     std::function<double()> fitness_fun = [this]() {
