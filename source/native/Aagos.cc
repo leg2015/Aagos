@@ -29,7 +29,7 @@ auto rand = emp::Random(config.SEED());
   }
 
   // runs each generation
-  for (size_t gen = 0; gen < config.MAX_GENS(); gen++) {
+  for (size_t gen = 0; gen <= config.MAX_GENS(); gen++) {
     // Do mutations on the population.
     world.DoMutations(config.ELITE_COUNT());
 
