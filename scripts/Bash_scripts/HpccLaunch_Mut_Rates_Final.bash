@@ -192,7 +192,7 @@ while [[ $INDEX -lt  $SIZE ]]; do
     START=m_${GENE_MOVE_PROB}_f_${CURR_FLIP}_c_${BIT_INS_PROB}
     echo $START
     # This cat creates new script in script dir. Assumes in Aagos dir.
-cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START.qsub"
+cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START.bash"
 #!/bin/bash -login
 #PBS -l walltime=12:00:00
 #PBS -l nodes=1:ppn=1
@@ -207,8 +207,8 @@ source  $VARIABLES # variables must be in Aagos dir to work
 IND=0
     while [[ \$IND -lt $NUM_REPLICATES ]]
     do
-        mkdir -vp "./$OUTPUT_DIR/$START/\$INDEX" # create dir for this replicate 
-        FILE_PATH=./$OUTPUT_DIR/$START/\$INDEX/ # save filepath of new dir to store dat files there
+        mkdir -vp "./$OUTPUT_DIR/$START/\$IND" # create dir for this replicate 
+        FILE_PATH=./$OUTPUT_DIR/$START/\$IND/ # save filepath of new dir to store dat files there
         >&2 echo "$START" # echoes mutation rate for this run to std err
         >&2 echo "\$SEED"  # echoes seed to std err
         # time run for performance purposes, pipes to std err automatically
@@ -220,7 +220,7 @@ EOF
     let INDEX=INDEX+1
     # should still be in Aagos here
     # launch scripts to hpcc scheduler to be run
-    qsub "./$OUTPUT_DIR/scripts/Run_$START.qsub"
+    bash "./$OUTPUT_DIR/scripts/Run_$START.bash"
     # reset second mut_rate, will always be starting at this val
 
 done
