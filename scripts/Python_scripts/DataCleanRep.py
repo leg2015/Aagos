@@ -56,5 +56,5 @@ for f in files:
             merged[mut_rates[i]] = mut_rates[i+1]
         dataframes_stats.append(merged)
 final = pd.concat(dataframes_stats, axis=0)
-final.to_csv(filepath + '/' + filepath + 'CleanedDataStatFitRep.csv')
-print("data successfully saved to ", filepath + '/' + filepath + 'CleanedDataStatFitRep.csv')
+final.to_csv(filepath + '/CleanedDataRep.csv')
+print("data successfully saved to ", filepath + '/CleanedDataRep.csv')
