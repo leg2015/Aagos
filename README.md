@@ -4,11 +4,12 @@
 
 * In static systems, high mutation rates create a pressure for gene overlap and smaller genomes
 * However, more modular, separated genetic architectures have been shown to be more evolvable in previous work
+![](https://github.com/leg2015/Aagos/blob/master/Background.png "Background")
 * Furthermore, in evolutionary biology, we see a general trend of larger essential genomes in more complex organisms
 * Therefore, _what environmental pressures have selected for modular, evolvable genetic architectures in biological systems?_
 
 ## System Model
-
+![](https://github.com/leg2015/Aagos/blob/master/NKLandscape.png "Nk-Inspried Landscape")
 * NK-Inspired landscape
 * Variable length genomes
 
