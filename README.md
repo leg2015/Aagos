@@ -29,6 +29,14 @@ To run these experiments for yourself, simply download the [Empirical library](h
 
 `./Aagos -[parameters]`
 
+### Parameters we used: 
+* GENE_MOVE_PROB = 0.003
+* BIT_FLIP_PROB = 0, .00001, .0001, .001, .003, .01, .03, .1
+* BIT_INS_PROB = 0.001   
+* BIT_DEL_PROB = 0.001 
+* CHANGE_RATE = 0, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 5000 
+
+### Changeable Parameters
 **Environmental Parameters**
   * CHANGE_RATE, default 0, How many changes to fitness tables each generation
   * POP_SIZE, default 1000, How many organisms should be in the population
