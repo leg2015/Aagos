@@ -20,7 +20,7 @@
 * Moderate environmental change leads to larger minimal genomes, however high environmental change leads to meltdown
 * Even with a high mutation rate, in the presence of moderate environmental change, minimal genome size is significantly larger than in static environments
 
-## Result Replication
+## Experiment Replication
 
 To run these experiments for yourself, simply download the [Empirical library](https://github.com/devosoft/Empirical) and [this repository](https://github.com/leg2015/Aagos) and enter the commands:
 
