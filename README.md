@@ -1,4 +1,5 @@
 # Aagos
+* **A**uto-**A**daptive **G**enetic **O**rganization **S**ystem
 
 ## Motivation
 
