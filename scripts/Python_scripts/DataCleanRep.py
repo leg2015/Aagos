@@ -1,6 +1,7 @@
 
 # coding: utf-8
-
+# how to run this: python [path to file]/DataCleanRep.py -f [path to group of files to clean] -n [number of replicates for that trial] -glob [the path to the data tracking files ie representative.csv etc.]
+# glob path for change files is [ /c*/* ]
 import pandas as pd
 import numpy as np
 # import matplotlib.pyplot as plt
@@ -12,16 +13,22 @@ import argparse as argp
 parser = argp.ArgumentParser(description='Clean and aggregate Aagos data.')
 parser.add_argument("-f", type=str, required=True, help="filepath to where aagos data is stored. Should be the path into the dir where all run dirs are stored")
 parser.add_argument("-n", type=int, required=True, help="number of replicates for this run of Aagos")
-parser.add_argument("-glob", type=str, help=" what should the glob pattern for these files look like. Defaults to mutation parsing", default='/m_*/*')
+parser.add_argument("-glob", type=str, help=" what should the glob pattern for these files look like. Defaults to mutation parsing", default='/m_*/*') # default is for using with mutation tests bash scripts
+parser.add_argument("-change", action="store_true", help=" if the file that's being cleaned is for changing environments") # if using changing environments bash script, then use this flag and will automatically pull changing environemnts for you
+
 args = parser.parse_args()
 filepath = args.f
 num_replicates = args.n
+if args.change is true:
+    glob_path = filepath + "/c*/*"
+else :
+    glob_path = filepath + args.glob
 if filepath is '':
     sys.exit("No filepath was provided! Please provide filepath to Aagos data")
 # script should look through fitness, representative_org and statistics file
 num_files = 1 # number of files that this data script should clean out
 # get path for all data files
-glob_path = filepath + args.glob
+
 files = glob.glob(glob_path)
 if len(files) is 0:
     err_msg = "ERROR: files not found. Either an error with glob path: " + glob_path + " or error with data files"

@@ -1,5 +1,6 @@
 
 # coding: utf-8
+# how to run this: python [path to file]/DataCleanRep.py -f [path to group of files to clean] -n [number of replicates for that trial] -glob [the path to the data tracking files ie representative.csv etc.] -change [add if the file you're cleaning is a change file]
 
 import pandas as pd
 import numpy as np
