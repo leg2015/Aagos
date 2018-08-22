@@ -4,8 +4,9 @@ Aagos
 *.gitignore
 *.csv
 
+# Ignore text files
 *.txt
-
+# Ignore launch files for hpcc created for testing purposes
 *.qsub
 
 
@@ -26,6 +27,9 @@ misc/TIMINGS
 
 SegmentationFaultData/SegFaultRuns
 
-*.png
+# Ignore notes files
+*.md
+
+# Ignore images
 
 *.png
