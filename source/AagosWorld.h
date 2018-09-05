@@ -23,6 +23,7 @@ EMP_BUILD_CONFIG(AagosConfig,
                  VALUE(SEED, int, 0, "Random number seed (0 for based on time)"),
                  VALUE(ELITE_COUNT, size_t, 0, "How many organisms should be selected via elite selection?"),
                  VALUE(TOURNAMENT_SIZE, size_t, 2, "How many organisms should be chosen for each tournament?"),
+                 VALUE(GRADIENT_MODEL, bool, false, "Whether the current experiment uses a gradient model for fitness or trad. fitness")
 
                  GROUP(GENOME_STRUCTURE, "How should each organism's genome be setup?"),
                  VALUE(NUM_BITS, size_t, 128, "Starting number of bits in each organism"),
@@ -53,12 +54,14 @@ private:
   // need a node manager for data tracking since so many different data points to draw
   emp::DataManager<double, emp::data::Log, emp::data::Stats, emp::data::Pull> manager; 
   emp::Ptr<emp::ContainerDataFile<emp::vector<emp::Ptr<AagosOrg>>>> snapshot_file;
+  emp::vector<emp::BitVector> target_bits; // vector of target bitstrings for gradient version of model
 
   // Configured values
   size_t num_bits;
   size_t num_genes;
   size_t gene_size;
   size_t num_bins;
+  bool gradient;
 
   std::string data_filepath;
   emp::Binomial gene_moves_binomial;
@@ -71,19 +74,17 @@ private:
   int fittest_id;
 
 public:
-  AagosWorld(emp::Random& rand, AagosConfig &_config, const std::string &world_name = "AagosWorld")
-      : emp::World<AagosOrg>(rand, world_name)
-      , config(_config)
-      , landscape(config.NUM_GENES() , config.GENE_SIZE() - 1, GetRandom())
-     // , manager()
-      , num_bits(config.NUM_BITS())
-      , num_genes(config.NUM_GENES())
-      , gene_size(config.GENE_SIZE())
-      , num_bins(config.NUM_GENES() + 1)
-      , data_filepath( config.DATA_FILEPATH()) // TODO: only works if subdir is made before runs start... TODO: wouldn't work if subdir not created, runs wouldn't be stored
-      , gene_moves_binomial(config.GENE_MOVE_PROB(), config.NUM_GENES()) // since num genes doesn't evolve, can calculate 1 dist
-      , gene_mask(emp::MaskLow<size_t>(config.GENE_SIZE()))
-      , fittest_id(-1) // set to -1 to indicate fittest individual hasn't been calc yet
+  AagosWorld(emp::Random &rand, AagosConfig &_config, const std::string &world_name = "AagosWorld")
+      : emp::World<AagosOrg>(rand, world_name), config(_config), landscape(config.NUM_GENES(), config.GENE_SIZE() - 1, GetRandom())
+        // , manager()
+        ,
+        num_bits(config.NUM_BITS()), num_genes(config.NUM_GENES()), gene_size(config.GENE_SIZE()), num_bins(config.NUM_GENES() + 1), data_filepath(config.DATA_FILEPATH()) // TODO: only works if subdir is made before runs start... TODO: wouldn't work if subdir not created, runs wouldn't be stored
+        ,
+        gene_moves_binomial(config.GENE_MOVE_PROB(), config.NUM_GENES()) // since num genes doesn't evolve, can calculate 1 dist
+        ,
+        gene_mask(emp::MaskLow<size_t>(config.GENE_SIZE())), fittest_id(-1) // set to -1 to indicate fittest individual hasn't been calc yet
+        ,
+        gradient(config.GRADIENT_MODEL)
 
   {
     emp_assert(config.MIN_SIZE() >= config.GENE_SIZE(), "BitSet can't handle a genome smaller than gene_size");
@@ -95,9 +96,18 @@ public:
       deletes_binomials.emplace_back(config.BIT_DEL_PROB(), i);
     }
 
+  // if using gradient model, initialize target bitstrings
+  if(gradient) {
+    for(size_t i = 0; i < num_genes; i++) {
+      auto &rand = this.GetRandom()//TODO: is this bad?
+      target_bits.emplace(emp::RandomBitVector(rand, gene_size)); 
+    }
+    // TODO: will break if the number of genes is allowed to evolve ever
+    emp_assert(target_bits.size() == num_genes "there should be the same number of target bitstrings as genes in genomes"); 
+    }
     // fitness function for aagos orgs
-    auto fit_fun = [this](AagosOrg &org) {
-      double fitness = 0.0;
+    auto fit_fun = [this](AagosOrg &org) { //TODO: change to prportion of matching bits
+      double fitness = 0.0; // TODO: use hamming distance to compare bistrings - UES
       for (size_t gene_id = 0; gene_id < num_genes; gene_id++)
       {
         const size_t gene_pos = org.gene_starts[gene_id];
@@ -109,7 +119,15 @@ public:
         {
           gene_val |= (org.bits.GetUInt(0) << tail_bits) & gene_mask;
         }
-        fitness += landscape.GetFitness(gene_id, gene_val);
+        // calculate fitness
+        if(gradient) { // remember that we're assuming here that 1st index of gene_starts maps to 1st index in target bitstring
+          //TODO: need to convert 32 bit unit that gene_val is to a bitvector, going to complete rest of code assuming this
+          fitness += target_bits[i].EQU(gene_val).count() / gene_size;
+          //calcs hamming dist between target and curr gene & adds up # of matches
+          // divide by num bits in gene so fitness range is (0, 1)
+          } else {
+          fitness += landscape.GetFitness(gene_id, gene_val);
+        }
       }
       return fitness;
     };
@@ -517,7 +535,16 @@ public:
   // updates world
   void Update()
   {
-    landscape.RandomizeStates(GetRandom(), config.CHANGE_RATE());
+    // do environmental change
+    if(gradient) {
+      for(size_t i = 0; i < config.CHANGE_RATE()) { //TODO: has the problem where it can replace over same val mult times so not true disp. but don't know how to fix
+        auto &rand = this.GetRandom();
+        // grad a randomly chosen target sequence and assign to a new randomly generated target sequence
+        target_bits[rand.GetUInt(target_bits.size())] = emp::RandomBitVector(rand, gene_size);
+      }
+    } else { // default
+      landscape.RandomizeStates(GetRandom(), config.CHANGE_RATE());
+    }
     base_t::Update();
     fittest_id = -1; // reset fittest id flag
   }

@@ -1,5 +1,4 @@
 #include <iostream>
-# hi
 #include "base/vector.h"
 #include "config/ArgManager.h"
 #include "config/command_line.h"
