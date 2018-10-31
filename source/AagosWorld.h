@@ -23,7 +23,8 @@ EMP_BUILD_CONFIG(AagosConfig,
                  VALUE(SEED, int, 0, "Random number seed (0 for based on time)"),
                  VALUE(ELITE_COUNT, size_t, 0, "How many organisms should be selected via elite selection?"),
                  VALUE(TOURNAMENT_SIZE, size_t, 2, "How many organisms should be chosen for each tournament?"),
-                 VALUE(GRADIENT_MODEL, bool, false, "Whether the current experiment uses a gradient model for fitness or trad. fitness")
+                 VALUE(GRADIENT_MODEL, bool, false, "Whether the current experiment uses a gradient model for fitness or trad. fitness"),
+  
 
                  GROUP(GENOME_STRUCTURE, "How should each organism's genome be setup?"),
                  VALUE(NUM_BITS, size_t, 128, "Starting number of bits in each organism"),
@@ -84,7 +85,7 @@ public:
         ,
         gene_mask(emp::MaskLow<size_t>(config.GENE_SIZE())), fittest_id(-1) // set to -1 to indicate fittest individual hasn't been calc yet
         ,
-        gradient(config.GRADIENT_MODEL)
+        gradient(config.GRADIENT_MODEL())
 
   {
     emp_assert(config.MIN_SIZE() >= config.GENE_SIZE(), "BitSet can't handle a genome smaller than gene_size");
@@ -99,8 +100,8 @@ public:
   // if using gradient model, initialize target bitstrings
   if(gradient) {
     for(size_t i = 0; i < num_genes; i++) {
-      auto &rand = this.GetRandom()//TODO: is this bad?
-      target_bits.emplace(emp::RandomBitVector(rand, gene_size)); 
+      auto &rand = GetRandom();//TODO: is this bad?
+      target_bits.emplace_back(emp::RandomBitVector(rand, gene_size)); 
     }
     // TODO: will break if the number of genes is allowed to evolve ever
     emp_assert(target_bits.size() == num_genes "there should be the same number of target bitstrings as genes in genomes"); 
@@ -122,7 +123,7 @@ public:
         // calculate fitness
         if(gradient) { // remember that we're assuming here that 1st index of gene_starts maps to 1st index in target bitstring
           //TODO: need to convert 32 bit unit that gene_val is to a bitvector, going to complete rest of code assuming this
-          fitness += target_bits[i].EQU(gene_val).count() / gene_size;
+          fitness += target_bits[gene_id].EQU(gene_val).count() / gene_size;
           //calcs hamming dist between target and curr gene & adds up # of matches
           // divide by num bits in gene so fitness range is (0, 1)
           } else {
@@ -537,10 +538,14 @@ public:
   {
     // do environmental change
     if(gradient) {
-      for(size_t i = 0; i < config.CHANGE_RATE()) { //TODO: has the problem where it can replace over same val mult times so not true disp. but don't know how to fix
-        auto &rand = this.GetRandom();
+      for(size_t i = 0; i < config.CHANGE_RATE(); i++) {
+        auto &rand = GetRandom();
         // grad a randomly chosen target sequence and assign to a new randomly generated target sequence
-        target_bits[rand.GetUInt(target_bits.size())] = emp::RandomBitVector(rand, gene_size);
+        auto to_change = target_bits[rand.GetUInt(target_bits.size())];
+        to_change.Set(rand.GetUInt(to_change.size()), !to_change.Get(i)); //TODO: call set function on bitvector  call getBit on bitvector to flip
+        // random has a getUInt, and also use getUInt to get the bit within the bit vector
+        // bitvector.Set(i, !bitvector.Get(i))
+        // bitvector.Set(random->GetUInt(bitvector.size()), !bitvector.Get(i)) its okay b/c bit NEEDS TO FLIP for env change
       }
     } else { // default
       landscape.RandomizeStates(GetRandom(), config.CHANGE_RATE());
