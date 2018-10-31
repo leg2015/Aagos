@@ -208,15 +208,15 @@ while [[ $IND_0 -lt  SIZE ]]; do
     let COUNT=COUNT+1
     INDEX=0
     # This cat creates new script in script dir. Assumes in Aagos dir.
-cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub"
+cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START-$END.sbatch"
 #!/bin/bash -login
-#PBS -l walltime=08:00:00
-#PBS -l nodes=1:ppn=1
-#PBS -l mem=2gb
-#PBS -N Aagos_Mut_$START_$END
-#PBS -M gillespl@southwestern.edu
-#PBS -e ./$OUTPUT_DIR/error/Run_$START-$END
-#PBS -o ./$OUTPUT_DIR/output/Run_$START-$END
+#SBATCH --time=08:00:00
+#SBATCH -n 1 -c 1
+#SBATCH --mem=2G
+#SBATCH -J Aagos_Mut_$START_$END
+#SBATCH -mail-user=gillespl@southwestern.edu
+#SBATCH -e ./$OUTPUT_DIR/error/Run_$START-$END
+#SBATCH -o ./$OUTPUT_DIR/output/Run_$START-$END
 
 cd /mnt/scratch/f0004516/Aagos # make sure in Aagos directory
 source  $VARIABLES # variables must be in Aagos dir to work
@@ -247,7 +247,7 @@ EOF
 
     # should still be in Aagos here
     # launch scripts to hpcc scheduler to be run
-    qsub "./$OUTPUT_DIR/scripts/Run_$START-$END.qsub"
+    sbatch "./$OUTPUT_DIR/scripts/Run_$START-$END.sbatch"
     # reset second mut_rate, will always be starting at this val
     IND_2=1
     let CURR_IND[0]=$IND_0
