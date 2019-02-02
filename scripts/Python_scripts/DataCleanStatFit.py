@@ -17,6 +17,7 @@ parser.add_argument("-glob", type=str, help=" what should the glob pattern for t
 parser.add_argument("-change", action="store_true", help=" if the file that's being cleaned is for changing environments")
 args = parser.parse_args()
 filepath = args.f
+filename = ''
 num_replicates = args.n
 if filepath is '':
     sys.exit("No filepath was provided! Please provide filepath to Aagos data")
@@ -37,6 +38,8 @@ for f in files:
         if len(files) < num_replicates:
             error_msg = "ERROR: incomplete data. A replicate from run " + f + " is missing!"
             sys.exit(error_msg)
+
+        filename = f.split('/')[1]       
         curr = f.split('/')[-2]
         mut_rates = curr.split('_')
         currdata = glob.glob(f + '/*.csv')
@@ -62,5 +65,5 @@ for f in files:
             merged[mut_rates[i]] = mut_rates[i+1]
         dataframes_stats.append(merged)
 final = pd.concat(dataframes_stats, axis=0)
-final.to_csv(filepath + '/CleanedDataStatFit.csv')
-print("data successfully saved to ", filepath + '/CleanedDataStatFit.csv')
+final.to_csv(filepath +  '/' + filename + '_CleanedDataStatFit.csv')
+print("data successfully saved to ", filepath +  '/' + filename + '_CleanedDataStatFit.csv')

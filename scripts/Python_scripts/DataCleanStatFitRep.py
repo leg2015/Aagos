@@ -15,6 +15,7 @@ parser.add_argument("-n", type=int, required=True, help="number of replicates fo
 parser.add_argument("-glob", type=str, help=" what should the glob pattern for these files look like. Defaults to mutation parsing", default='/m_*/*')
 args = parser.parse_args()
 filepath = args.f
+filename = ''
 num_replicates = args.n
 if filepath is '':
     sys.exit("No filepath was provided! Please provide filepath to Aagos data")
@@ -33,6 +34,7 @@ for f in files:
             error_msg = "ERROR: incomplete data. A replicate from run " + f + " is missing!"
             sys.exit(error_msg)
         # get each replicate
+        filename = f.split('/')[1]
         replicate = f.split('/')[-1]
         curr = f.split('/')[-2]
         mut_rates = curr.split('_')
@@ -55,5 +57,5 @@ for f in files:
             merged[mut_rates[i]] = mut_rates[i+1]
         dataframes_stats.append(merged)
 final = pd.concat(dataframes_stats, axis=0)
-final.to_csv(filepath + '/CleanedDataStatFitRep.csv')
-print("data successfully saved to ", filepath + '/CleanedDataStatFitRep.csv')
+final.to_csv(filepath +  '/' + filename + '_CleanedDataStatFitRep.csv')
+print("data successfully saved to ", filepath +  '/' + filename + '_CleanedDataStatFitRep.csv')
