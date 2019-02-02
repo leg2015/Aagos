@@ -93,6 +93,7 @@ public:
 
   {
     emp_assert(config.MIN_SIZE() >= config.GENE_SIZE(), "BitSet can't handle a genome smaller than gene_size");
+    emp_assert(config.MAX_SIZE() >= config.NUM_BITS(), "the starting gene size of the organism can't be larger than the max size the organism can reach");
     // for each possible length of genome, calculate the bin dist for that length
     // start at smallest possible gene length
     for (size_t i = config.MIN_SIZE(); i <= config.MAX_SIZE(); i++) {
@@ -153,6 +154,7 @@ public:
     std::function<size_t(AagosOrg &, emp::Random &)> mut_fun =
         [this](AagosOrg &org, emp::Random &random) {
           size_t bin_array_offset = org.GetNumBits() - config.MIN_SIZE(); // offset is num bits - min size of genome
+          // std::cout << "org.GetNumBits: " << org.GetNumBits() << " and config.MIN_SIZE(): " << config.MIN_SIZE() << "and gene size: " << config.GENE_SIZE() << std::endl;
           emp_assert(bin_array_offset >= 0, "index of bin dist cannot be negative!!");
           // Do gene moves.
           size_t num_moves = gene_moves_binomial.PickRandom(random);
@@ -556,8 +558,9 @@ public:
       for(size_t i = 0; i < config.CHANGE_RATE(); i++) {
         auto &rand = GetRandom();
         // grad a randomly chosen target sequence and assign to a new randomly generated target sequence
-        auto to_change = target_bits[rand.GetUInt(target_bits.size())];
-        to_change.Set(rand.GetUInt(to_change.size()), !to_change.Get(i)); // call set function on bitvector  call getBit on bitvector to flip
+        auto & to_change = target_bits[rand.GetUInt(target_bits.size())];
+        auto rand_loc = rand.GetUInt(to_change.size());
+        to_change.Set(rand_loc, !to_change.Get(rand_loc)); // call set function on bitvector  call getBit on bitvector to flip
         // random has a getUInt, and also use getUInt to get the bit within the bit vector
         // bitvector.Set(i, !bitvector.Get(i))
         // bitvector.Set(random->GetUInt(bitvector.size()), !bitvector.Get(i)) its okay b/c bit NEEDS TO FLIP for env change
