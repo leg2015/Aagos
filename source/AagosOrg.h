@@ -17,9 +17,9 @@ private:
   // starting locations of all genes
   emp::vector<size_t> gene_starts;
   // size of each gene in genome
-  int gene_size;
+  size_t gene_size;
   // number of genes in genome
-  int num_genes;
+  size_t num_genes;
   size_t num_bins;
   // number of neighbors each gene in genome has
   // neighbor is defined as a gene that overlaps the current gene
@@ -110,10 +110,10 @@ public:
   {
     // set sentinel
     initialized = true;
-    int num_bits = GetNumBits();
+    size_t num_bits = GetNumBits();
     // set up histogram
-    HistogramCalc(num_bits);
-    NeighborCalc(num_bits);
+    HistogramCalc((int)num_bits);
+    NeighborCalc((int)num_bits);
   }
 
   // Calculates the histogram of number of genes overlapping at each bit
@@ -128,7 +128,7 @@ public:
     // histogram bins ranges from 0 (no overlap) to num_genes, b/c worst case all
     // genes overlap the same bit. Num bins is then num_genes + 1 b/c need a
     // bin for no overlap.
-    histogram.SetupBins(0, num_bins, num_bins);
+    histogram.SetupBins(0, (int)num_bins, num_bins);
 
     // adds the number of genes associated with each bit to histogram data node
     // first loops through each bit
@@ -137,7 +137,7 @@ public:
       // counts number of genes that overlap at given bit
       int overlap = 0;
       // max range that a gene can start in order to overlap current bit
-      int diff = i - (gene_size - 1);// off by one error
+      int diff = i - ((int)gene_size - 1);// off by one error
 
       // loops through each gene to see if it overlaps current bit
       for (size_t j = 0; j < num_genes; j++)
@@ -169,7 +169,7 @@ public:
     // loops through each gene to get its neighbor count
     for (size_t i = 0; i < num_genes; i++)
     {
-      size_t count = 0;
+      int count = 0;
       // loops through all remaining genes to see if neighbors
       for (size_t j = 0; j < num_genes; j++)
       {
@@ -179,7 +179,7 @@ public:
           // if the current gene starts w/in gene_size on either side of gene in question, must overlap
           if (abs((int)gene_starts[i] - (int)gene_starts[j]) < gene_size || // todo clean up these casts
               // this second check catches genes that overlap only by comparing the ends of both genes to each other modded
-              abs(((int)gene_starts[i] + gene_size) % num_bits - ((int)gene_starts[j] + gene_size) % num_bits) < gene_size)
+              abs(((int)gene_starts[i] + (int)gene_size) % (int)num_bits - ((int)gene_starts[j] + (int)gene_size) % (int)num_bits) < (int)gene_size)
           {
             count++;
           }

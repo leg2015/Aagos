@@ -9,6 +9,19 @@
 
 int main(int argc, char* argv[])
 {
+  // testing code for gradient model. Making sure we can convert from size_t to bitvector
+  emp::BitVector bits = emp::BitVector(2);
+  bits.Set(1);
+  emp_assert(bits.GetUInt(0) == 2);
+
+  uint32_t  test = bits.GetUIntAtBit(0);
+  emp_assert(test == 2);
+
+  bits.SetUInt(0, test);
+  emp_assert(bits[0] == 0);
+  emp_assert(bits[1] == 1);
+  // emp_assert
+
   AagosConfig config;
   // Deal with loading config values via native interface (config file and command line args)
   config.Read("Aagos.cfg");
@@ -16,10 +29,12 @@ int main(int argc, char* argv[])
   if (args.ProcessConfigOptions(config, std::cout, "Aagos.cfg", "Aagos-macros.h") == false) exit(0);
   if (args.TestUnknown() == false) exit(0);  // If there are leftover args, throw an error.
 
-  AagosWorld world(config);
+  
 
-  emp::Random & random = world.GetRandom();
+  emp::Random random = emp::Random();
+  AagosWorld world(random, config);
 
+  // org[0].GetUIntAtBit(gene_pos)
   // Build a random initial population
   for (uint32_t i = 0; i < config.POP_SIZE(); i++) {
     AagosOrg next_org(config.NUM_BITS(), config.NUM_GENES(), config.GENE_SIZE()); // build org
