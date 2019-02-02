@@ -55,6 +55,6 @@
 
 `bash scripts/Bash_scripts/final_launch_scripts/Hpcc_launch_change_env_Final.bash -VARIABLES scripts/Bash_scripts/final_launch_scripts/change_variables_final.bash -GENE_MOVE_PROB .003 -BIT_INS_PROB .001 -BIT_DEL_PROB .001  -OUTPUT_DIR Change_Treat_f_.003_N_128 -NUM_REPLICATES 10 -GRADIENT_MODEL 1 -EMAIL [emilys email] -AAGOS_PATH [path to aagos dir]`
 
-###changing bit flip rate with changing environment rate of [???]
+### changing bit flip rate with changing environment rate of [???]
 Once an optimal environmental change rate has been discovered, run this command with said change rate
 `bash scripts/Bash_scripts/final_launch_scripts/HpccLaunch_Mut_rates_Final.bash -VARIABLES scripts/Bash_scripts/final_launch_scripts/mut_variables_final.bash -GENE_MOVE_PROB .003 -BIT_INS_PROB .001 -BIT_DEL_PROB .001  -OUTPUT_DIR Mut_Treat_Change_0_N_128 -NUM_REPLICATES 10 -GRADIENT_MODEL 1 -CHANGE_RATE [???] -EMAIL [emilys email] -AAGOS_PATH [path to aagos dir]`
