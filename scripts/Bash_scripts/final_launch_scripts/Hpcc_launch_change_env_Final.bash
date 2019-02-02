@@ -231,7 +231,7 @@ cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START.sbatch"
 #SBATCH -n 1 -c 1
 #SBATCH --mem=2G
 #SBATCH -J Aagos_Change_$START
-#SBATCH -mail-user=$EMAIL
+#SBATCH --mail-user=$EMAIL
 #SBATCH -e ./$OUTPUT_DIR/error/Run_$START
 #SBATCH -o ./$OUTPUT_DIR/output/Run_$START
 
