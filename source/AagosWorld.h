@@ -23,6 +23,8 @@ EMP_BUILD_CONFIG(AagosConfig,
                  VALUE(SEED, int, 0, "Random number seed (0 for based on time)"),
                  VALUE(ELITE_COUNT, size_t, 0, "How many organisms should be selected via elite selection?"),
                  VALUE(TOURNAMENT_SIZE, size_t, 2, "How many organisms should be chosen for each tournament?"),
+                 VALUE(GRADIENT_MODEL, bool, false, "Whether the current experiment uses a gradient model for fitness or trad. fitness"),
+  
 
                  GROUP(GENOME_STRUCTURE, "How should each organism's genome be setup?"),
                  VALUE(NUM_BITS, size_t, 128, "Starting number of bits in each organism"),
@@ -53,12 +55,14 @@ private:
   // need a node manager for data tracking since so many different data points to draw
   emp::DataManager<double, emp::data::Log, emp::data::Stats, emp::data::Pull> manager; 
   emp::Ptr<emp::ContainerDataFile<emp::vector<emp::Ptr<AagosOrg>>>> snapshot_file;
+  emp::vector<emp::BitVector> target_bits; // vector of target bitstrings for gradient version of model
 
   // Configured values
   size_t num_bits;
   size_t num_genes;
   size_t gene_size;
   size_t num_bins;
+  bool gradient;
 
   std::string data_filepath;
   emp::Binomial gene_moves_binomial;
@@ -71,19 +75,21 @@ private:
   int fittest_id;
 
 public:
-  AagosWorld(emp::Random& rand, AagosConfig &_config, const std::string &world_name = "AagosWorld")
-      : emp::World<AagosOrg>(rand, world_name)
-      , config(_config)
-      , landscape(config.NUM_GENES() , config.GENE_SIZE() - 1, GetRandom())
-     // , manager()
-      , num_bits(config.NUM_BITS())
-      , num_genes(config.NUM_GENES())
-      , gene_size(config.GENE_SIZE())
-      , num_bins(config.NUM_GENES() + 1)
-      , data_filepath( config.DATA_FILEPATH()) // TODO: only works if subdir is made before runs start... TODO: wouldn't work if subdir not created, runs wouldn't be stored
-      , gene_moves_binomial(config.GENE_MOVE_PROB(), config.NUM_GENES()) // since num genes doesn't evolve, can calculate 1 dist
-      , gene_mask(emp::MaskLow<size_t>(config.GENE_SIZE()))
-      , fittest_id(-1) // set to -1 to indicate fittest individual hasn't been calc yet
+  AagosWorld(emp::Random &rand, AagosConfig &_config, const std::string &world_name = "AagosWorld")
+      : emp::World<AagosOrg>(rand, world_name), config(_config), landscape(config.NUM_GENES(), config.GENE_SIZE() - 1, GetRandom())
+        // , manager()
+        ,
+        num_bits(config.NUM_BITS()), num_genes(config.NUM_GENES()), gene_size(config.GENE_SIZE()), num_bins(config.NUM_GENES() + 1)
+        , 
+         gradient(config.GRADIENT_MODEL())
+        ,
+        data_filepath(config.DATA_FILEPATH()) // TODO: only works if subdir is made before runs start... TODO: wouldn't work if subdir not created, runs wouldn't be stored
+        ,
+        gene_moves_binomial(config.GENE_MOVE_PROB(), config.NUM_GENES()) // since num genes doesn't evolve, can calculate 1 dist
+        ,
+        gene_mask(emp::MaskLow<size_t>(config.GENE_SIZE())) 
+        ,
+        fittest_id(-1) // set to -1 to indicate fittest individual hasn't been calc yet
 
   {
     emp_assert(config.MIN_SIZE() >= config.GENE_SIZE(), "BitSet can't handle a genome smaller than gene_size");
@@ -95,13 +101,26 @@ public:
       deletes_binomials.emplace_back(config.BIT_DEL_PROB(), i);
     }
 
+  // if using gradient model, initialize target bitstrings
+  if(gradient) {
+    for(size_t i = 0; i < num_genes; i++) {
+      auto &rand = GetRandom();//TODO: is this bad?
+      target_bits.emplace_back(emp::RandomBitVector(rand, gene_size)); 
+    }
+    for(size_t i = 0; i < target_bits.size(); i++) {
+      emp_assert(target_bits[i].GetSize() == gene_size);
+    }
+    // : will break if the number of genes is allowed to evolve ever
+    emp_assert(target_bits.size() == num_genes, "there should be the same number of target bitstrings as genes in genomes"); 
+    }
     // fitness function for aagos orgs
-    auto fit_fun = [this](AagosOrg &org) {
-      double fitness = 0.0;
+    auto fit_fun = [this](AagosOrg &org) { //: change to prportion of matching bits
+      double fitness = 0.0; // : use hamming distance to compare bistrings - UES
       for (size_t gene_id = 0; gene_id < num_genes; gene_id++)
       {
         const size_t gene_pos = org.gene_starts[gene_id];
-        size_t gene_val = org.bits.GetUIntAtBit(gene_pos) & gene_mask;
+        uint32_t gene_val = org.bits.GetUIntAtBit(gene_pos) & gene_mask;
+        // emp_assert();
         const size_t tail_bits = num_bits - gene_pos;
 
         // If a gene runs off the end of the bitstring, loop around to the beginning.
@@ -109,7 +128,22 @@ public:
         {
           gene_val |= (org.bits.GetUInt(0) << tail_bits) & gene_mask;
         }
-        fitness += landscape.GetFitness(gene_id, gene_val);
+        // calculate fitness
+        if(gradient) { // remember that we're assuming here that 1st index of gene_starts maps to 1st index in target bitstring
+          
+          // emp_assert(gene_val.Get)
+
+          emp::BitVector gene = emp::BitVector(gene_size);
+          gene.SetUInt(0, gene_val);
+          fitness += (double)target_bits[gene_id].EQU(gene).count() / (double)gene_size; 
+          //calcs hamming dist between target and curr gene & adds up # of matches
+          // divide by num bits in gene so fitness range is (0, 1)
+          // std::cout << "gene   is: "<< gene << std::endl;
+          // std::cout << "target is: "<< target_bits[gene_id] << std::endl;
+          // std::cout << "fitness is: " << (double)target_bits[gene_id].EQU(gene).count() / (double)gene_size << std::endl;
+          } else {
+          fitness += landscape.GetFitness(gene_id, gene_val);
+        }
       }
       return fitness;
     };
@@ -136,18 +170,18 @@ public:
           }
 
           // Get num of insertions and deletions.
-          size_t num_insert = inserts_binomials[bin_array_offset].PickRandom(random);
-          size_t num_delete = deletes_binomials[bin_array_offset].PickRandom(random);
+          int num_insert = (int)inserts_binomials[bin_array_offset].PickRandom(random);
+          int num_delete = (int)deletes_binomials[bin_array_offset].PickRandom(random);
           const int proj_size = (int)org.bits.GetSize() + num_insert - num_delete;
 
           // checks gene size is within range
           if (proj_size > config.MAX_SIZE())
           { // if size of genome larger than max, restrict to max size
-            num_insert -= proj_size - config.MAX_SIZE();
+            num_insert -= proj_size - (int)config.MAX_SIZE();
           }
           else if (proj_size < config.MIN_SIZE())
           { // else if size of genome smaller than min, restrict as well
-            num_delete -= config.MIN_SIZE() - proj_size;
+            num_delete -= (int)config.MIN_SIZE() - proj_size;
           }
 
           // asserts size limitations
@@ -191,11 +225,11 @@ public:
                 x--;
           }
 
-          int num_muts = num_moves + num_flips + num_insert + num_delete;
+          int num_muts = (int)num_moves + (int)num_flips + (int)num_insert + (int)num_delete;
           if (num_muts > 0) {
             org.ResetHistogram();
           }
-          return num_moves + num_flips + num_insert + num_delete; // Returns total num mutations
+          return (int)num_moves + (int)num_flips + (int)num_insert + (int)num_delete; // Returns total num mutations
         };
     SetMutFun(mut_fun);       // set mutation function of world to above
     SetPopStruct_Mixed(true); // uses well-mixed population structure
@@ -215,8 +249,8 @@ public:
       {
         if (!pop[i])
           continue;
-        if (CalcFitnessID(i) > CalcFitnessID(fittest_id))
-          fittest_id = i;
+        if (CalcFitnessID(i) > CalcFitnessID((size_t)fittest_id))
+          fittest_id = (int)i;
       }
     }
   }
@@ -393,7 +427,7 @@ public:
       // fn for current bin of histogram
       gene_overlap_fun = [this, b]() {
         FindFittest(); // since order not guaranteed, must look for fittest ind. in each fn call
-        return pop[fittest_id]->GetHistogram().GetHistCount(b);
+        return pop[(size_t)fittest_id]->GetHistogram().GetHistCount(b);
       };
       // add current function to file
       representative_file.AddFun(gene_overlap_fun, emp::to_string(b) + "_gene_overlap",
@@ -403,7 +437,7 @@ public:
     // gets gene start locations for representative org
     std::function<std::string()> gene_starts_fun = [this]() {
       FindFittest();
-      return emp::to_string(pop[fittest_id]->GetGeneStarts());
+      return emp::to_string(pop[(size_t)fittest_id]->GetGeneStarts());
     };
     representative_file.AddFun(gene_starts_fun, "gene_starts", 
           "all gene starts for the representative organism in the population");
@@ -411,7 +445,7 @@ public:
     // gets number of coding sites for representative org
     std::function<double()> coding_sites_fun = [this]() {
         FindFittest();
-        const emp::vector<size_t> &bins = pop[fittest_id]->GetHistogram().GetHistCounts();
+        const emp::vector<size_t> &bins = pop[(size_t)fittest_id]->GetHistogram().GetHistCounts();
         int count = 0;
         for (size_t i = 1; i < bins.size(); i++) // start with bin corresponding to one gene
           {
@@ -426,7 +460,7 @@ public:
     // gets genome length for representative org
     std::function<double()> genome_size_fun = [this]() {
       FindFittest();
-      return pop[fittest_id]->GetNumBits();
+      return pop[(size_t)fittest_id]->GetNumBits();
     };
     representative_file.AddFun(genome_size_fun, "genome_length",
            "genome length of representative organism");
@@ -434,14 +468,14 @@ public:
     // gets fitness of representative org
     std::function<double()> fitness_fun = [this]() {
       FindFittest();
-      return CalcFitnessID(fittest_id);
+      return CalcFitnessID((size_t)fittest_id);
     };
     representative_file.AddFun(fitness_fun, "fitness", "fitness of representative org");
 
     // gets mean of neighbors of rep. org.
     std::function<double()> genome_neighbor_fun = [this]() {
       FindFittest();
-      return emp::Mean(pop[fittest_id]->GetGeneNeighbors());
+      return emp::Mean(pop[(size_t)fittest_id]->GetGeneNeighbors());
     };
     representative_file.AddFun(genome_neighbor_fun, "gene_neighbors",
            "gene neighbors of representative org");
@@ -517,7 +551,20 @@ public:
   // updates world
   void Update()
   {
-    landscape.RandomizeStates(GetRandom(), config.CHANGE_RATE());
+    // do environmental change
+    if(gradient) {
+      for(size_t i = 0; i < config.CHANGE_RATE(); i++) {
+        auto &rand = GetRandom();
+        // grad a randomly chosen target sequence and assign to a new randomly generated target sequence
+        auto to_change = target_bits[rand.GetUInt(target_bits.size())];
+        to_change.Set(rand.GetUInt(to_change.size()), !to_change.Get(i)); // call set function on bitvector  call getBit on bitvector to flip
+        // random has a getUInt, and also use getUInt to get the bit within the bit vector
+        // bitvector.Set(i, !bitvector.Get(i))
+        // bitvector.Set(random->GetUInt(bitvector.size()), !bitvector.Get(i)) its okay b/c bit NEEDS TO FLIP for env change
+      }
+    } else { // default
+      landscape.RandomizeStates(GetRandom(), config.CHANGE_RATE());
+    }
     base_t::Update();
     fittest_id = -1; // reset fittest id flag
   }
