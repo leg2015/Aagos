@@ -432,8 +432,7 @@ public:
         return pop[(size_t)fittest_id]->GetHistogram().GetHistCount(b);
       };
       // add current function to file
-      representative_file.AddFun(gene_overlap_fun, emp::to_string(b) + "_gene_overlap",
-           "statistics for representative population member");
+      representative_file.AddFun(gene_overlap_fun, "gene_overlap_" + emp::to_string(b), "statistics for representative population member");
     }
 
     // gets gene start locations for representative org
