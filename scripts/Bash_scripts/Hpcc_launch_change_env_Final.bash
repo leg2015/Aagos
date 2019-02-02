@@ -181,15 +181,15 @@ while [[ $IND -lt  NUM_ENV ]]; do
     START=change_${CHANGE_TO_TRY[$IND]}
     INDEX=0
     # This cat creates new script in script dir. Assumes in Aagos dir.
-cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START.qsub"
+cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START.sbatch"
 #!/bin/bash -login
-#PBS -l walltime=04:00:00
-#PBS -l nodes=1:ppn=1
-#PBS -l mem=2gb
-#PBS -N Aagos_Change_$START
-#PBS -M gillespl@southwestern.edu
-#PBS -e ./$OUTPUT_DIR/error/Run_$START
-#PBS -o ./$OUTPUT_DIR/output/Run_$START
+#SBATCH --time=04:00:00
+#SBATCH -n 1 -c 1
+#SBATCH --mem=2G
+#SBATCH -J Aagos_Change_$START
+#SBATCH -mail-user=gillespl@southwestern.edu
+#SBATCH -e ./$OUTPUT_DIR/error/Run_$START
+#SBATCH -o ./$OUTPUT_DIR/output/Run_$START
 
 cd /mnt/scratch/f0004516/Aagos # make sure in Aagos directory
 source  $VARIABLES # variables must be in Aagos dir to work
@@ -211,6 +211,6 @@ EOF
 
     # should still be in Aagos here
     # launch scripts to hpcc scheduler to be run
-    qsub "./$OUTPUT_DIR/scripts/Run_$START.qsub"
+    sbatch "./$OUTPUT_DIR/scripts/Run_$START.sbatch"
     let IND=IND+1
 done

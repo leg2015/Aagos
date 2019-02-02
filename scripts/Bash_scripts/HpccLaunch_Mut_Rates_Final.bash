@@ -192,15 +192,15 @@ while [[ $INDEX -lt  $SIZE ]]; do
     START=m_${GENE_MOVE_PROB}_f_${CURR_FLIP}_c_${BIT_INS_PROB}
     echo $START
     # This cat creates new script in script dir. Assumes in Aagos dir.
-cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START.qsub"
+cat << EOF > "./$OUTPUT_DIR/scripts/Run_$START.sbatch"
 #!/bin/bash -login
-#PBS -l walltime=12:00:00
-#PBS -l nodes=1:ppn=1
-#PBS -l mem=2gb
-#PBS -N Aagos_Mut_$START
-#PBS -M gillespl@southwestern.edu
-#PBS -e ./$OUTPUT_DIR/error/Run_$START
-#PBS -o ./$OUTPUT_DIR/output/Run_$START
+#SBATCH --time=12:00:00
+#SBATCH -n 1 -c 1
+#SBATCH --mem=2G
+#SBATCH -J Aagos_Mut_$START
+#SBATCH -mail-user=gillespl@southwestern.edu
+#SBATCH -e ./$OUTPUT_DIR/error/Run_$START
+#SBATCH -o ./$OUTPUT_DIR/output/Run_$START
 
 cd /mnt/scratch/f0004516/Aagos # make sure in Aagos directory
 source  $VARIABLES # variables must be in Aagos dir to work
@@ -220,7 +220,7 @@ EOF
     let INDEX=INDEX+1
     # should still be in Aagos here
     # launch scripts to hpcc scheduler to be run
-    qsub "./$OUTPUT_DIR/scripts/Run_$START.qsub"
+    sbatch "./$OUTPUT_DIR/scripts/Run_$START.sbatch"
     # reset second mut_rate, will always be starting at this val
 
 done
