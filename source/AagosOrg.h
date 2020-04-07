@@ -12,6 +12,7 @@ class AagosOrg
   friend class AagosWorld;
 
 private:
+
   // genome of organism - bitstring
   emp::BitVector bits;
   // starting locations of all genes
@@ -150,7 +151,7 @@ public:
             // then if it loops around enough to overlap current bit
             // then diff will be more negative than the
             //  gene start - the number of bits in genome
-            || ((diff <= ((int) gene_starts[j] - num_bits)))) 
+            || ((diff <= ((int) gene_starts[j] - num_bits))))
         {
           overlap++;
         }
