@@ -5,7 +5,7 @@
 
 #include "Evolve/NK.h"
 #include "Evolve/World.h"
-#include "tools/Binomial.h"
+#include "tools/Distribution.h"
 #include "tools/math.h"
 #include "tools/stats.h"
 #include "tools/string_utils.h"
@@ -24,7 +24,7 @@ EMP_BUILD_CONFIG(AagosConfig,
                  VALUE(ELITE_COUNT, size_t, 0, "How many organisms should be selected via elite selection?"),
                  VALUE(TOURNAMENT_SIZE, size_t, 2, "How many organisms should be chosen for each tournament?"),
                  VALUE(GRADIENT_MODEL, bool, false, "Whether the current experiment uses a gradient model for fitness or trad. fitness"),
-  
+
 
                  GROUP(GENOME_STRUCTURE, "How should each organism's genome be setup?"),
                  VALUE(NUM_BITS, size_t, 128, "Starting number of bits in each organism"),
@@ -53,7 +53,7 @@ private:
   AagosConfig &config;
   emp::NKLandscape landscape;
   // need a node manager for data tracking since so many different data points to draw
-  emp::DataManager<double, emp::data::Log, emp::data::Stats, emp::data::Pull> manager; 
+  emp::DataManager<double, emp::data::Log, emp::data::Stats, emp::data::Pull> manager;
   emp::Ptr<emp::ContainerDataFile<emp::vector<emp::Ptr<AagosOrg>>>> snapshot_file;
   emp::vector<emp::BitVector> target_bits; // vector of target bitstrings for gradient version of model
 
@@ -80,14 +80,14 @@ public:
         // , manager()
         ,
         num_bits(config.NUM_BITS()), num_genes(config.NUM_GENES()), gene_size(config.GENE_SIZE()), num_bins(config.NUM_GENES() + 1)
-        , 
+        ,
          gradient(config.GRADIENT_MODEL())
         ,
         data_filepath(config.DATA_FILEPATH()) // TODO: only works if subdir is made before runs start... TODO: wouldn't work if subdir not created, runs wouldn't be stored
         ,
         gene_moves_binomial(config.GENE_MOVE_PROB(), config.NUM_GENES()) // since num genes doesn't evolve, can calculate 1 dist
         ,
-        gene_mask(emp::MaskLow<size_t>(config.GENE_SIZE())) 
+        gene_mask(emp::MaskLow<size_t>(config.GENE_SIZE()))
         ,
         fittest_id(-1) // set to -1 to indicate fittest individual hasn't been calc yet
 
@@ -106,13 +106,13 @@ public:
   if(gradient) {
     for(size_t i = 0; i < num_genes; i++) {
       auto &rand = GetRandom();//TODO: is this bad?
-      target_bits.emplace_back(emp::RandomBitVector(rand, gene_size)); 
+      target_bits.emplace_back(emp::RandomBitVector(rand, gene_size));
     }
     for(size_t i = 0; i < target_bits.size(); i++) {
       emp_assert(target_bits[i].GetSize() == gene_size);
     }
     // : will break if the number of genes is allowed to evolve ever
-    emp_assert(target_bits.size() == num_genes, "there should be the same number of target bitstrings as genes in genomes"); 
+    emp_assert(target_bits.size() == num_genes, "there should be the same number of target bitstrings as genes in genomes");
     }
     // fitness function for aagos orgs
     auto fit_fun = [this](AagosOrg &org) { //: change to prportion of matching bits
@@ -131,12 +131,12 @@ public:
         }
         // calculate fitness
         if(gradient) { // remember that we're assuming here that 1st index of gene_starts maps to 1st index in target bitstring
-          
+
           // emp_assert(gene_val.Get)
 
           emp::BitVector gene = emp::BitVector(gene_size);
           gene.SetUInt(0, gene_val);
-          fitness += (double)target_bits[gene_id].EQU(gene).count() / (double)gene_size; 
+          fitness += (double)target_bits[gene_id].EQU(gene).count() / (double)gene_size;
           //calcs hamming dist between target and curr gene & adds up # of matches
           // divide by num bits in gene so fitness range is (0, 1)
           // std::cout << "gene   is: "<< gene << std::endl;
@@ -236,7 +236,7 @@ public:
     SetMutFun(mut_fun);       // set mutation function of world to above
     SetPopStruct_Mixed(true); // uses well-mixed population structure
     SetDataTracking();        // sets up data tracking
-    
+
   }
 
   ~AagosWorld() { ; }
@@ -336,7 +336,7 @@ public:
   auto & coding_sites_node = manager.New("coding_sites");
   coding_sites_node.AddPullSet([this]() {
     emp::vector<double> pop_coding;
-    for ( emp::Ptr<AagosOrg> org : pop) 
+    for ( emp::Ptr<AagosOrg> org : pop)
     {
       if (!org)
         continue;
@@ -354,7 +354,7 @@ public:
   auto & gene_len_node = manager.New("gene_len");
   gene_len_node.AddPullSet([this]() {
         emp::vector<double> pop_len;
-    for ( emp::Ptr<AagosOrg> org : pop) 
+    for ( emp::Ptr<AagosOrg> org : pop)
     {
       if (!org)
         continue;
@@ -372,7 +372,7 @@ public:
     // measure amount of overlap in a genome
     // calculated as mean of histogram
     auto & overlap_node = manager.New("avg_overlap");
-    overlap_node.AddPullSet([this]() { 
+    overlap_node.AddPullSet([this]() {
       emp::vector<double> pop_overlap;
       for (emp::Ptr<AagosOrg> org : pop)
       {
@@ -383,7 +383,7 @@ public:
       return pop_overlap;
     });
 
-    
+
 
     // neighbor node gets mean of gene neighbors for each org
     auto & neighbor_node = manager.New("avg_num_neighbors");
@@ -440,7 +440,7 @@ public:
       FindFittest();
       return emp::to_string(pop[(size_t)fittest_id]->GetGeneStarts());
     };
-    representative_file.AddFun(gene_starts_fun, "gene_starts", 
+    representative_file.AddFun(gene_starts_fun, "gene_starts",
           "all gene starts for the representative organism in the population");
 
     // gets number of coding sites for representative org
@@ -454,7 +454,7 @@ public:
           }
           return count;
     };
-    representative_file.AddFun(coding_sites_fun, "coding_sites", 
+    representative_file.AddFun(coding_sites_fun, "coding_sites",
           "number of coding sites for representative organism");
 
 

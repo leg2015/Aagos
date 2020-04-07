@@ -4,10 +4,10 @@ PROJECT_TEST := AagosTests
 EMP_DIR := ../Empirical/source
 
 # Flags to use regardless of compiler
-CFLAGS_all := -Wall -Wno-unused-function -std=c++14 -I$(EMP_DIR)/
+CFLAGS_all := -Wall -Wno-unused-function -std=c++17 -I$(EMP_DIR)/
 
 # Native compiler information
-CXX_nat := g++
+CXX_nat := g++-9
 CFLAGS_nat := -O3 -DNDEBUG $(CFLAGS_all)
 CFLAGS_nat_debug := -g -pedantic -DEMP_TRACK_MEM  -Wnon-virtual-dtor -Wcast-align -Woverloaded-virtual -Wconversion -Weffc++ $(CFLAGS_all)
 CFLAGS_nat_profile := -O3 -DNDEBUG $(CFLAGS_all) -pg
@@ -53,11 +53,11 @@ profile:    source/native/$(PROJECT).cc
 
 
 $(PROJECT_TEST): source/native/$(PROJECT_TEST).cc
-	$(CXX_nat) $(CFLAGS_nat) source/native/$(PROJECT_TEST).cc -o $(PROJECT_TEST)	
+	$(CXX_nat) $(CFLAGS_nat) source/native/$(PROJECT_TEST).cc -o $(PROJECT_TEST)
 
 debugTest:	CFLAGS_nat := $(CFLAGS_nat_debug)
 debugTest: source/native/$(PROJECT_TEST).cc
-	$(CXX_nat) $(CFLAGS_nat) source/native/$(PROJECT_TEST).cc -o $(PROJECT_TEST)	
+	$(CXX_nat) $(CFLAGS_nat) source/native/$(PROJECT_TEST).cc -o $(PROJECT_TEST)
 
 
 
