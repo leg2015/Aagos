@@ -43,12 +43,42 @@ public:
 
   };
 
+  struct Phenotype {
+    double fitness=0.0;
+    emp::vector<double> gene_fitness_contributions;
+
+    Phenotype(size_t num_genes) : gene_fitness_contributions(num_genes, 0.0) { }
+    Phenotype(const Phenotype &) = default;
+    Phenotype(Phenotype &&) = default;
+
+    void Reset() {
+      fitness = 0.0;
+      std::fill(gene_fitness_contributions.begin(), gene_fitness_contributions.end(), 0);
+    }
+
+    bool operator==(const Phenotype & other) const {
+      return std::tie(fitness, gene_fitness_contributions)
+              == std::tie(other.fitness, other.gene_fitness_contributions);
+    }
+
+    bool operator!=(const Phenotype & other) const {
+      return !(*this == other);
+    }
+
+    bool operator<(const Phenotype & other) const {
+      return std::tie(fitness, gene_fitness_contributions)
+              < std::tie(other.fitness, other.gene_fitness_contributions);
+    }
+  };
+
   using histogram_t = emp::DataNode<int, emp::data::Histogram, emp::data::Stats>;
 
 protected:
   size_t gene_size; ///< size of each gene in the genome
   size_t num_genes; ///< number of genes in the genome
   Genome genome;    ///< Genotype
+  Phenotype phenotype;
+
 
   /// # neighbors (per gene measurement) - the number of neighbors each gene has where a neighbor is
   /// another gene that overlaps the focal gene by at least one bit.
@@ -73,6 +103,7 @@ public:
     : gene_size(_gene_size),
       num_genes(_num_genes),
       genome(_num_bits, num_genes),
+      phenotype(num_genes),
       gene_neighbors(num_genes)
   {
     emp_assert(genome.bits.size() > 0, genome.bits.size());
@@ -88,6 +119,7 @@ public:
   size_t GetNumBits() const { return genome.bits.size(); }
   size_t GetNumGenes() const { return num_genes; }
 
+  emp::BitVector & GetBits() { return genome.bits; }
   const emp::BitVector & GetBits() const { return genome.bits; }
   const emp::vector<size_t> & GetGeneStarts() const { return genome.gene_starts; }
 
@@ -99,6 +131,8 @@ public:
   }
 
   // Phenotype information
+  Phenotype & GetPhenotype() { return phenotype; }
+  const Phenotype & GetPhenotype() const { return phenotype; }
 
   void ResetHistogram() {
     occupancy_histogram.Reset();
