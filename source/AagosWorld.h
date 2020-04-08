@@ -241,6 +241,7 @@ void AagosWorld::RunStep() {
   most_fit_id = 0;
   for (size_t org_id = 0; org_id < this->GetSize(); ++org_id) {
     emp_assert(IsOccupied(org_id));
+    std::cout << "-- Evaluating org_id " << org_id << " --" << std::endl;
     evaluate_org(GetOrg(org_id));
     if (CalcFitnessID(org_id) > CalcFitnessID(most_fit_id)) {
       most_fit_id = org_id;
@@ -252,7 +253,7 @@ void AagosWorld::RunStep() {
   // == Do selection ==
   if (config.ELITE_COUNT()) emp::EliteSelect(*this, config.ELITE_COUNT(), 1);
   // Run a tournament for the rest...
-  emp::TournamentSelect(*this, config.TOURNAMENT_SIZE(), config.POP_SIZE()-config.ELITE_COUNT());
+  emp::TournamentSelect(*this, config.TOURNAMENT_SIZE(), config.POP_SIZE() - config.ELITE_COUNT());
 
   // == Do update ==
   // If it's a generation to print to console, do so
@@ -262,7 +263,8 @@ void AagosWorld::RunStep() {
               << ": max fitness=" << CalcFitnessID(most_fit_id)
               << "; size=" << GetOrg(most_fit_id).GetNumBits()
               << std::endl;
-    // world[most_fit_id].Print();
+    GetOrg(most_fit_id).Print();
+    std::cout << std::endl;
   }
 
   Update();
@@ -291,10 +293,22 @@ void AagosWorld::InitFitnessEval() {
   if (config.GRADIENT_MODEL()) {
     std::cout << "Initializing gradient model of fitness." << std::endl;
     fitness_model_gradient = emp::NewPtr<GradientFitnessModel>(*random_ptr, config.NUM_GENES(), config.GENE_SIZE());
+    // Print out the gene targets
+    std::cout << "Initial gene targets:" << std::endl;
+    const auto & targets = fitness_model_gradient->targets;
+    for (size_t i = 0; i < targets.size(); ++i) {
+      std::cout << "  Target " << i << ": ";
+      targets[i].Print();
+      std::cout << std::endl;
+    }
+
     evaluate_org = [this](org_t & org) {
+      std::cout << "== Evaluating org ==" << std::endl;
+
       const size_t num_genes = config.NUM_GENES();
       const size_t num_bits = config.NUM_BITS();
       const size_t gene_size = config.GENE_SIZE();
+
       // Grab reference to and reset organism's phenotype.
       auto & phen = org.GetPhenotype();
       phen.Reset();
