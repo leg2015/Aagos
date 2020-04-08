@@ -135,6 +135,7 @@ public:
   using base_t = emp::World<AagosOrg>;
   using org_t = AagosOrg;
   using config_t = AagosConfig;
+  using genome_t = AagosOrg::Genome;
 
   /// Fitness model for gradient fitness evaluation
   struct GradientFitnessModel {
@@ -183,6 +184,7 @@ protected:
   size_t most_fit_id;
 
   void InitFitnessEval();
+  void InitPop();
 
 public:
   AagosWorld(emp::Random & random, const config_t & cfg)
@@ -211,6 +213,8 @@ public:
     });
 
     // TODO - initialize population
+    std::cout << "Initialize the population" << std::endl;
+    InitPop();
 
     SetPopStruct_Mixed(true);
     SetAutoMutate(config.ELITE_COUNT());          // Configure world to auto-mutate organisms (if id > elite count)
@@ -271,12 +275,22 @@ void AagosWorld::Run() {
   }
 }
 
+void AagosWorld::InitPop() {
+  // Initialize population randomly (for now).
+  for (size_t i = 0; i < config.POP_SIZE(); ++i) {
+    genome_t genome(config.NUM_BITS(), config.NUM_GENES(), config.GENE_SIZE());
+    genome.Randomize(*random_ptr);
+    Inject(genome);
+  }
+  emp_assert(this->GetSize() == config.POP_SIZE());
+}
+
 void AagosWorld::InitFitnessEval() {
   // Fitness evaluation depends on configured fitness model.
   // Current model options: gradient, no gradient
   if (config.GRADIENT_MODEL()) {
     std::cout << "Initializing gradient model of fitness." << std::endl;
-    fitness_model_gradient = emp::NewPtr<GradientFitnessModel>(GetRandom(), config.NUM_GENES(), config.GENE_SIZE());
+    fitness_model_gradient = emp::NewPtr<GradientFitnessModel>(*random_ptr, config.NUM_GENES(), config.GENE_SIZE());
     evaluate_org = [this](org_t & org) {
       const size_t num_genes = config.NUM_GENES();
       const size_t num_bits = config.NUM_BITS();
