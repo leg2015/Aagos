@@ -223,7 +223,53 @@ public:
     mutator.Delete();
   }
 
+  /// Advance world by a single time step (generation).
+  void RunStep();
+
+  /// Run world for configured number of generations.
+  void Run();
+
 };
+
+void AagosWorld::RunStep() {
+  // (1) evaluate population, (2) select parents, (3) update the world
+  // == Do evaluation ==
+  most_fit_id = 0;
+  for (size_t org_id = 0; org_id < this->GetSize(); ++org_id) {
+    emp_assert(IsOccupied(org_id));
+    evaluate_org(GetOrg(org_id));
+    if (CalcFitnessID(org_id) > CalcFitnessID(most_fit_id)) {
+      most_fit_id = org_id;
+    }
+    // NOTE - if we wanted to add phenotype tracking to systematics, here's where we could intercept
+    //        the necessary information.
+  }
+
+  // == Do selection ==
+  if (config.ELITE_COUNT()) emp::EliteSelect(*this, config.ELITE_COUNT(), 1);
+  // Run a tournament for the rest...
+  emp::TournamentSelect(*this, config.TOURNAMENT_SIZE(), config.POP_SIZE()-config.ELITE_COUNT());
+
+  // == Do update ==
+  // If it's a generation to print to console, do so
+  const size_t update = GetUpdate();
+  if (update % config.PRINT_INTERVAL() == 0) {
+    std::cout << update
+              << ": max fitness=" << CalcFitnessID(most_fit_id)
+              << "; size=" << GetOrg(most_fit_id).GetNumBits()
+              << std::endl;
+    // world[most_fit_id].Print();
+  }
+
+  Update();
+  ClearCache();
+}
+
+void AagosWorld::Run() {
+  for (size_t gen = 0; gen <= config.MAX_GENS(); ++gen) {
+    RunStep();
+  }
+}
 
 void AagosWorld::InitFitnessEval() {
   // Fitness evaluation depends on configured fitness model.

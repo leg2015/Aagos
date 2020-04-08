@@ -27,5 +27,5 @@ int main(int argc, char* argv[])
 
   emp::Random random(config.SEED());
   AagosWorld world(random, config);
-  // world.Run()
+  world.Run();
 }

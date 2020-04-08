@@ -13,17 +13,20 @@ public:
 
   /// AagosOrg genomes comprise a bitsequence and the starting positions of each gene in the bitsequence.
   struct Genome {
+    size_t gene_size; ///< size of each gene in the genome
+    size_t num_genes; ///< number of genes in the genome
     emp::BitVector bits;              ///< Bit sequence
     emp::vector<size_t> gene_starts;  ///< Starting positions of all genes.
 
-    Genome(size_t num_bits, size_t num_genes)
-      : bits(num_bits), gene_starts(num_genes, 0) { }
+    Genome(size_t _num_bits, size_t _num_genes, size_t _gene_size)
+      : gene_size(_gene_size), num_genes(_num_genes),
+        bits(_num_bits), gene_starts(_num_genes, 0) { }
     Genome(const Genome &) = default;
     Genome(Genome &&) = default;
 
     bool operator==(const Genome & other) const {
-      return std::tie(bits, gene_starts)
-              == std::tie(other.bits, other.gene_starts);
+      return std::tie(gene_size, num_genes, bits, gene_starts)
+              == std::tie(other.gene_size, other.num_genes, other.bits, other.gene_starts);
     }
 
     bool operator!=(const Genome & other) const {
@@ -31,8 +34,8 @@ public:
     }
 
     bool operator<(const Genome & other) const {
-      return std::tie(bits, gene_starts)
-              < std::tie(other.bits, other.gene_starts);
+      return std::tie(gene_size, num_genes, bits, gene_starts)
+              < std::tie(other.gene_size, other.num_genes, other.bits, other.gene_starts);
     }
 
     // Randomize genome and gene starts
@@ -74,11 +77,8 @@ public:
   using histogram_t = emp::DataNode<int, emp::data::Histogram, emp::data::Stats>;
 
 protected:
-  size_t gene_size; ///< size of each gene in the genome
-  size_t num_genes; ///< number of genes in the genome
   Genome genome;    ///< Genotype
   Phenotype phenotype;
-
 
   /// # neighbors (per gene measurement) - the number of neighbors each gene has where a neighbor is
   /// another gene that overlaps the focal gene by at least one bit.
@@ -100,24 +100,32 @@ protected:
 
 public:
   AagosOrg(size_t _num_bits=64, size_t _num_genes=64, size_t _gene_size=8)
-    : gene_size(_gene_size),
-      num_genes(_num_genes),
-      genome(_num_bits, num_genes),
-      phenotype(num_genes),
-      gene_neighbors(num_genes)
+    : genome(_num_bits, _num_genes, _gene_size),
+      phenotype(_num_genes),
+      gene_neighbors(_num_genes)
   {
     emp_assert(genome.bits.size() > 0, genome.bits.size());
-    emp_assert(num_genes > 0, num_genes);
-    emp_assert(gene_size > 0, gene_size);
+    emp_assert(genome.num_genes > 0, genome.num_genes);
+    emp_assert(genome.gene_size > 0, genome.gene_size);
     emp_assert(!occupancy_histogram_initialized, occupancy_histogram_initialized);
   }
-  // default copy constructor
+
+  AagosOrg(const Genome & g)
+    : genome(g), phenotype(g.num_genes), gene_neighbors(g.num_genes)
+  {
+    emp_assert(genome.bits.size() > 0, genome.bits.size());
+    emp_assert(genome.num_genes > 0, genome.num_genes);
+    emp_assert(genome.gene_size > 0, genome.gene_size);
+    emp_assert(!occupancy_histogram_initialized, occupancy_histogram_initialized);
+  }
+
   AagosOrg(const AagosOrg &) = default;
   AagosOrg(AagosOrg &&) = default;
   ~AagosOrg() { ; }
 
   size_t GetNumBits() const { return genome.bits.size(); }
-  size_t GetNumGenes() const { return num_genes; }
+  size_t GetNumGenes() const { return genome.num_genes; }
+  size_t GetGeneSize() const { return genome.gene_size; }
 
   emp::BitVector & GetBits() { return genome.bits; }
   const emp::BitVector & GetBits() const { return genome.bits; }
@@ -182,6 +190,8 @@ void AagosOrg::HistogramCalc() {
   // genes overlap the same bit. Num bins is then num_genes + 1 b/c need a
   // bin for no overlap.
   const size_t num_bits = GetNumBits();
+  const size_t num_genes = GetNumGenes();
+  const size_t gene_size = GetGeneSize();
   const size_t num_bins = num_genes + 1;
   const auto & gene_starts = genome.gene_starts;
   // Configure histogram bins.
@@ -213,6 +223,8 @@ void AagosOrg::NeighborCalc() {
   std::fill(gene_neighbors.begin(), gene_neighbors.end(), 0); // Reset gene neighbor counts.
   const auto & gene_starts = genome.gene_starts;
   const size_t num_bits = GetNumBits();
+  const size_t num_genes = GetNumGenes();
+  const size_t gene_size = GetGeneSize();
   for (size_t i = 0; i < num_genes; ++i) {
     for (size_t j = i+1; j < num_genes; ++j) {
       // if the current gene starts w/in gene_size on either side of gene in question, must overlap
