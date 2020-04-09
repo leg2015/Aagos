@@ -156,6 +156,33 @@ public:
     }
 
     const emp::BitVector & GetTarget(size_t id) const { return targets[id]; }
+
+    /// Mutate a number of target bits equal to bit cnt.
+    void RandomizeTargetBits(emp::Random & rand, size_t bit_cnt) {
+      for (size_t i = 0; i < bit_cnt; ++i) {
+        // Select a random target sequence.
+        const size_t target_id = rand.GetUInt(targets.size());
+        emp::BitVector & target = targets[target_id];
+        const size_t target_pos = rand.GetUInt(target.GetSize());
+        target.Set(target_pos, !target.Get(target_pos));
+      }
+    }
+
+    /// Randomize a number of targets equal to cnt.
+    void RandomizeTargets(emp::Random & rand, size_t cnt) {
+      // Change a number of targets (= cnt).
+      emp::vector<size_t> target_ids(targets.size());
+      std::iota(target_ids.begin(), target_ids.end(), 0);
+      emp::Shuffle(rand, target_ids);
+      cnt = emp::Min(cnt, target_ids.size()); // No need to randomize more targets than exist.
+      for (size_t i = 0; i < cnt; ++i) {
+        // Select a random target sequence.
+        emp_assert(i < target_ids.size());
+        const size_t target_id = target_ids[i];
+        emp::BitVector & target = targets[target_id];
+        emp::RandomizeBitVector(target, rand);
+      }
+    }
   };
 
   /// Fitness model for NK fitness evaluation
@@ -171,6 +198,10 @@ public:
     }
 
     emp::NKLandscape & GetLandscape() { return landscape; }
+
+    void RandomizeLandscapeBits(emp::Random & rand, size_t cnt) {
+      landscape.RandomizeStates(rand, cnt);
+    }
   };
 
 protected:
@@ -180,6 +211,7 @@ protected:
   emp::Ptr<NKFitnessModel> fitness_model_nk;
   emp::Ptr<GradientFitnessModel> fitness_model_gradient;
   std::function<void(org_t &)> evaluate_org;
+  std::function<void()> change_environment;
 
   emp::Ptr<AagosMutator> mutator;
 
@@ -192,12 +224,14 @@ protected:
   size_t most_fit_id;
 
   void InitFitnessEval();
+  void InitEnvironment(); // todo - test environment change
   void InitPop();
   void InitDataTracking();
 
   void SetupStatsFile();
   void SetupRepresentativeFile();
   void DoPopulationSnapshot();
+  // TODO - setup environment tracking file?
 
 public:
   AagosWorld(emp::Random & random, const config_t & cfg)
@@ -302,6 +336,9 @@ void AagosWorld::RunStep() {
 
   Update();
   ClearCache();
+
+  // Should the environment change?
+  change_environment();
 }
 
 void AagosWorld::Run() {
@@ -407,6 +444,20 @@ void AagosWorld::InitFitnessEval() {
   });
 }
 
+void AagosWorld::InitEnvironment() {
+  if (config.GRADIENT_MODEL()) {
+    // Configure environment change for gradient fitness model.
+    change_environment = [this]() {
+      fitness_model_gradient->RandomizeTargetBits(*random_ptr, config.CHANGE_RATE());
+    };
+  } else {
+    // Configure environment change for nk landscape fitness model.
+    change_environment = [this]() {
+      fitness_model_nk->RandomizeLandscapeBits(*random_ptr, config.CHANGE_RATE());
+    };
+  }
+}
+
 void AagosWorld::InitDataTracking() {
   // Create output directory
   mkdir(output_path.c_str(), ACCESSPERMS);
@@ -417,7 +468,6 @@ void AagosWorld::InitDataTracking() {
   SetupFitnessFile(output_path + "fitness.csv").SetTimingRepeat(config.SUMMARY_INTERVAL());
   SetupStatsFile();
   SetupRepresentativeFile();
-  // TODO - SetupSnapshotFile();
   // TODO - output run configuration
 }
 
