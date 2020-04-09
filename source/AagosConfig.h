@@ -28,7 +28,7 @@ EMP_BUILD_CONFIG(AagosConfig,
 
   GROUP(OUTPUT, "Output rates for Aagos"),
     VALUE(PRINT_INTERVAL, size_t, 1000, "How many updates between prints?"),
-    VALUE(STATISTICS_INTERVAL, size_t, 1000, "How many updates between statistic gathering?"),
+    VALUE(SUMMARY_INTERVAL, size_t, 1000, "How many updates between statistic gathering?"),
     VALUE(SNAPSHOT_INTERVAL, size_t, 10000, "How many updates between snapshots?"),
     VALUE(DATA_FILEPATH, std::string, "", "what directory should all data files be written to?")
 )

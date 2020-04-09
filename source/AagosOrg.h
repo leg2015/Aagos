@@ -225,6 +225,8 @@ void AagosOrg::NeighborCalc() {
   const size_t num_bits = GetNumBits();
   const size_t num_genes = GetNumGenes();
   const size_t gene_size = GetGeneSize();
+  emp_assert(gene_neighbors.size() == num_genes);
+  emp_assert(gene_starts.size() == num_genes);
   for (size_t i = 0; i < num_genes; ++i) {
     for (size_t j = i+1; j < num_genes; ++j) {
       // if the current gene starts w/in gene_size on either side of gene in question, must overlap

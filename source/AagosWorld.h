@@ -13,6 +13,7 @@
 
 #include <sstream>
 #include <string>
+#include <sys/stat.h>
 
 #include "AagosOrg.h"
 #include "AagosConfig.h"
@@ -173,6 +174,7 @@ public:
 
 protected:
   const config_t & config;    ///< World configuration.
+  std::string output_path;
 
   emp::Ptr<NKFitnessModel> fitness_model_nk;
   emp::Ptr<GradientFitnessModel> fitness_model_gradient;
@@ -181,22 +183,31 @@ protected:
   emp::Ptr<AagosMutator> mutator;
 
   // todo - data collection
+  emp::DataManager<double, emp::data::Log, emp::data::Stats, emp::data::Pull> manager;
 
   size_t gene_mask;
   size_t most_fit_id;
 
   void InitFitnessEval();
   void InitPop();
+  void InitDataTracking();
+
+  void SetupStatsFile();
+  void SetupRepresentativeFile();
+  void SetupSnapshotFile();
 
 public:
   AagosWorld(emp::Random & random, const config_t & cfg)
     : base_t(random), config(cfg)
   {
     std::cout << "-- Constructing AagosWorld -- " << std::endl;
-
+    // Asserts
+    emp_assert(config.NUM_GENES() > 0);
     // Basic setup
     gene_mask = emp::MaskLow<size_t>(config.GENE_SIZE());
     most_fit_id = 0;
+    output_path = config.DATA_FILEPATH();
+    SetPopStruct_Mixed(true);
 
     // Initialize fitness evaluation.
     std::cout << "Setting up fitness evaluation." << std::endl;
@@ -214,14 +225,15 @@ public:
       return mutator->ApplyMutations(org, rnd);
     });
 
-    // TODO - initialize population
+    // Configure data tracking
+    InitDataTracking();
+
+    // Initialize population
     std::cout << "Initialize the population" << std::endl;
     InitPop();
 
-    SetPopStruct_Mixed(true);
-    SetAutoMutate(config.ELITE_COUNT());          // Configure world to auto-mutate organisms (if id > elite count)
-
-    // TODO - setup data tracking!
+    // Configure world to auto-mutate organisms (if id > elite count)
+    SetAutoMutate(config.ELITE_COUNT());
   }
 
   ~AagosWorld() {
@@ -259,9 +271,9 @@ void AagosWorld::RunStep() {
 
   // == Do update ==
   // If it's a generation to print to console, do so
-  const size_t update = GetUpdate();
-  if (update % config.PRINT_INTERVAL() == 0) {
-    std::cout << update
+  const size_t u = GetUpdate();
+  if (u % config.PRINT_INTERVAL() == 0) {
+    std::cout << u
               << ": max fitness=" << CalcFitnessID(most_fit_id)
               << "; size=" << GetOrg(most_fit_id).GetNumBits()
               << "; genome=";
@@ -374,6 +386,127 @@ void AagosWorld::InitFitnessEval() {
   SetFitFun([this](org_t & org) {
     return org.GetPhenotype().fitness;
   });
+}
+
+void AagosWorld::InitDataTracking() {
+  // Create output directory
+  mkdir(output_path.c_str(), ACCESSPERMS);
+  if(output_path.back() != '/') {
+      output_path += '/';
+  }
+
+  SetupFitnessFile(output_path + "fitness.csv").SetTimingRepeat(config.SUMMARY_INTERVAL());
+  SetupStatsFile();
+  // TODO - output run configuration
+}
+
+/// Setup data tracking nodes for general statistics about the population.
+void AagosWorld::SetupStatsFile() {
+  emp::DataFile & gene_stats_file = SetupFile(output_path + "gene_stats.csv");
+  gene_stats_file.AddVar(update, "update", "current generation");
+
+  // data node to track number of neutral sites
+  // num neutral sites is the size of 0 bin for each org
+  auto & neutral_sites_node = manager.New("neutral_sites");
+  neutral_sites_node.AddPullSet([this]() {
+    emp::vector<double> pop_neut;
+    for (emp::Ptr<org_t> org_ptr : pop) {
+      if (!org_ptr) continue;
+      pop_neut.emplace_back(org_ptr->GetGeneOccupancyHistogram().GetHistCount(0));
+    }
+    return pop_neut;
+  });
+  // data node to track number of single gene sites
+  // size of 1 bin for each org
+  auto & single_gene_sites_node = manager.New("single_gene_sites");
+  single_gene_sites_node.AddPullSet([this]() {
+    emp::vector<double> pop_one;
+    for (emp::Ptr<org_t> org_ptr : pop) {
+      if (!org_ptr) continue;
+      pop_one.emplace_back(org_ptr->GetGeneOccupancyHistogram().GetHistCount(1));
+    }
+    return pop_one;
+  });
+
+  // todo - add tracking for each value in histogram?
+
+  // node to track number of multiple overlap sites
+  // all bins of size > 1
+  auto & multi_gene_sites_node = manager.New("multi_gene_sites");
+  multi_gene_sites_node.AddPullSet([this]() {
+    emp::vector<double> pop_multi;
+    for (emp::Ptr<org_t> org_ptr : pop) {
+      if (!org_ptr) continue;
+      size_t count = 0;
+      const emp::vector<size_t> & bins = org_ptr->GetGeneOccupancyHistogram().GetHistCounts(); // get all bins
+      for (size_t i = 2; i < bins.size(); ++i) {
+        count += bins[i]; // assuming bins are in order, sum all bins
+      }
+      pop_multi.emplace_back(count);
+    }
+    return pop_multi;
+  });
+
+  // Node to track the number of sites with at least one gene corresponding to it
+  auto & coding_sites_node = manager.New("coding_sites");
+  coding_sites_node.AddPullSet([this]() {
+    emp::vector<double> pop_coding;
+    for (emp::Ptr<org_t> org_ptr : pop) {
+      if (!org_ptr) continue;
+      size_t count = 0;
+      const emp::vector<size_t> & bins = org_ptr->GetGeneOccupancyHistogram().GetHistCounts();
+      for (size_t i = 1; i < bins.size(); ++i) {
+        count += bins[i];
+      }
+      pop_coding.emplace_back(count);
+    }
+    return pop_coding;
+  });
+
+  // Node to track the gene length of each organism
+  auto & genome_len_node = manager.New("genome_length");
+  genome_len_node.AddPullSet([this]() {
+    emp::vector<double> pop_len;
+    for (emp::Ptr<org_t> org_ptr : pop) {
+      if (!org_ptr) continue;
+      pop_len.emplace_back(org_ptr->GetNumBits());
+    }
+    return pop_len;
+  });
+
+  // Avg occupancy => average number of genes per site
+  auto & occupancy_node = manager.New("avg_occupancy");
+  occupancy_node.AddPullSet([this]() {
+    emp::vector<double> pop_occupancy;
+    for (emp::Ptr<org_t> org_ptr : pop) {
+      if (!org_ptr) continue;
+      pop_occupancy.emplace_back(org_ptr->GetGeneOccupancyHistogram().GetMean());
+    }
+    return pop_occupancy;
+  });
+
+  // Avg gene neighbors
+  auto & neighbor_node = manager.New("avg_num_neighbors");
+  neighbor_node.AddPullSet([this]() {
+    emp::vector<double> pop_neighbor;
+    for (emp::Ptr<org_t> org_ptr : pop) {
+      if (!org_ptr) continue;
+      pop_neighbor.emplace_back(emp::Mean(org_ptr->GetGeneNeighbors()));
+    }
+    return pop_neighbor;
+  });
+
+  // Add all data nodes to the stats file
+  gene_stats_file.AddStats(neutral_sites_node, "neutral_sites", "sites with no genes associated with them", true, true);
+  gene_stats_file.AddStats(single_gene_sites_node, "single_gene_sites", "sites with exactly one gene associated with them", true, true);
+  gene_stats_file.AddStats(multi_gene_sites_node, "multi_gene_sites", "sites with more thone one genes associated with them", true, true);
+  gene_stats_file.AddStats(occupancy_node, "site_occupancy", "Average number of genes occupying each site", true, true);
+  gene_stats_file.AddStats(neighbor_node, "neighbor_genes", "Average number of other genes each gene overlaps with", true, true);
+  gene_stats_file.AddStats(coding_sites_node, "coding_sites", "Number of genome sites with at least one corresponding gene", true, true);
+  gene_stats_file.AddStats(genome_len_node, "genome_length", "Length of genome", true, true);
+
+  gene_stats_file.SetTimingRepeat(config.SUMMARY_INTERVAL());
+  gene_stats_file.PrintHeaderKeys();
 }
 
 
