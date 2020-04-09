@@ -241,7 +241,7 @@ void AagosWorld::RunStep() {
   most_fit_id = 0;
   for (size_t org_id = 0; org_id < this->GetSize(); ++org_id) {
     emp_assert(IsOccupied(org_id));
-    std::cout << "-- Evaluating org_id " << org_id << " --" << std::endl;
+    // std::cout << "-- Evaluating org_id " << org_id << " --" << std::endl;
     evaluate_org(GetOrg(org_id));
     if (CalcFitnessID(org_id) > CalcFitnessID(most_fit_id)) {
       most_fit_id = org_id;
@@ -262,7 +262,7 @@ void AagosWorld::RunStep() {
     std::cout << update
               << ": max fitness=" << CalcFitnessID(most_fit_id)
               << "; size=" << GetOrg(most_fit_id).GetNumBits()
-              << std::endl;
+              << "; genome=";
     GetOrg(most_fit_id).Print();
     std::cout << std::endl;
   }
@@ -294,17 +294,16 @@ void AagosWorld::InitFitnessEval() {
     std::cout << "Initializing gradient model of fitness." << std::endl;
     fitness_model_gradient = emp::NewPtr<GradientFitnessModel>(*random_ptr, config.NUM_GENES(), config.GENE_SIZE());
     // Print out the gene targets
-    std::cout << "Initial gene targets:" << std::endl;
-    const auto & targets = fitness_model_gradient->targets;
-    for (size_t i = 0; i < targets.size(); ++i) {
-      std::cout << "  Target " << i << ": ";
-      targets[i].Print();
-      std::cout << std::endl;
-    }
+    // std::cout << "Initial gene targets:" << std::endl;
+    // const auto & targets = fitness_model_gradient->targets;
+    // for (size_t i = 0; i < targets.size(); ++i) {
+    //   std::cout << "  Target " << i << ": ";
+    //   targets[i].Print();
+    //   std::cout << std::endl;
+    // }
 
     evaluate_org = [this](org_t & org) {
-      std::cout << "== Evaluating org ==" << std::endl;
-
+      // std::cout << "== Evaluating org ==" << std::endl;
       const size_t num_genes = config.NUM_GENES();
       const size_t num_bits = config.NUM_BITS();
       const size_t gene_size = config.GENE_SIZE();
@@ -312,10 +311,23 @@ void AagosWorld::InitFitnessEval() {
       // Grab reference to and reset organism's phenotype.
       auto & phen = org.GetPhenotype();
       phen.Reset();
+
+      // std::cout << "Genome: "; org.Print(); std::cout << std::endl;
+      // std::cout << "  Initial phenotype:" << std::endl;
+      // std::cout << "    fitness = " << phen.fitness << std::endl;
+      // std::cout << "    gene contributions = [";
+      // for (size_t i = 0; i < phen.gene_fitness_contributions.size(); ++i) {
+      //   if (i) std::cout << ", ";
+      //   std::cout << phen.gene_fitness_contributions[i];
+      // }
+      // std::cout << "]" << std::endl;
+
       // Calculate fitness contribution of each gene independently.
       double fitness = 0.0;
       const auto & gene_starts = org.GetGeneStarts();
+      // std::cout << "Measuring gene fitnesses" << std::endl;
       for (size_t gene_id = 0; gene_id < num_genes; ++gene_id) {
+        // std::cout << "--- gene id " << gene_id << " ---" << std::endl;
         emp_assert(gene_id < gene_starts.size());
         const size_t gene_start = gene_starts[gene_id];
         uint32_t gene_val = org.GetBits().GetUIntAtBit(gene_start) & gene_mask;
@@ -324,15 +336,22 @@ void AagosWorld::InitFitnessEval() {
         if (tail_bits < gene_size) {
           gene_val |= (org.GetBits().GetUInt(0) << tail_bits) & gene_mask;
         }
+        // std::cout << "  gene val = " << gene_val << std::endl;
         // Compute fitness contribution of this gene
         // - Remember, we assume the first index of gene_starts maps to the first index of the target bitstring.
         emp_assert(gene_starts.size() == fitness_model_gradient->targets.size());
         const emp::BitVector & target = fitness_model_gradient->GetTarget(gene_id);
         emp::BitVector gene = emp::BitVector(gene_size);
-        gene.SetUInt(0, gene_val);
+        gene.SetUIntAtBit(0, gene_val);
         const double fitness_contribution = (double)target.EQU(gene).count() / (double)gene_size;
         phen.gene_fitness_contributions[gene_id] = fitness_contribution;
         fitness += fitness_contribution;
+
+        // std::cout << "  target: "; target.Print(); std::cout << std::endl;
+        // std::cout << "  gene: "; gene.Print(); std::cout << std::endl;
+        // std::cout << "  EQU.count = " << target.EQU(gene).count() << std::endl;
+        // std::cout << "  fitness contribution = " << fitness_contribution << std::endl;
+
       }
       phen.fitness = fitness;
     };
