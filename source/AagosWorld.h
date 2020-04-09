@@ -231,6 +231,7 @@ protected:
   void SetupStatsFile();
   void SetupRepresentativeFile();
   void DoPopulationSnapshot();
+  void DoConfigSnapshot();
   // TODO - setup environment tracking file?
 
 public:
@@ -271,6 +272,8 @@ public:
 
     // Configure world to auto-mutate organisms (if id > elite count)
     SetAutoMutate(config.ELITE_COUNT());
+
+    DoConfigSnapshot(); // Snapshot run settings
   }
 
   ~AagosWorld() {
@@ -692,9 +695,8 @@ void AagosWorld::SetupRepresentativeFile() {
 }
 
 /// Setup population snapshotting
-// todo - DoSnapshot? Or, keep in current form?
 void AagosWorld::DoPopulationSnapshot() {
-  emp::DataFile snapshot_file(output_path + "/pop_" + emp::to_string((int)GetUpdate()) + ".csv");
+  emp::DataFile snapshot_file(output_path + "pop_" + emp::to_string((int)GetUpdate()) + ".csv");
   const size_t num_genes = config.NUM_GENES();
   size_t cur_org_id = 0;
   // Add functions
@@ -806,6 +808,21 @@ void AagosWorld::DoPopulationSnapshot() {
   snapshot_file.PrintHeaderKeys();
   for (cur_org_id = 0; cur_org_id < GetSize(); ++cur_org_id) {
     emp_assert(IsOccupied(cur_org_id));
+    snapshot_file.Update();
+  }
+}
+
+/// Take a snapshot of the configuration settings
+void AagosWorld::DoConfigSnapshot() {
+  emp::DataFile snapshot_file(output_path + "run_config.csv");
+  std::function<std::string()> get_cur_param = []() { return ""; };
+  std::function<std::string()> get_cur_value = []() { return ""; };
+  snapshot_file.template AddFun<std::string>([&get_cur_param]() -> std::string { return get_cur_param(); }, "parameter");
+  snapshot_file.template AddFun<std::string>([&get_cur_value]() -> std::string { return get_cur_value(); }, "value");
+  snapshot_file.PrintHeaderKeys();
+  for (const auto & entry : config) {
+    get_cur_param = [&entry]() { return entry.first; };
+    get_cur_value = [&entry]() { return emp::to_string(entry.second->GetValue()); };
     snapshot_file.Update();
   }
 }
