@@ -184,6 +184,9 @@ protected:
 
   // todo - data collection
   emp::DataManager<double, emp::data::Log, emp::data::Stats, emp::data::Pull> manager;
+  emp::Ptr<emp::DataFile> gene_stats_file;
+  emp::Ptr<emp::DataFile> representative_org_file;
+
 
   size_t gene_mask;
   size_t most_fit_id;
@@ -239,6 +242,8 @@ public:
   ~AagosWorld() {
     if (config.GRADIENT_MODEL()) fitness_model_gradient.Delete();
     mutator.Delete();
+    representative_org_file.Delete();
+    gene_stats_file.Delete();
   }
 
   /// Advance world by a single time step (generation).
@@ -279,6 +284,19 @@ void AagosWorld::RunStep() {
               << "; genome=";
     GetOrg(most_fit_id).Print();
     std::cout << std::endl;
+  }
+
+  // Handle managed output files.
+  if (config.SUMMARY_INTERVAL()) {
+    if (!(u % config.SUMMARY_INTERVAL()) || (u == config.MAX_GENS())) {
+      gene_stats_file->Update();
+      representative_org_file->Update();
+    }
+  }
+  if (config.SNAPSHOT_INTERVAL()) {
+    if (!(u % config.SNAPSHOT_INTERVAL()) || (u == config.MAX_GENS())) {
+      // TODO - snapshot!
+    }
   }
 
   Update();
@@ -397,13 +415,16 @@ void AagosWorld::InitDataTracking() {
 
   SetupFitnessFile(output_path + "fitness.csv").SetTimingRepeat(config.SUMMARY_INTERVAL());
   SetupStatsFile();
+  SetupRepresentativeFile();
+  // TODO - SetupSnapshotFile();
   // TODO - output run configuration
 }
 
 /// Setup data tracking nodes for general statistics about the population.
 void AagosWorld::SetupStatsFile() {
-  emp::DataFile & gene_stats_file = SetupFile(output_path + "gene_stats.csv");
-  gene_stats_file.AddVar(update, "update", "current generation");
+  // emp::DataFile & gene_stats_file = SetupFile(output_path + "gene_stats.csv");
+  gene_stats_file = emp::NewPtr<emp::DataFile>(output_path + "gene_stats.csv");
+  gene_stats_file->AddVar(update, "update", "current generation");
 
   // data node to track number of neutral sites
   // num neutral sites is the size of 0 bin for each org
@@ -497,16 +518,40 @@ void AagosWorld::SetupStatsFile() {
   });
 
   // Add all data nodes to the stats file
-  gene_stats_file.AddStats(neutral_sites_node, "neutral_sites", "sites with no genes associated with them", true, true);
-  gene_stats_file.AddStats(single_gene_sites_node, "single_gene_sites", "sites with exactly one gene associated with them", true, true);
-  gene_stats_file.AddStats(multi_gene_sites_node, "multi_gene_sites", "sites with more thone one genes associated with them", true, true);
-  gene_stats_file.AddStats(occupancy_node, "site_occupancy", "Average number of genes occupying each site", true, true);
-  gene_stats_file.AddStats(neighbor_node, "neighbor_genes", "Average number of other genes each gene overlaps with", true, true);
-  gene_stats_file.AddStats(coding_sites_node, "coding_sites", "Number of genome sites with at least one corresponding gene", true, true);
-  gene_stats_file.AddStats(genome_len_node, "genome_length", "Length of genome", true, true);
+  gene_stats_file->AddStats(neutral_sites_node, "neutral_sites", "sites with no genes associated with them", true, true);
+  gene_stats_file->AddStats(single_gene_sites_node, "single_gene_sites", "sites with exactly one gene associated with them", true, true);
+  gene_stats_file->AddStats(multi_gene_sites_node, "multi_gene_sites", "sites with more thone one genes associated with them", true, true);
+  gene_stats_file->AddStats(occupancy_node, "site_occupancy", "Average number of genes occupying each site", true, true);
+  gene_stats_file->AddStats(neighbor_node, "neighbor_genes", "Average number of other genes each gene overlaps with", true, true);
+  gene_stats_file->AddStats(coding_sites_node, "coding_sites", "Number of genome sites with at least one corresponding gene", true, true);
+  gene_stats_file->AddStats(genome_len_node, "genome_length", "Length of genome", true, true);
 
-  gene_stats_file.SetTimingRepeat(config.SUMMARY_INTERVAL());
-  gene_stats_file.PrintHeaderKeys();
+  // gene_stats_file.SetTimingRepeat(config.SUMMARY_INTERVAL());
+  gene_stats_file->PrintHeaderKeys();
+}
+
+/// Setup data tracking for representative organism
+void AagosWorld::SetupRepresentativeFile() {
+  // emp::DataFile & representative_file = SetupFile(output_path + "representative_org.csv");
+  representative_org_file = emp::NewPtr<emp::DataFile>(output_path + "representative_org.csv");
+  representative_org_file->AddVar(update, "update", "Current generation");
+  const size_t num_genes = config.NUM_GENES();
+
+  // (1) Per-site gene occupancy counts
+  // For each level of site occupancy, add function that returns the number of sites with that occupancy level.
+  for (size_t i = 0; i < num_genes + 1; ++i) {
+    std::function<double()> gene_occupancy_fun = [this, i]() {
+      emp_assert(i < GetOrg(most_fit_id).GetGeneOccupancyHistogram().GetHistCounts().size());
+      emp_assert(most_fit_id < this->GetSize());
+      emp_assert(IsOccupied(most_fit_id));
+      return (double)GetOrg(most_fit_id).GetGeneOccupancyHistogram().GetHistCount(i);
+    };
+    representative_org_file->AddFun(gene_occupancy_fun, "site_cnt_" + emp::to_string(i) + "_gene_occupancy", "The number of sites with a particular occupancy level.");
+  }
+
+  // representative_file.SetTimingRepeat(config.SUMMARY_INTERVAL());
+  representative_org_file->PrintHeaderKeys();
+
 }
 
 
