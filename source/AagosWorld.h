@@ -167,6 +167,8 @@ public:
     {
       landscape.Config(num_genes, gene_size-1, rand);
     }
+
+    emp::NKLandscape & GetLandscape() { return landscape; }
   };
 
 protected:
@@ -294,16 +296,15 @@ void AagosWorld::InitFitnessEval() {
     std::cout << "Initializing gradient model of fitness." << std::endl;
     fitness_model_gradient = emp::NewPtr<GradientFitnessModel>(*random_ptr, config.NUM_GENES(), config.GENE_SIZE());
     // Print out the gene targets
-    // std::cout << "Initial gene targets:" << std::endl;
-    // const auto & targets = fitness_model_gradient->targets;
-    // for (size_t i = 0; i < targets.size(); ++i) {
-    //   std::cout << "  Target " << i << ": ";
-    //   targets[i].Print();
-    //   std::cout << std::endl;
-    // }
-
+    std::cout << "Initial gene targets:" << std::endl;
+    const auto & targets = fitness_model_gradient->targets;
+    for (size_t i = 0; i < targets.size(); ++i) {
+      std::cout << "  Target " << i << ": ";
+      targets[i].Print();
+      std::cout << std::endl;
+    }
+    // Configure the organism evaluation function.
     evaluate_org = [this](org_t & org) {
-      // std::cout << "== Evaluating org ==" << std::endl;
       const size_t num_genes = config.NUM_GENES();
       const size_t num_bits = config.NUM_BITS();
       const size_t gene_size = config.GENE_SIZE();
@@ -312,31 +313,18 @@ void AagosWorld::InitFitnessEval() {
       auto & phen = org.GetPhenotype();
       phen.Reset();
 
-      // std::cout << "Genome: "; org.Print(); std::cout << std::endl;
-      // std::cout << "  Initial phenotype:" << std::endl;
-      // std::cout << "    fitness = " << phen.fitness << std::endl;
-      // std::cout << "    gene contributions = [";
-      // for (size_t i = 0; i < phen.gene_fitness_contributions.size(); ++i) {
-      //   if (i) std::cout << ", ";
-      //   std::cout << phen.gene_fitness_contributions[i];
-      // }
-      // std::cout << "]" << std::endl;
-
       // Calculate fitness contribution of each gene independently.
       double fitness = 0.0;
       const auto & gene_starts = org.GetGeneStarts();
-      // std::cout << "Measuring gene fitnesses" << std::endl;
       for (size_t gene_id = 0; gene_id < num_genes; ++gene_id) {
-        // std::cout << "--- gene id " << gene_id << " ---" << std::endl;
         emp_assert(gene_id < gene_starts.size());
         const size_t gene_start = gene_starts[gene_id];
         uint32_t gene_val = org.GetBits().GetUIntAtBit(gene_start) & gene_mask;
         const size_t tail_bits = num_bits - gene_start;
         // If a gene runs off the end of the bitstring, loop around to the beginning.
         if (tail_bits < gene_size) {
-          gene_val |= (org.GetBits().GetUInt(0) << tail_bits) & gene_mask;
+          gene_val |= (org.GetBits().GetUIntAtBit(0) << tail_bits) & gene_mask;
         }
-        // std::cout << "  gene val = " << gene_val << std::endl;
         // Compute fitness contribution of this gene
         // - Remember, we assume the first index of gene_starts maps to the first index of the target bitstring.
         emp_assert(gene_starts.size() == fitness_model_gradient->targets.size());
@@ -346,18 +334,41 @@ void AagosWorld::InitFitnessEval() {
         const double fitness_contribution = (double)target.EQU(gene).count() / (double)gene_size;
         phen.gene_fitness_contributions[gene_id] = fitness_contribution;
         fitness += fitness_contribution;
-
-        // std::cout << "  target: "; target.Print(); std::cout << std::endl;
-        // std::cout << "  gene: "; gene.Print(); std::cout << std::endl;
-        // std::cout << "  EQU.count = " << target.EQU(gene).count() << std::endl;
-        // std::cout << "  fitness contribution = " << fitness_contribution << std::endl;
-
       }
       phen.fitness = fitness;
     };
   } else {
-    // todo
-    std::cout << "TODO" << std::endl;
+    std::cout << "Initializing NK model of fitness." << std::endl;
+    fitness_model_nk = emp::NewPtr<NKFitnessModel>(*random_ptr, config.NUM_GENES(), config.GENE_SIZE());
+    // Configure the organism evaluation function.
+    evaluate_org = [this](org_t & org) {
+      const size_t num_genes = config.NUM_GENES();
+      const size_t num_bits = config.NUM_BITS();
+      const size_t gene_size = config.GENE_SIZE();
+
+      // Grab reference to and reset organism's phenotype.
+      auto & phen = org.GetPhenotype();
+      phen.Reset();
+
+      // Calculate fitness contribution of each gene independently.
+      double fitness = 0.0;
+      const auto & gene_starts = org.GetGeneStarts();
+      for (size_t gene_id = 0; gene_id < num_genes; ++gene_id) {
+        emp_assert(gene_id < gene_starts.size());
+        const size_t gene_start = gene_starts[gene_id];
+        uint32_t gene_val = org.GetBits().GetUIntAtBit(gene_start) & gene_mask;
+        const size_t tail_bits = num_bits - gene_start;
+        // If a gene runs off the end of the bitstring, loop around to the beginning.
+        if (tail_bits < gene_size) {
+          gene_val |= (org.GetBits().GetUIntAtBit(0) << tail_bits) & gene_mask;
+        }
+        // Compute fitness contribution of this gene using nk landscape
+        const double fitness_contribution = fitness_model_nk->GetLandscape().GetFitness(gene_id, gene_val);
+        phen.gene_fitness_contributions[gene_id] = fitness_contribution;
+        fitness += fitness_contribution;
+      }
+      phen.fitness = fitness;
+    };
   }
   // Note that this assumes that this organism has been evaluated.
   SetFitFun([this](org_t & org) {
