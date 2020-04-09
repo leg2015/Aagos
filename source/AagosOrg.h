@@ -44,6 +44,9 @@ public:
       emp::RandomizeVector<size_t>(gene_starts, random, 0, bits.size());
     }
 
+    size_t GetGeneSize() const { return gene_size; }
+    size_t GetNumGenes() const { return num_genes; }
+
   };
 
   struct Phenotype {

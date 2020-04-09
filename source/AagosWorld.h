@@ -12,6 +12,7 @@
 #include "tools/string_utils.h"
 
 #include <sstream>
+#include <iostream>
 #include <string>
 #include <sys/stat.h>
 
@@ -241,6 +242,7 @@ public:
 
   ~AagosWorld() {
     if (config.GRADIENT_MODEL()) fitness_model_gradient.Delete();
+    else fitness_model_nk.Delete();
     mutator.Delete();
     representative_org_file.Delete();
     gene_stats_file.Delete();
@@ -537,7 +539,93 @@ void AagosWorld::SetupRepresentativeFile() {
   representative_org_file->AddVar(update, "update", "Current generation");
   const size_t num_genes = config.NUM_GENES();
 
-  // (1) Per-site gene occupancy counts
+  // Fitness
+  std::function<double()> fitness_fun = [this]() {
+    return CalcFitnessID(most_fit_id);
+  };
+  representative_org_file->AddFun(fitness_fun, "fitness", "Organism fitness (at this update)");
+
+  // Genome length
+  std::function<size_t()> genome_length_fun = [this]() {
+    const org_t & org = GetOrg(most_fit_id);
+    return org.GetNumBits();
+  };
+  representative_org_file->AddFun(genome_length_fun, "genome_length", "How many bits in genome?");
+
+  // Number of coding sites for representative organism.
+  std::function<size_t()> coding_sites_fun = [this]() {
+    org_t & org = GetOrg(most_fit_id);
+    const emp::vector<size_t> & bins = org.GetGeneOccupancyHistogram().GetHistCounts();
+    size_t count = 0;
+    for (size_t i = 1; i < bins.size(); ++i) {
+      count += bins[i];
+    }
+    return count;
+  };
+  representative_org_file->AddFun(coding_sites_fun, "coding_sites", "How many sites in this organism's genome are coding?");
+
+  // Number of neutral sites
+  std::function<size_t()> neutral_sites_fun = [this]() {
+    org_t & org = GetOrg(most_fit_id);
+    return org.GetGeneOccupancyHistogram().GetHistCount(0);
+  };
+  representative_org_file->AddFun(neutral_sites_fun, "neutral_sites", "How many sites in this organim's genome are neutral?");
+
+
+  // Gene start locations in representative org
+  std::function<std::string()> gene_starts_fun = [this]() {
+    std::ostringstream stream;
+    stream << "\"[";
+    const org_t & org = GetOrg(most_fit_id);
+    for (size_t i = 0; i < org.GetGeneStarts().size(); ++i) {
+      if (i) stream << ",";
+      stream << org.GetGeneStarts()[i];
+    }
+    stream << "]\"";
+    return stream.str();
+  };
+  representative_org_file->AddFun(gene_starts_fun, "gene_starts", "Starting positions for each gene");
+
+  // Organism genome bits
+  std::function<std::string()> genome_bits_fun = [this]() {
+    std::ostringstream stream;
+    const org_t & org = GetOrg(most_fit_id);
+    org.GetGenome().bits.Print(stream);
+    return stream.str();
+  };
+  representative_org_file->AddFun(genome_bits_fun, "genome_bitstring", "Bitstring component of genome");
+
+  // Organism gene size.
+  std::function<size_t()> genome_gene_size = [this]() {
+    const org_t & org = GetOrg(most_fit_id);
+    return org.GetGenome().GetGeneSize();
+  };
+  representative_org_file->AddFun(genome_gene_size, "gene_size", "How many bits is each gene?");
+
+  // Per-gene neighbors
+  std::function<std::string()> per_gene_neighbors_fun = [this]() {
+    org_t & org = GetOrg(most_fit_id);
+    const auto & gene_neighbors = org.GetGeneNeighbors();
+    std::ostringstream stream;
+    stream << "\"[";
+    for (size_t i = 0; i < gene_neighbors.size(); ++i) {
+      if (i) stream << ",";
+      stream << gene_neighbors[i];
+    }
+    stream << "]\"";
+    return stream.str();
+  };
+  representative_org_file->AddFun(per_gene_neighbors_fun, "gene_neighbors", "Per-gene neighbors");
+
+  // Mean per-gene neighbors
+  std::function<double()> mean_gene_neighbors = [this]() {
+    org_t & org = GetOrg(most_fit_id);
+    const auto & gene_neighbors = org.GetGeneNeighbors();
+    return emp::Mean(gene_neighbors);
+  };
+  representative_org_file->AddFun(mean_gene_neighbors, "avg_gene_neighbors", "Average per-gene neighbors");
+
+  // Per-site gene occupancy counts
   // For each level of site occupancy, add function that returns the number of sites with that occupancy level.
   for (size_t i = 0; i < num_genes + 1; ++i) {
     std::function<double()> gene_occupancy_fun = [this, i]() {
