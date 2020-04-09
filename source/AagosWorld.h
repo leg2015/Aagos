@@ -188,7 +188,6 @@ protected:
   emp::Ptr<emp::DataFile> gene_stats_file;
   emp::Ptr<emp::DataFile> representative_org_file;
 
-
   size_t gene_mask;
   size_t most_fit_id;
 
@@ -198,7 +197,7 @@ protected:
 
   void SetupStatsFile();
   void SetupRepresentativeFile();
-  void SetupSnapshotFile();
+  void DoPopulationSnapshot();
 
 public:
   AagosWorld(emp::Random & random, const config_t & cfg)
@@ -297,7 +296,7 @@ void AagosWorld::RunStep() {
   }
   if (config.SNAPSHOT_INTERVAL()) {
     if (!(u % config.SNAPSHOT_INTERVAL()) || (u == config.MAX_GENS())) {
-      // TODO - snapshot!
+      DoPopulationSnapshot();
     }
   }
 
@@ -640,6 +639,125 @@ void AagosWorld::SetupRepresentativeFile() {
   // representative_file.SetTimingRepeat(config.SUMMARY_INTERVAL());
   representative_org_file->PrintHeaderKeys();
 
+}
+
+/// Setup population snapshotting
+// todo - DoSnapshot? Or, keep in current form?
+void AagosWorld::DoPopulationSnapshot() {
+  emp::DataFile snapshot_file(output_path + "/pop_" + emp::to_string((int)GetUpdate()) + ".csv");
+  const size_t num_genes = config.NUM_GENES();
+  size_t cur_org_id = 0;
+  // Add functions
+  snapshot_file.AddVar(update, "update", "Current generation");
+
+  // Organism ID
+  std::function<size_t()> org_id_fun = [this, &cur_org_id]() {
+    return cur_org_id;
+  };
+  snapshot_file.AddFun(org_id_fun, "org_id", "Organism id");
+
+  // Fitness
+  std::function<double()> fitness_fun = [this, &cur_org_id]() {
+    return CalcFitnessID(cur_org_id);
+  };
+  snapshot_file.AddFun(fitness_fun, "fitness", "Organism fitness (at this update)");
+
+  // Genome length
+  std::function<size_t()> genome_length_fun = [this, &cur_org_id]() {
+    const org_t & org = GetOrg(cur_org_id);
+    return org.GetNumBits();
+  };
+  snapshot_file.AddFun(genome_length_fun, "genome_length", "How many bits in genome?");
+
+  // Number of coding sites for representative organism.
+  std::function<size_t()> coding_sites_fun = [this, &cur_org_id]() {
+    org_t & org = GetOrg(cur_org_id);
+    const emp::vector<size_t> & bins = org.GetGeneOccupancyHistogram().GetHistCounts();
+    size_t count = 0;
+    for (size_t i = 1; i < bins.size(); ++i) {
+      count += bins[i];
+    }
+    return count;
+  };
+  snapshot_file.AddFun(coding_sites_fun, "coding_sites", "How many sites in this organism's genome are coding?");
+
+  // Number of neutral sites
+  std::function<size_t()> neutral_sites_fun = [this, &cur_org_id]() {
+    org_t & org = GetOrg(cur_org_id);
+    return org.GetGeneOccupancyHistogram().GetHistCount(0);
+  };
+  snapshot_file.AddFun(neutral_sites_fun, "neutral_sites", "How many sites in this organim's genome are neutral?");
+
+  // Gene start locations in representative org
+  std::function<std::string()> gene_starts_fun = [this, &cur_org_id]() {
+    const org_t & org = GetOrg(cur_org_id);
+    std::ostringstream stream;
+    stream << "\"[";
+    for (size_t i = 0; i < org.GetGeneStarts().size(); ++i) {
+      if (i) stream << ",";
+      stream << org.GetGeneStarts()[i];
+    }
+    stream << "]\"";
+    return stream.str();
+  };
+  snapshot_file.AddFun(gene_starts_fun, "gene_starts", "Starting positions for each gene");
+
+  // Organism genome bits
+  std::function<std::string()> genome_bits_fun = [this, &cur_org_id]() {
+    const org_t & org = GetOrg(cur_org_id);
+    std::ostringstream stream;
+    org.GetGenome().bits.Print(stream);
+    return stream.str();
+  };
+  snapshot_file.AddFun(genome_bits_fun, "genome_bitstring", "Bitstring component of genome");
+
+  // Organism gene size.
+  std::function<size_t()> genome_gene_size = [this, &cur_org_id]() {
+    const org_t & org = GetOrg(cur_org_id);
+    return org.GetGenome().GetGeneSize();
+  };
+  snapshot_file.AddFun(genome_gene_size, "gene_size", "How many bits is each gene?");
+
+  // Per-gene neighbors
+  std::function<std::string()> per_gene_neighbors_fun = [this, &cur_org_id]() {
+    org_t & org = GetOrg(cur_org_id);
+    const auto & gene_neighbors = org.GetGeneNeighbors();
+    std::ostringstream stream;
+    stream << "\"[";
+    for (size_t i = 0; i < gene_neighbors.size(); ++i) {
+      if (i) stream << ",";
+      stream << gene_neighbors[i];
+    }
+    stream << "]\"";
+    return stream.str();
+  };
+  snapshot_file.AddFun(per_gene_neighbors_fun, "gene_neighbors", "Per-gene neighbors");
+
+  // Mean per-gene neighbors
+  std::function<double()> mean_gene_neighbors = [this, &cur_org_id]() {
+    org_t & org = GetOrg(cur_org_id);
+    const auto & gene_neighbors = org.GetGeneNeighbors();
+    return emp::Mean(gene_neighbors);
+  };
+  snapshot_file.AddFun(mean_gene_neighbors, "avg_gene_neighbors", "Average per-gene neighbors");
+
+  // Per-site gene occupancy counts
+  // For each level of site occupancy, add function that returns the number of sites with that occupancy level.
+  for (size_t i = 0; i < num_genes + 1; ++i) {
+    std::function<double()> gene_occupancy_fun = [this, i, &cur_org_id]() {
+      emp_assert(i < GetOrg(cur_org_id).GetGeneOccupancyHistogram().GetHistCounts().size());
+      emp_assert(cur_org_id < this->GetSize());
+      emp_assert(IsOccupied(cur_org_id));
+      return (double)GetOrg(cur_org_id).GetGeneOccupancyHistogram().GetHistCount(i);
+    };
+    snapshot_file.AddFun(gene_occupancy_fun, "site_cnt_" + emp::to_string(i) + "_gene_occupancy", "The number of sites with a particular occupancy level.");
+  }
+
+  snapshot_file.PrintHeaderKeys();
+  for (cur_org_id = 0; cur_org_id < GetSize(); ++cur_org_id) {
+    emp_assert(IsOccupied(cur_org_id));
+    snapshot_file.Update();
+  }
 }
 
 
