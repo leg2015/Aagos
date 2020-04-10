@@ -250,6 +250,7 @@ public:
     // Initialize fitness evaluation.
     std::cout << "Setting up fitness evaluation." << std::endl;
     InitFitnessEval();
+    InitEnvironment();
 
     // Configure mutator
     std::cout << "Constructing mutator..." << std::endl;
