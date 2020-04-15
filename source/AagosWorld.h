@@ -21,12 +21,12 @@
 
 class AagosMutator {
 protected:
-  size_t num_genes;
-  emp::Range<size_t> genome_size_constraints;
-  double prob_gene_moves;
-  double prob_bit_flip;
-  double prob_bit_ins;
-  double prob_bit_del;
+  const size_t num_genes;
+  const emp::Range<size_t> genome_size_constraints;
+  const double prob_gene_moves;
+  const double prob_bit_flip;
+  const double prob_bit_ins;
+  const double prob_bit_del;
 
   // Used for mutation?
   emp::Binomial gene_moves_binomial;
@@ -205,6 +205,15 @@ public:
   };
 
 protected:
+  size_t TOTAL_GENS;
+  size_t CUR_CHANGE_MAGNITUDE;
+  size_t CUR_CHANGE_FREQUENCY;
+  double CUR_GENE_MOVE_PROB;
+  double CUR_BIT_FLIP_PROB;
+  double CUR_BIT_INS_PROB;
+  double CUR_BIT_DEL_PROB;
+  size_t cur_phase=0;
+
   const config_t & config;    ///< World configuration.
   std::string output_path;
 
@@ -228,6 +237,9 @@ protected:
   void InitPop();
   void InitDataTracking();
 
+  void InitLocalConfigs();     ///< Localize paramters that may change for phase two.
+  void ActivateEvoPhaseTwo();  ///< Do all the work to transition world into phase two of evolution
+
   void SetupStatsFile();
   void SetupRepresentativeFile();
   void DoPopulationSnapshot();
@@ -241,6 +253,10 @@ public:
     std::cout << "-- Constructing AagosWorld -- " << std::endl;
     // Asserts
     emp_assert(config.NUM_GENES() > 0);
+
+    // Localize phase-one-specific configs
+    InitLocalConfigs();
+
     // Basic setup
     gene_mask = emp::MaskLow<size_t>(config.GENE_SIZE());
     most_fit_id = 0;
@@ -255,8 +271,8 @@ public:
     // Configure mutator
     std::cout << "Constructing mutator..." << std::endl;
     mutator = emp::NewPtr<AagosMutator>(config.NUM_GENES(), emp::Range<size_t>(config.MIN_SIZE(), config.MAX_SIZE()),
-                                        config.GENE_MOVE_PROB(), config.BIT_FLIP_PROB(),
-                                        config.BIT_INS_PROB(), config.BIT_DEL_PROB());
+                                        CUR_GENE_MOVE_PROB, CUR_BIT_FLIP_PROB,
+                                        CUR_BIT_INS_PROB, CUR_BIT_DEL_PROB);
     std::cout << "  ...done constructing mutator." << std::endl;
     SetMutFun([this](org_t & org, emp::Random & rnd) {
       // NOTE - here's where we would intercept mutation-type distributions (with some extra infrastructure
@@ -327,20 +343,20 @@ void AagosWorld::RunStep() {
 
   // Handle managed output files.
   if (config.SUMMARY_INTERVAL()) {
-    if (!(u % config.SUMMARY_INTERVAL()) || (u == config.MAX_GENS())) {
+    if ( !(u % config.SUMMARY_INTERVAL()) || (u == config.MAX_GENS()) || (u == TOTAL_GENS) ) {
       gene_stats_file->Update();
       representative_org_file->Update();
     }
   }
   if (config.SNAPSHOT_INTERVAL()) {
-    if (!(u % config.SNAPSHOT_INTERVAL()) || (u == config.MAX_GENS())) {
+    if ( !(u % config.SNAPSHOT_INTERVAL()) || (u == config.MAX_GENS()) ||  (u == TOTAL_GENS) ) {
       DoPopulationSnapshot();
     }
   }
 
   // Should the environment change?
-  if (config.CHANGE_FREQUENCY()) {
-    if (!(u % config.CHANGE_FREQUENCY())) {
+  if (CUR_CHANGE_FREQUENCY) {
+    if (!(u % CUR_CHANGE_FREQUENCY)) {
       change_environment();
     }
   }
@@ -354,6 +370,59 @@ void AagosWorld::Run() {
   for (size_t gen = 0; gen <= config.MAX_GENS(); ++gen) {
     RunStep();
   }
+  // Transition?
+  if (!config.PHASE_2_ACTIVE()) return;
+  // Transition run into phase 2 of evolution
+  ActivateEvoPhaseTwo();
+  // Run phase of evolution
+  for (size_t gen = 0; gen <= config.PHASE_2_MAX_GENS(); ++gen) {
+    RunStep();
+  }
+}
+
+// todo - add total_gens to config snapshot
+void AagosWorld::InitLocalConfigs() {
+  CUR_CHANGE_MAGNITUDE = config.CHANGE_MAGNITUDE();
+  CUR_CHANGE_FREQUENCY = config.CHANGE_FREQUENCY();
+  CUR_GENE_MOVE_PROB = config.GENE_MOVE_PROB();
+  CUR_BIT_FLIP_PROB = config.BIT_FLIP_PROB();
+  CUR_BIT_INS_PROB = config.BIT_INS_PROB();
+  CUR_BIT_DEL_PROB = config.BIT_DEL_PROB();
+
+  TOTAL_GENS = (config.PHASE_2_ACTIVE()) ?  config.MAX_GENS() + config.PHASE_2_MAX_GENS() : config.MAX_GENS();
+  cur_phase = 0;
+}
+
+void AagosWorld::ActivateEvoPhaseTwo() {
+  std::cout << "==> Transitioning to evolution phase two <==" << std::endl;
+  // todo
+
+  // Update localized configs as appropriate.
+  CUR_CHANGE_MAGNITUDE = config.PHASE_2_CHANGE_MAGNITUDE();
+  CUR_CHANGE_FREQUENCY = config.PHASE_2_CHANGE_FREQUENCY();
+  CUR_GENE_MOVE_PROB = config.PHASE_2_GENE_MOVE_PROB();
+  CUR_BIT_FLIP_PROB = config.PHASE_2_BIT_FLIP_PROB();
+  CUR_BIT_INS_PROB = config.PHASE_2_BIT_INS_PROB();
+  CUR_BIT_DEL_PROB = config.PHASE_2_BIT_DEL_PROB();
+
+  // Destruct and re-make mutator for phase two. No need to change the world's mutation function because
+  // we're still using the same mutator pointer.
+  emp_assert(mutator != nullptr);
+  mutator.Delete();
+  std::cout << "  Constructing mutator..." << std::endl;
+  mutator = emp::NewPtr<AagosMutator>(config.NUM_GENES(), emp::Range<size_t>(config.MIN_SIZE(), config.MAX_SIZE()),
+                                      CUR_GENE_MOVE_PROB, CUR_BIT_FLIP_PROB,
+                                      CUR_BIT_INS_PROB, CUR_BIT_DEL_PROB);
+  std::cout << "    ...done constructing mutator." << std::endl;
+
+  // Randomize the environment.
+  if (config.GRADIENT_MODEL()) {
+    fitness_model_gradient->RandomizeTargets(*random_ptr, config.NUM_GENES());
+  } else {
+    fitness_model_nk->GetLandscape().Reset(*random_ptr);
+  }
+
+  ++cur_phase;
 }
 
 void AagosWorld::InitPop() {
@@ -457,12 +526,12 @@ void AagosWorld::InitEnvironment() {
   if (config.GRADIENT_MODEL()) {
     // Configure environment change for gradient fitness model.
     change_environment = [this]() {
-      fitness_model_gradient->RandomizeTargetBits(*random_ptr, config.CHANGE_MAGNITUDE());
+      fitness_model_gradient->RandomizeTargetBits(*random_ptr, CUR_CHANGE_MAGNITUDE);
     };
   } else {
     // Configure environment change for nk landscape fitness model.
     change_environment = [this]() {
-      fitness_model_nk->RandomizeLandscapeBits(*random_ptr, config.CHANGE_MAGNITUDE());
+      fitness_model_nk->RandomizeLandscapeBits(*random_ptr, CUR_CHANGE_MAGNITUDE);
     };
   }
 }
@@ -485,6 +554,7 @@ void AagosWorld::SetupStatsFile() {
   // emp::DataFile & gene_stats_file = SetupFile(output_path + "gene_stats.csv");
   gene_stats_file = emp::NewPtr<emp::DataFile>(output_path + "gene_stats.csv");
   gene_stats_file->AddVar(update, "update", "current generation");
+  gene_stats_file->AddVar(cur_phase, "evo_phase", "Current phase of evolution");
 
   // data node to track number of neutral sites
   // num neutral sites is the size of 0 bin for each org
@@ -586,7 +656,6 @@ void AagosWorld::SetupStatsFile() {
   gene_stats_file->AddStats(coding_sites_node, "coding_sites", "Number of genome sites with at least one corresponding gene", true, true);
   gene_stats_file->AddStats(genome_len_node, "genome_length", "Length of genome", true, true);
 
-  // gene_stats_file.SetTimingRepeat(config.SUMMARY_INTERVAL());
   gene_stats_file->PrintHeaderKeys();
 }
 
@@ -595,6 +664,7 @@ void AagosWorld::SetupRepresentativeFile() {
   // emp::DataFile & representative_file = SetupFile(output_path + "representative_org.csv");
   representative_org_file = emp::NewPtr<emp::DataFile>(output_path + "representative_org.csv");
   representative_org_file->AddVar(update, "update", "Current generation");
+  representative_org_file->AddVar(cur_phase, "evo_phase", "Current phase of evolution");
   const size_t num_genes = config.NUM_GENES();
 
   // Fitness
@@ -707,6 +777,7 @@ void AagosWorld::DoPopulationSnapshot() {
   size_t cur_org_id = 0;
   // Add functions
   snapshot_file.AddVar(update, "update", "Current generation");
+  snapshot_file.AddVar(cur_phase, "evo_phase", "Current phase of evolution");
 
   // Organism ID
   std::function<size_t()> org_id_fun = [this, &cur_org_id]() {
@@ -826,6 +897,9 @@ void AagosWorld::DoConfigSnapshot() {
   snapshot_file.template AddFun<std::string>([&get_cur_param]() -> std::string { return get_cur_param(); }, "parameter");
   snapshot_file.template AddFun<std::string>([&get_cur_value]() -> std::string { return get_cur_value(); }, "value");
   snapshot_file.PrintHeaderKeys();
+  get_cur_param = []() { return "TOTAL_GENS"; };
+  get_cur_value = [this]() { return emp::to_string(TOTAL_GENS); };
+  snapshot_file.Update();
   for (const auto & entry : config) {
     get_cur_param = [&entry]() { return entry.first; };
     get_cur_value = [&entry]() { return emp::to_string(entry.second->GetValue()); };
