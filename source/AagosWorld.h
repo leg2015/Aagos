@@ -183,6 +183,11 @@ public:
         emp::RandomizeBitVector(target, rand);
       }
     }
+
+    void PrintTargets(std::ostream & out=std::cout) {
+      out << emp::to_string(targets);
+    }
+
   };
 
   /// Fitness model for NK fitness evaluation
@@ -201,6 +206,10 @@ public:
 
     void RandomizeLandscapeBits(emp::Random & rand, size_t cnt) {
       landscape.RandomizeStates(rand, cnt);
+    }
+
+    void PrintLandscape(std::ostream & out=std::cout) {
+      out << emp::to_string(landscape.GetLandscape());
     }
   };
 
@@ -228,6 +237,7 @@ protected:
   emp::DataManager<double, emp::data::Log, emp::data::Stats, emp::data::Pull> manager;
   emp::Ptr<emp::DataFile> gene_stats_file;
   emp::Ptr<emp::DataFile> representative_org_file;
+  emp::Ptr<emp::DataFile> env_file;
 
   size_t gene_mask;
   size_t most_fit_id;
@@ -242,6 +252,7 @@ protected:
 
   void SetupStatsFile();
   void SetupRepresentativeFile();
+  void SetupEnvironmentFile();
   void DoPopulationSnapshot();
   void DoConfigSnapshot();
   // TODO - setup environment tracking file?
@@ -299,6 +310,7 @@ public:
     mutator.Delete();
     representative_org_file.Delete();
     gene_stats_file.Delete();
+    env_file.Delete();
   }
 
   /// Advance world by a single time step (generation).
@@ -351,6 +363,7 @@ void AagosWorld::RunStep() {
   if (config.SNAPSHOT_INTERVAL()) {
     if ( !(u % config.SNAPSHOT_INTERVAL()) || (u == config.MAX_GENS()) ||  (u == TOTAL_GENS) ) {
       DoPopulationSnapshot();
+      env_file->Update();
     }
   }
 
@@ -546,6 +559,7 @@ void AagosWorld::InitDataTracking() {
   SetupFitnessFile(output_path + "fitness.csv").SetTimingRepeat(config.SUMMARY_INTERVAL());
   SetupStatsFile();
   SetupRepresentativeFile();
+  SetupEnvironmentFile();
   // TODO - output run configuration
 }
 
@@ -768,6 +782,34 @@ void AagosWorld::SetupRepresentativeFile() {
   // representative_file.SetTimingRepeat(config.SUMMARY_INTERVAL());
   representative_org_file->PrintHeaderKeys();
 
+}
+
+void AagosWorld::SetupEnvironmentFile() {
+  // environment file should get updated at every snapshot/summary interval
+  env_file = emp::NewPtr<emp::DataFile>(output_path + "environment.csv");
+  env_file->AddVar(update, "update", "Current generation");
+  env_file->AddVar(cur_phase, "evo_phase", "Current phase of evolution");
+
+  std::function<std::string()> get_env_state;
+  if (config.GRADIENT_MODEL()) {
+    get_env_state = [this]() {
+      std::ostringstream stream;
+      stream << "\"";
+      fitness_model_gradient->PrintTargets(stream);
+      stream << "\"";
+      return stream.str();
+    };
+  } else {
+    get_env_state = [this]() {
+      std::ostringstream stream;
+      stream << "\"";
+      fitness_model_nk->PrintLandscape(stream);
+      stream << "\"";
+      return stream.str();
+    };
+  }
+  env_file->AddFun(get_env_state, "env_state", "Current state of the environment");
+  env_file->PrintHeaderKeys();
 }
 
 /// Setup population snapshotting
