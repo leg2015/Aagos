@@ -338,11 +338,16 @@ void AagosWorld::RunStep() {
     }
   }
 
+  // Should the environment change?
+  if (config.CHANGE_FREQUENCY()) {
+    if (!(u % config.CHANGE_FREQUENCY())) {
+      change_environment();
+    }
+  }
+
   Update();
   ClearCache();
 
-  // Should the environment change?
-  change_environment();
 }
 
 void AagosWorld::Run() {
@@ -452,12 +457,12 @@ void AagosWorld::InitEnvironment() {
   if (config.GRADIENT_MODEL()) {
     // Configure environment change for gradient fitness model.
     change_environment = [this]() {
-      fitness_model_gradient->RandomizeTargetBits(*random_ptr, config.CHANGE_RATE());
+      fitness_model_gradient->RandomizeTargetBits(*random_ptr, config.CHANGE_MAGNITUDE());
     };
   } else {
     // Configure environment change for nk landscape fitness model.
     change_environment = [this]() {
-      fitness_model_nk->RandomizeLandscapeBits(*random_ptr, config.CHANGE_RATE());
+      fitness_model_nk->RandomizeLandscapeBits(*random_ptr, config.CHANGE_MAGNITUDE());
     };
   }
 }

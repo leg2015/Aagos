@@ -5,7 +5,8 @@
 
 EMP_BUILD_CONFIG(AagosConfig,
   GROUP(WORLD_STRUCTURE, "How should each organism's genome be setup?"),
-    VALUE(CHANGE_RATE, size_t, 0, "How many changes to fitness tables each generation?"),
+    VALUE(CHANGE_MAGNITUDE, size_t, 0, "How many changes to fitness tables each generation?"),
+    VALUE(CHANGE_FREQUENCY, size_t, 1, "How many generations elapse between environment changes? Frequency = 0 means no changes."),
     VALUE(POP_SIZE, size_t, 1000, "How many organisms should be in the population?"),
     VALUE(MAX_GENS, size_t, 50000, "How many generations should the runs go for?"),
     VALUE(SEED, int, 0, "Random number seed (0 for based on time)"),
