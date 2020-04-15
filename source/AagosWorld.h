@@ -523,12 +523,24 @@ void AagosWorld::ActivateEvoPhaseTwo() {
                                       CUR_BIT_INS_PROB, CUR_BIT_DEL_PROB);
   std::cout << "    ...done constructing mutator." << std::endl;
 
-  // Randomize the environment.
-  if (config.GRADIENT_MODEL()) {
-    fitness_model_gradient->RandomizeTargets(*random_ptr, config.NUM_GENES());
+  if (config.PHASE_2_LOAD_ENV_FROM_FILE()) {
+    // Load the environment from a file.
+    const bool success = (config.GRADIENT_MODEL()) ?
+      fitness_model_gradient->LoadTargets(config.PHASE_2_ENV_FILE())
+        : fitness_model_nk->LoadLandscape(config.PHASE_2_ENV_FILE());
+    if (!success) {
+      std::cout << "Failed to load environment from file (" << config.PHASE_2_ENV_FILE() << "). Exiting..." << std::endl;
+      exit(-1);
+    }
   } else {
-    fitness_model_nk->GetLandscape().Reset(*random_ptr);
+    // Randomize the environment.
+    if (config.GRADIENT_MODEL()) {
+      fitness_model_gradient->RandomizeTargets(*random_ptr, config.NUM_GENES());
+    } else {
+      fitness_model_nk->GetLandscape().Reset(*random_ptr);
+    }
   }
+
 
   ++cur_phase;
 }
