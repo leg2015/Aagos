@@ -140,6 +140,8 @@ public:
   using config_t = AagosConfig;
   using genome_t = AagosOrg::Genome;
 
+  // todo - make different fitness models derive from a base class that defines functions like randomize,
+  //        change, load_from_file, etc
   /// Fitness model for gradient fitness evaluation
   struct GradientFitnessModel {
     size_t num_genes;
@@ -325,6 +327,8 @@ protected:
   emp::Ptr<GradientFitnessModel> fitness_model_gradient;
   std::function<void(org_t &)> evaluate_org;
   std::function<void()> change_environment;
+  std::function<void()> randomize_environment;
+  std::function<bool(const std::string &)> load_environment_from_file;
 
   emp::Ptr<AagosMutator> mutator;
 
@@ -442,9 +446,9 @@ void AagosWorld::RunStep() {
   if (u % config.PRINT_INTERVAL() == 0) {
     std::cout << u
               << ": max fitness=" << CalcFitnessID(most_fit_id)
-              << "; size=" << GetOrg(most_fit_id).GetNumBits()
-              << "; genome=";
-    GetOrg(most_fit_id).Print();
+              << "; size=" << GetOrg(most_fit_id).GetNumBits();
+              // << "; genome=";
+    // GetOrg(most_fit_id).Print();
     std::cout << std::endl;
   }
 
@@ -525,20 +529,14 @@ void AagosWorld::ActivateEvoPhaseTwo() {
 
   if (config.PHASE_2_LOAD_ENV_FROM_FILE()) {
     // Load the environment from a file.
-    const bool success = (config.GRADIENT_MODEL()) ?
-      fitness_model_gradient->LoadTargets(config.PHASE_2_ENV_FILE())
-        : fitness_model_nk->LoadLandscape(config.PHASE_2_ENV_FILE());
+    const bool success = load_environment_from_file(config.PHASE_2_ENV_FILE());
     if (!success) {
       std::cout << "Failed to load environment from file (" << config.PHASE_2_ENV_FILE() << "). Exiting..." << std::endl;
       exit(-1);
     }
   } else {
     // Randomize the environment.
-    if (config.GRADIENT_MODEL()) {
-      fitness_model_gradient->RandomizeTargets(*random_ptr, config.NUM_GENES());
-    } else {
-      fitness_model_nk->GetLandscape().Reset(*random_ptr);
-    }
+    randomize_environment();
   }
 
 
@@ -648,10 +646,22 @@ void AagosWorld::InitEnvironment() {
     change_environment = [this]() {
       fitness_model_gradient->RandomizeTargetBits(*random_ptr, CUR_CHANGE_MAGNITUDE);
     };
+    randomize_environment = [this]() {
+       fitness_model_gradient->RandomizeTargets(*random_ptr, config.NUM_GENES());
+    };
+    load_environment_from_file = [this](const std::string & path) {
+      return fitness_model_gradient->LoadTargets(path);
+    };
   } else {
     // Configure environment change for nk landscape fitness model.
     change_environment = [this]() {
       fitness_model_nk->RandomizeLandscapeBits(*random_ptr, CUR_CHANGE_MAGNITUDE);
+    };
+    randomize_environment = [this]() {
+      fitness_model_nk->GetLandscape().Reset(*random_ptr);
+    };
+    load_environment_from_file = [this](const std::string & path) {
+      return fitness_model_nk->LoadLandscape(path);
     };
   }
 }
