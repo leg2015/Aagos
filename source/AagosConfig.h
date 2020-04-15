@@ -16,6 +16,8 @@ EMP_BUILD_CONFIG(AagosConfig,
 
   GROUP(RUN_SECOND_PHASE, "Will run have a second phase with new configuration parameters? (limited set of things can change)"),
     VALUE(PHASE_2_ACTIVE, bool, false, "Should run continue to a second phase with new parameters?"),
+    VALUE(PHASE_2_LOAD_ENV_FROM_FILE, bool, false, "Should we load initial phase 2 environment from a file?"),
+    VALUE(PHASE_2_ENV_FILE, std::string, "environment.env", "File to load environment from (if configured to load phase 2 environment from file)"),
     VALUE(PHASE_2_CHANGE_MAGNITUDE, size_t, 0, "Change magnitude for second phase of evolution"),
     VALUE(PHASE_2_CHANGE_FREQUENCY, size_t, 1, "Change frequency for the second phase of evolution"),
     VALUE(PHASE_2_MAX_GENS, size_t, 100, "Number of generations in second phase of evolution"),
