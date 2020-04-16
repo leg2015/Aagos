@@ -4,7 +4,7 @@
 import argparse, os, sys, errno, subprocess
 
 seed_offset = 1000
-num_replicates = 3
+num_replicates = 50
 
 nk_config = {
     "environment_change": [
@@ -25,13 +25,13 @@ nk_config = {
         ],
 
     "BIT_FLIP_PROB": [
-        "-BIT_FLIP_PROB 0.0001",
-        "-BIT_FLIP_PROB 0.0003",
-        "-BIT_FLIP_PROB 0.001",
-        "-BIT_FLIP_PROB 0.003",
-        "-BIT_FLIP_PROB 0.01",
-        "-BIT_FLIP_PROB 0.03",
-        "-BIT_FLIP_PROB 0.1"]
+        "-BIT_FLIP_PROB 0.0001 -PHASE_2_BIT_FLIP_PROB 0.0001",
+        "-BIT_FLIP_PROB 0.0003 -PHASE_2_BIT_FLIP_PROB 0.0003",
+        "-BIT_FLIP_PROB 0.001 -PHASE_2_BIT_FLIP_PROB 0.001",
+        "-BIT_FLIP_PROB 0.003 -PHASE_2_BIT_FLIP_PROB 0.003",
+        "-BIT_FLIP_PROB 0.01 -PHASE_2_BIT_FLIP_PROB 0.01",
+        "-BIT_FLIP_PROB 0.03 -PHASE_2_BIT_FLIP_PROB 0.03",
+        "-BIT_FLIP_PROB 0.1 -PHASE_2_BIT_FLIP_PROB 0.1"]
 }
 
 gradient_config = {
@@ -53,13 +53,13 @@ gradient_config = {
         ],
 
     "BIT_FLIP_PROB": [
-        "-BIT_FLIP_PROB 0.0001",
-        "-BIT_FLIP_PROB 0.0003",
-        "-BIT_FLIP_PROB 0.001",
-        "-BIT_FLIP_PROB 0.003",
-        "-BIT_FLIP_PROB 0.01",
-        "-BIT_FLIP_PROB 0.03",
-        "-BIT_FLIP_PROB 0.1"]
+        "-BIT_FLIP_PROB 0.0001 -PHASE_2_BIT_FLIP_PROB 0.0001",
+        "-BIT_FLIP_PROB 0.0003 -PHASE_2_BIT_FLIP_PROB 0.0003",
+        "-BIT_FLIP_PROB 0.001 -PHASE_2_BIT_FLIP_PROB 0.001",
+        "-BIT_FLIP_PROB 0.003 -PHASE_2_BIT_FLIP_PROB 0.003",
+        "-BIT_FLIP_PROB 0.01 -PHASE_2_BIT_FLIP_PROB 0.01",
+        "-BIT_FLIP_PROB 0.03 -PHASE_2_BIT_FLIP_PROB 0.03",
+        "-BIT_FLIP_PROB 0.1 -PHASE_2_BIT_FLIP_PROB 0.1"]
 }
 
 
