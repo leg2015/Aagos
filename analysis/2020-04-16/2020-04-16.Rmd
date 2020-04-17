@@ -67,13 +67,14 @@ gen <- 50000
 ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
       aes(x=EXP_CHANGE_PER_GEN, y=coding_sites, color=EXP_CHANGE_PER_GEN)) +
   geom_boxplot() +
-  facet_wrap(~ BIT_FLIP_PROB, nrow=7) +
+  facet_wrap(~ BIT_FLIP_PROB) +
   xlab("Env. bits flipped per generation") +
   ylab("# coding sites in best organism") +
-  theme(legend.position="none") +
+  theme(legend.position="none",
+        axis.text.x = element_text(angle=90)) +
   ggsave(paste("./imgs/coding-sites-x-chg_grad-model-", gradient_model, 
                "_evo-phase-",phase, "_gen-", gen, 
-               ".pdf", sep=""), width=7, height=35)
+               ".pdf", sep=""), width=20, height=20)
 
 ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
       aes(x=BIT_FLIP_PROB, y=coding_sites, color=BIT_FLIP_PROB)) +
@@ -81,10 +82,11 @@ ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & 
   facet_wrap(~ EXP_CHANGE_PER_GEN) +
   xlab("Bit-flip rate") +
   ylab("# coding sites in best organism") +
-  theme(legend.position="none") +
+  theme(legend.position="none",
+      axis.text.x = element_text(angle=90)) +
   ggsave(paste("./imgs/coding-sites-x-mut_grad-model-", gradient_model, 
                "_evo-phase-",phase, "_gen-", gen, 
-               ".pdf", sep=""), width=17, height=15)
+               ".pdf", sep=""), width=20, height=20)
 ```
 
 Fitnesses after 50k generations (phase 1)
@@ -97,22 +99,24 @@ gen <- 50000
 ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
       aes(x=EXP_CHANGE_PER_GEN, y=fitness, color=EXP_CHANGE_PER_GEN)) +
   geom_boxplot() +
-  facet_wrap(~ BIT_FLIP_PROB, nrow=7) +
+  facet_wrap(~ BIT_FLIP_PROB) +
   xlab("Environment bits flipped per generation") +
-  theme(legend.position="none") +
+  theme(legend.position="none",
+    axis.text.x = element_text(angle=90)) +
   ggsave(paste("./imgs/fitness-x-chg_grad-model-", gradient_model, 
                "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=7, height=35)
+               ".pdf", sep=""), width=20, height=20)
 
 ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
       aes(x=BIT_FLIP_PROB, y=fitness, color=BIT_FLIP_PROB)) +
   geom_boxplot() +
   facet_wrap(~ EXP_CHANGE_PER_GEN) +
   xlab("Bit-flip rate") +
-  theme(legend.position="none") +
+  theme(legend.position="none",
+    axis.text.x = element_text(angle=90)) +
   ggsave(paste("./imgs/fitness-x-mut_grad-model-", gradient_model, 
                "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=17, height=15)
+               ".pdf", sep=""), width=20, height=20)
 ```
 
 Fitnesses after 60k generations (phase two - architecture lock-down)
@@ -125,22 +129,24 @@ gen <- 60000
 ggplot(filter(agg_data, GRADIENT_MODEL==gradient_model & evo_phase==phase & update==gen),
       aes(x=EXP_CHANGE_PER_GEN, y=fitness, color=EXP_CHANGE_PER_GEN)) +
   geom_boxplot() +
-  facet_wrap(~ BIT_FLIP_PROB, nrow=7) +
+  facet_wrap(~ BIT_FLIP_PROB) +
   xlab("Env. bits flipped per generation") +
-  theme(legend.position="none") +
+  theme(legend.position="none",
+    axis.text.x = element_text(angle=90)) +
   ggsave(paste("./imgs/fitness-x-chg_grad-model-", gradient_model, 
                "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=7, height=35)
+               ".pdf", sep=""), width=20, height=20)
 
 ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
       aes(x=BIT_FLIP_PROB, y=fitness, color=BIT_FLIP_PROB)) +
   geom_boxplot() +
   facet_wrap(~ EXP_CHANGE_PER_GEN) +
   xlab("Bit-flip rate") +
-  theme(legend.position="none") +
+  theme(legend.position="none",
+    axis.text.x = element_text(angle=90)) +
   ggsave(paste("./imgs/fitness-x-mut_grad-model-", gradient_model, 
                "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=17, height=15)
+               ".pdf", sep=""), width=20, height=20)
 ```
 
 Fitness at 60K (phase two) vs coding sites
@@ -173,14 +179,14 @@ gen <- 50000
 ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
       aes(x=EXP_CHANGE_PER_GEN, y=coding_sites, color=EXP_CHANGE_PER_GEN)) +
   geom_boxplot() +
-  facet_wrap(~ BIT_FLIP_PROB, nrow=7) +
+  facet_wrap(~ BIT_FLIP_PROB) +
   xlab("Env bit flips per generation") +
   ylab("# coding sites in best organism") +
   theme(legend.position="none",
         axis.text.x=element_text(angle=90)) +
   ggsave(paste("./imgs/coding-sites-x-chg_grad-model-", gradient_model, 
                "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=7, height=35)
+               ".pdf", sep=""), width=20, height=20)
 
 ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
       aes(x=BIT_FLIP_PROB, y=coding_sites, color=BIT_FLIP_PROB)) +
@@ -192,7 +198,7 @@ ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & 
         axis.text.x=element_text(angle=90)) +
   ggsave(paste("./imgs/coding-sites-x-mut_grad-model-", gradient_model, 
                "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=17, height=15)
+               ".pdf", sep=""), width=20, height=20)
 
 ```
 
@@ -206,22 +212,24 @@ gen <- 50000
 ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
       aes(x=EXP_CHANGE_PER_GEN, y=fitness, color=EXP_CHANGE_PER_GEN)) +
   geom_boxplot() +
-  facet_wrap(~ BIT_FLIP_PROB, nrow=7) +
+  facet_wrap(~ BIT_FLIP_PROB) +
   xlab("Environment bits flipped per generation") +
-  theme(legend.position="none") +
+  theme(legend.position="none",
+    axis.text.x = element_text(angle=90)) +
   ggsave(paste("./imgs/fitness-x-chg_grad-model-", gradient_model, 
                "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=7, height=35)
+               ".pdf", sep=""), width=20, height=20)
 
 ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
       aes(x=BIT_FLIP_PROB, y=fitness, color=BIT_FLIP_PROB)) +
   geom_boxplot() +
   facet_wrap(~ EXP_CHANGE_PER_GEN) +
   xlab("Bit-flip rate") +
-  theme(legend.position="none") +
+  theme(legend.position="none",
+    axis.text.x = element_text(angle=90)) +
   ggsave(paste("./imgs/fitness-x-mut_grad-model-", gradient_model, 
                "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=17, height=15)
+               ".pdf", sep=""), width=20, height=20)
 ```
 
 Fitness after 60K generations (phase 2 of evolution)
@@ -234,22 +242,24 @@ gen <- 60000
 ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
       aes(x=EXP_CHANGE_PER_GEN, y=fitness, color=EXP_CHANGE_PER_GEN)) +
   geom_boxplot() +
-  facet_wrap(~ BIT_FLIP_PROB, nrow=7) +
+  facet_wrap(~ BIT_FLIP_PROB) +
   xlab("Environment bits flipped per generation") +
-  theme(legend.position="none") +
+  theme(legend.position="none",
+    axis.text.x = element_text(angle=90)) +
   ggsave(paste("./imgs/fitness-x-chg_grad-model-", gradient_model, 
                "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=7, height=35)
+               ".pdf", sep=""), width=20, height=20)
 
 ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
       aes(x=BIT_FLIP_PROB, y=fitness, color=BIT_FLIP_PROB)) +
   geom_boxplot() +
   facet_wrap(~ EXP_CHANGE_PER_GEN) +
   xlab("Bit-flip rate") +
-  theme(legend.position="none") +
+  theme(legend.position="none",
+    axis.text.x = element_text(angle=90)) +
   ggsave(paste("./imgs/fitness-x-mut_grad-model-", gradient_model, 
                "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=17, height=15)
+               ".pdf", sep=""), width=20, height=20)
 ```
 
 Fitness at 60K (phase 2 of evolution) vs coding sites
