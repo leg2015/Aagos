@@ -10,17 +10,27 @@
 #include "tools/Range.h"
 #include "tools/stats.h"
 #include "tools/string_utils.h"
+#include "control/Signal.h"
 
 #include <sstream>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <sys/stat.h>
+#include <unordered_map>
 
 #include "AagosOrg.h"
 #include "AagosConfig.h"
 
 class AagosMutator {
+public:
+  enum class MUTATION_TYPES {
+    BIT_FLIPS=0,
+    BIT_INSERTIONS,
+    BIT_DELETIONS,
+    GENE_MOVES,
+  };
+
 protected:
   const size_t num_genes;
   const emp::Range<size_t> genome_size_constraints;
@@ -34,6 +44,9 @@ protected:
   emp::vector<emp::Binomial> bit_flips_binomials;
   emp::vector<emp::Binomial> inserts_binomials;
   emp::vector<emp::Binomial> deletes_binomials;
+
+  // Mutation tracking
+  std::unordered_map<MUTATION_TYPES, int> last_mutation_tracker;
 
 public:
   AagosMutator(size_t n_genes, const emp::Range<size_t> & genome_size,
@@ -66,15 +79,19 @@ public:
     // Do gene moves
     const size_t num_moves = gene_moves_binomial.PickRandom(random);
     for (size_t m = 0; m < num_moves; ++m) {
-      const size_t gene_id = random.GetUInt(0, num_genes);              // Pick a random gene
+      const size_t gene_id = random.GetUInt(0, num_genes);                 // Pick a random gene
       genome.gene_starts[gene_id] = random.GetUInt(genome.bits.GetSize()); // Pick a random new location
     }
+    last_mutation_tracker[MUTATION_TYPES::GENE_MOVES] = (int)num_moves;
+
     // Do bit flips
     const size_t num_flips = bit_flips_binomials[bin_array_offset].PickRandom(random);
     for (size_t m = 0; m < num_flips; ++m) {
       const size_t pos = random.GetUInt(genome.bits.GetSize());
       genome.bits[pos] ^= 1;
     }
+    last_mutation_tracker[MUTATION_TYPES::BIT_FLIPS] = (int)num_flips;
+
     // Do insertions and deletions.
     int num_insert = (int)inserts_binomials[bin_array_offset].PickRandom(random);
     int num_delete = (int)deletes_binomials[bin_array_offset].PickRandom(random);
@@ -117,6 +134,9 @@ public:
         x -= ((size_t)x >= pos);
       }
     }
+    last_mutation_tracker[MUTATION_TYPES::BIT_INSERTIONS] = num_insert;
+    last_mutation_tracker[MUTATION_TYPES::BIT_DELETIONS] = num_delete;
+
     // Compute number of mutations, update organism's mutation-related tracking.
     const int num_muts = (int)num_moves + (int)num_flips + num_insert + num_delete;
     emp_assert(num_muts >= 0);
@@ -127,7 +147,14 @@ public:
   }
 
   // TODO - accessors
-  // TODO - record mutations functionality
+  std::unordered_map<MUTATION_TYPES, int> & GetLastMutations() { return last_mutation_tracker; }
+
+  void ResetLastMutationTracker() {
+    last_mutation_tracker[MUTATION_TYPES::BIT_FLIPS] = 0;
+    last_mutation_tracker[MUTATION_TYPES::BIT_INSERTIONS] = 0;
+    last_mutation_tracker[MUTATION_TYPES::BIT_DELETIONS] = 0;
+    last_mutation_tracker[MUTATION_TYPES::GENE_MOVES] = 0;
+  }
 
 };
 
@@ -139,6 +166,12 @@ public:
   using org_t = AagosOrg;
   using config_t = AagosConfig;
   using genome_t = AagosOrg::Genome;
+  using phenotype_t = AagosOrg::Phenotype;
+  using mutator_t = AagosMutator;
+
+  using mut_landscape_t = emp::datastruct::mut_landscape_info<phenotype_t>;
+  using systematics_t = emp::Systematics<org_t, genome_t, mut_landscape_t>;
+  using taxon_t = typename systematics_t::taxon_t;
 
   // todo - make different fitness models derive from a base class that defines functions like randomize,
   //        change, load_from_file, etc
@@ -330,7 +363,12 @@ protected:
   std::function<void()> randomize_environment;
   std::function<bool(const std::string &)> load_environment_from_file;
 
+  emp::Signal<void(size_t)> after_eval_sig; ///< Triggered after organism (ID given by size_t argument) evaluation.
+
   emp::Ptr<AagosMutator> mutator;
+
+  emp::Ptr<systematics_t> sys_ptr; ///< Shortcut pointer to the correctly-typed systematics manager.
+                                   ///< NOTE: The base world class will be responsible for memory management.
 
   // todo - data collection
   emp::DataManager<double, emp::data::Log, emp::data::Stats, emp::data::Pull> manager;
@@ -352,9 +390,25 @@ protected:
   void SetupStatsFile();
   void SetupRepresentativeFile();
   void SetupEnvironmentFile();
+  void SetupSystematics();
   void DoPopulationSnapshot();
   void DoConfigSnapshot();
   // TODO - setup environment tracking file?
+
+  /// Shortcut for computing organism's coding sites.
+  size_t ComputeCodingSites(org_t & org) {
+    size_t count = 0;
+    const emp::vector<size_t> & bins = org.GetGeneOccupancyHistogram().GetHistCounts();
+    for (size_t i = 1; i < bins.size(); ++i) {
+      count += bins[i];
+    }
+    return count;
+  }
+
+  /// Short cut for computing organism's neutral sites.
+  size_t ComputeNeutralSites(org_t & org) {
+    return org.GetGeneOccupancyHistogram().GetHistCount(0);
+  }
 
 public:
   AagosWorld(emp::Random & random, const config_t & cfg)
@@ -387,7 +441,16 @@ public:
     SetMutFun([this](org_t & org, emp::Random & rnd) {
       // NOTE - here's where we would intercept mutation-type distributions (with some extra infrastructure
       //        built into the mutator)!
-      return mutator->ApplyMutations(org, rnd);
+      org.ResetMutations();
+      mutator->ResetLastMutationTracker();
+      const size_t mut_cnt = mutator->ApplyMutations(org, rnd);
+      auto & mut_dist = mutator->GetLastMutations();
+      auto & org_mut_tracker = org.GetMutations();
+      org_mut_tracker["bit_flips"] = mut_dist[mutator_t::MUTATION_TYPES::BIT_FLIPS];
+      org_mut_tracker["bit_insertions"] = mut_dist[mutator_t::MUTATION_TYPES::BIT_INSERTIONS];
+      org_mut_tracker["bit_deletions"] = mut_dist[mutator_t::MUTATION_TYPES::BIT_DELETIONS];
+      org_mut_tracker["gene_moves"] = mut_dist[mutator_t::MUTATION_TYPES::GENE_MOVES];
+      return mut_cnt;
     });
 
     // Configure data tracking
@@ -398,6 +461,7 @@ public:
     InitPop();
 
     // Configure world to auto-mutate organisms (if id > elite count)
+    // - mutations occur on_before_placement (right before organism added to systematics)
     SetAutoMutate(config.ELITE_COUNT());
 
     DoConfigSnapshot(); // Snapshot run settings
@@ -431,6 +495,7 @@ void AagosWorld::RunStep() {
     if (CalcFitnessID(org_id) > CalcFitnessID(most_fit_id)) {
       most_fit_id = org_id;
     }
+    after_eval_sig.Trigger(org_id); // Record phenotype information for this organism's taxon.
     // NOTE - if we wanted to add phenotype tracking to systematics, here's where we could intercept
     //        the necessary information.
   }
@@ -462,6 +527,7 @@ void AagosWorld::RunStep() {
   if (config.SNAPSHOT_INTERVAL()) {
     if ( !(u % config.SNAPSHOT_INTERVAL()) || (u == config.MAX_GENS()) ||  (u == TOTAL_GENS) ) {
       DoPopulationSnapshot();
+      if (u) sys_ptr->Snapshot(output_path + "phylo_" + emp::to_string(u) + ".csv"); // Don't snapshot phylo at update 0
       env_file->Update();
     }
   }
@@ -600,6 +666,8 @@ void AagosWorld::InitFitnessEval() {
         fitness += fitness_contribution;
       }
       phen.fitness = fitness;
+      phen.coding_sites = ComputeCodingSites(org);
+      phen.neutral_sites = ComputeNeutralSites(org);
     };
   } else {
     std::cout << "Initializing NK model of fitness." << std::endl;
@@ -632,6 +700,8 @@ void AagosWorld::InitFitnessEval() {
         fitness += fitness_contribution;
       }
       phen.fitness = fitness;
+      phen.coding_sites = ComputeCodingSites(org);
+      phen.neutral_sites = ComputeNeutralSites(org);
     };
   }
   // Note that this assumes that this organism has been evaluated.
@@ -677,7 +747,7 @@ void AagosWorld::InitDataTracking() {
   SetupStatsFile();
   SetupRepresentativeFile();
   SetupEnvironmentFile();
-  // TODO - output run configuration
+  SetupSystematics();
 }
 
 /// Setup data tracking nodes for general statistics about the population.
@@ -694,7 +764,8 @@ void AagosWorld::SetupStatsFile() {
     emp::vector<double> pop_neut;
     for (emp::Ptr<org_t> org_ptr : pop) {
       if (!org_ptr) continue;
-      pop_neut.emplace_back(org_ptr->GetGeneOccupancyHistogram().GetHistCount(0));
+      pop_neut.emplace_back(ComputeNeutralSites(*org_ptr));
+      // pop_neut.emplace_back(org_ptr->GetGeneOccupancyHistogram().GetHistCount(0));
     }
     return pop_neut;
   });
@@ -735,12 +806,13 @@ void AagosWorld::SetupStatsFile() {
     emp::vector<double> pop_coding;
     for (emp::Ptr<org_t> org_ptr : pop) {
       if (!org_ptr) continue;
-      size_t count = 0;
-      const emp::vector<size_t> & bins = org_ptr->GetGeneOccupancyHistogram().GetHistCounts();
-      for (size_t i = 1; i < bins.size(); ++i) {
-        count += bins[i];
-      }
-      pop_coding.emplace_back(count);
+      pop_coding.emplace_back(ComputeCodingSites(*org_ptr));
+      // size_t count = 0;
+      // const emp::vector<size_t> & bins = org_ptr->GetGeneOccupancyHistogram().GetHistCounts();
+      // for (size_t i = 1; i < bins.size(); ++i) {
+      //   count += bins[i];
+      // }
+      // pop_coding.emplace_back(count);
     }
     return pop_coding;
   });
@@ -814,19 +886,21 @@ void AagosWorld::SetupRepresentativeFile() {
   // Number of coding sites for representative organism.
   std::function<size_t()> coding_sites_fun = [this]() {
     org_t & org = GetOrg(most_fit_id);
-    const emp::vector<size_t> & bins = org.GetGeneOccupancyHistogram().GetHistCounts();
-    size_t count = 0;
-    for (size_t i = 1; i < bins.size(); ++i) {
-      count += bins[i];
-    }
-    return count;
+    return ComputeCodingSites(org);
+    // const emp::vector<size_t> & bins = org.GetGeneOccupancyHistogram().GetHistCounts();
+    // size_t count = 0;
+    // for (size_t i = 1; i < bins.size(); ++i) {
+    //   count += bins[i];
+    // }
+    // return count;
   };
   representative_org_file->AddFun(coding_sites_fun, "coding_sites", "How many sites in this organism's genome are coding?");
 
   // Number of neutral sites
   std::function<size_t()> neutral_sites_fun = [this]() {
     org_t & org = GetOrg(most_fit_id);
-    return org.GetGeneOccupancyHistogram().GetHistCount(0);
+    return ComputeNeutralSites(org);
+    // return org.GetGeneOccupancyHistogram().GetHistCount(0);
   };
   representative_org_file->AddFun(neutral_sites_fun, "neutral_sites", "How many sites in this organim's genome are neutral?");
 
@@ -927,6 +1001,61 @@ void AagosWorld::SetupEnvironmentFile() {
   }
   env_file->AddFun(get_env_state, "env_state", "Current state of the environment");
   env_file->PrintHeaderKeys();
+}
+
+void AagosWorld::SetupSystematics() {
+  sys_ptr = emp::NewPtr<systematics_t>([](const org_t & o) { return o.GetGenome(); });
+  // We want to record phenotype information immediately after an organism is evaluated.
+  after_eval_sig.AddAction([this](size_t pop_id) {
+    emp::Ptr<taxon_t> taxon = sys_ptr->GetTaxonAt(pop_id);
+    taxon->GetData().RecordFitness(this->CalcFitnessID(pop_id));
+    taxon->GetData().RecordPhenotype(this->GetOrg(pop_id).GetPhenotype());
+  });
+  // We want to record mutations when an organism is added to the population
+  // - because mutations are applied automatically by this->DoBirth => this->AddOrgAt => sys->OnNew
+  std::function<void(emp::Ptr<taxon_t>, org_t&)> record_taxon_mut_data =
+    [this](emp::Ptr<taxon_t> taxon, org_t & org) {
+      taxon->GetData().RecordMutation(org.GetMutations()); // TODO - add mutation tracking to organism!
+    };
+  sys_ptr->OnNew(record_taxon_mut_data); // Mutations safely happen right before this is triggered
+  // todo - add mutations from parent
+  // Add snapshot functions
+  sys_ptr->AddSnapshotFun([](const taxon_t & taxon) {
+    return emp::to_string(taxon.GetData().GetFitness());
+  }, "mean_fitness", "Taxon fitness");
+  // - coding sites
+  sys_ptr->AddSnapshotFun([](const taxon_t & taxon) {
+    return emp::to_string(taxon.GetData().GetPhenotype().coding_sites);
+  }, "coding_sites", "Number of coding sites in taxon genotype.");
+  // - neutral sites
+  sys_ptr->AddSnapshotFun([](const taxon_t & taxon) {
+    return emp::to_string(taxon.GetData().GetPhenotype().neutral_sites);
+  }, "neutral_sites", "Number of neutral sites in taxon genotype.");
+  // - genome length
+  sys_ptr->AddSnapshotFun([](const taxon_t & taxon) {
+    return emp::to_string(taxon.GetInfo().bits.GetSize());
+  }, "genome_length", "Number of bits in taxon genotype.");
+  // - gene starts
+  sys_ptr->AddSnapshotFun([](const taxon_t & taxon) {
+    const genome_t & taxon_genome = taxon.GetInfo();
+    std::ostringstream stream;
+    stream << "\"[";
+    for (size_t i = 0; i < taxon_genome.gene_starts.size(); ++i) {
+      if (i) stream << ",";
+      stream << taxon_genome.gene_starts[i];
+    }
+    stream << "]\"";
+    return stream.str();
+  }, "gene_starts", "Starting position of each gene.");
+  // - genome
+  sys_ptr->AddSnapshotFun([](const taxon_t & taxon) {
+    std::ostringstream stream;
+    taxon.GetInfo().bits.Print(stream);
+    return stream.str();
+  }, "genome_bitstring", "Bitstring component of taxon genotype.");
+
+  AddSystematics(sys_ptr);
+  SetupSystematicsFile(0, output_path + "systematics.csv").SetTimingRepeat(config.SUMMARY_INTERVAL());
 }
 
 /// Setup population snapshotting
