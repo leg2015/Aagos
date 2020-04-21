@@ -462,7 +462,8 @@ public:
 
     // Configure world to auto-mutate organisms (if id > elite count)
     // - mutations occur on_before_placement (right before organism added to systematics)
-    SetAutoMutate(config.ELITE_COUNT());
+    // SetAutoMutate(config.ELITE_COUNT());
+    SetAutoMutate();
 
     DoConfigSnapshot(); // Snapshot run settings
   }
@@ -501,9 +502,10 @@ void AagosWorld::RunStep() {
   }
 
   // == Do selection ==
-  if (config.ELITE_COUNT()) emp::EliteSelect(*this, config.ELITE_COUNT(), 1);
+  // if (config.ELITE_COUNT()) emp::EliteSelect(*this, config.ELITE_COUNT(), 1);
   // Run a tournament for the rest...
-  emp::TournamentSelect(*this, config.TOURNAMENT_SIZE(), config.POP_SIZE() - config.ELITE_COUNT());
+  // emp::TournamentSelect(*this, config.TOURNAMENT_SIZE(), config.POP_SIZE() - config.ELITE_COUNT());
+  emp::TournamentSelect(*this, config.TOURNAMENT_SIZE(), config.POP_SIZE());
 
   // == Do update ==
   // If it's a generation to print to console, do so
@@ -1018,7 +1020,6 @@ void AagosWorld::SetupSystematics() {
       taxon->GetData().RecordMutation(org.GetMutations()); // TODO - add mutation tracking to organism!
     };
   sys_ptr->OnNew(record_taxon_mut_data); // Mutations safely happen right before this is triggered
-  // todo - add mutations from parent
   // Add snapshot functions
   sys_ptr->AddSnapshotFun([](const taxon_t & taxon) {
     return emp::to_string(taxon.GetData().GetFitness());
@@ -1031,6 +1032,35 @@ void AagosWorld::SetupSystematics() {
   sys_ptr->AddSnapshotFun([](const taxon_t & taxon) {
     return emp::to_string(taxon.GetData().GetPhenotype().neutral_sites);
   }, "neutral_sites", "Number of neutral sites in taxon genotype.");
+  // - mutations from parent
+  sys_ptr->AddSnapshotFun([](const taxon_t & taxon) -> std::string {
+    if (taxon.GetData().HasMutationType("gene_moves")) {
+      return emp::to_string(taxon.GetData().GetMutationCount("gene_moves"));
+    } else {
+      return "0";
+    }
+  }, "gene_move_muts", "Mutation count");
+  sys_ptr->AddSnapshotFun([](const taxon_t & taxon) -> std::string {
+    if (taxon.GetData().HasMutationType("bit_flips")) {
+      return emp::to_string(taxon.GetData().GetMutationCount("bit_flips"));
+    } else {
+      return "0";
+    }
+  }, "bit_flip_muts", "Mutation count");
+  sys_ptr->AddSnapshotFun([](const taxon_t & taxon) -> std::string {
+    if (taxon.GetData().HasMutationType("bit_insertions")) {
+      return emp::to_string(taxon.GetData().GetMutationCount("bit_insertions"));
+    } else {
+      return "0";
+    }
+  }, "bit_ins_muts", "Mutation count");
+  sys_ptr->AddSnapshotFun([](const taxon_t & taxon) -> std::string {
+    if (taxon.GetData().HasMutationType("bit_deletions")) {
+      return emp::to_string(taxon.GetData().GetMutationCount("bit_deletions"));
+    } else {
+      return "0";
+    }
+  }, "bit_del_muts", "Mutation count");
   // - genome length
   sys_ptr->AddSnapshotFun([](const taxon_t & taxon) {
     return emp::to_string(taxon.GetInfo().bits.GetSize());
