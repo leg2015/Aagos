@@ -10,7 +10,6 @@ EMP_BUILD_CONFIG(AagosConfig,
     VALUE(POP_SIZE, size_t, 1000, "How many organisms should be in the population?"),
     VALUE(MAX_GENS, size_t, 50000, "How many generations should the runs go for?"),
     VALUE(SEED, int, 0, "Random number seed (0 for based on time)"),
-    VALUE(ELITE_COUNT, size_t, 0, "How many organisms should be selected via elite selection?"),
     VALUE(TOURNAMENT_SIZE, size_t, 2, "How many organisms should be chosen for each tournament?"),
     VALUE(GRADIENT_MODEL, bool, false, "Whether the current experiment uses a gradient model for fitness or trad. fitness"),
 
