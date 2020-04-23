@@ -347,6 +347,7 @@ protected:
   size_t TOTAL_GENS;
   size_t CUR_CHANGE_MAGNITUDE;
   size_t CUR_CHANGE_FREQUENCY;
+  size_t CUR_TOURNAMENT_SIZE;
   double CUR_GENE_MOVE_PROB;
   double CUR_BIT_FLIP_PROB;
   double CUR_BIT_INS_PROB;
@@ -505,7 +506,7 @@ void AagosWorld::RunStep() {
   // if (config.ELITE_COUNT()) emp::EliteSelect(*this, config.ELITE_COUNT(), 1);
   // Run a tournament for the rest...
   // emp::TournamentSelect(*this, config.TOURNAMENT_SIZE(), config.POP_SIZE() - config.ELITE_COUNT());
-  emp::TournamentSelect(*this, config.TOURNAMENT_SIZE(), config.POP_SIZE());
+  emp::TournamentSelect(*this, CUR_TOURNAMENT_SIZE, config.POP_SIZE());
 
   // == Do update ==
   // If it's a generation to print to console, do so
@@ -568,6 +569,7 @@ void AagosWorld::InitLocalConfigs() {
   CUR_BIT_FLIP_PROB = config.BIT_FLIP_PROB();
   CUR_BIT_INS_PROB = config.BIT_INS_PROB();
   CUR_BIT_DEL_PROB = config.BIT_DEL_PROB();
+  CUR_TOURNAMENT_SIZE = config.TOURNAMENT_SIZE();
 
   TOTAL_GENS = (config.PHASE_2_ACTIVE()) ?  config.MAX_GENS() + config.PHASE_2_MAX_GENS() : config.MAX_GENS();
   cur_phase = 0;
@@ -584,6 +586,7 @@ void AagosWorld::ActivateEvoPhaseTwo() {
   CUR_BIT_FLIP_PROB = config.PHASE_2_BIT_FLIP_PROB();
   CUR_BIT_INS_PROB = config.PHASE_2_BIT_INS_PROB();
   CUR_BIT_DEL_PROB = config.PHASE_2_BIT_DEL_PROB();
+  CUR_TOURNAMENT_SIZE = config.PHASE_2_TOURNAMENT_SIZE();
 
   // Destruct and re-make mutator for phase two. No need to change the world's mutation function because
   // we're still using the same mutator pointer.
