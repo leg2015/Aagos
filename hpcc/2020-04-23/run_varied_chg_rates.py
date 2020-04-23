@@ -52,10 +52,6 @@ shared_config = {
 
     "GENOME_SIZE": [
         "-NUM_BITS 128 -NUM_GENES 16 -MAX_SIZE 1024",
-        "-NUM_BITS 64 -NUM_GENES 16 -MAX_SIZE 1024",
-        "-NUM_BITS 32 -NUM_GENES 16 -MAX_SIZE 1024",
-        "-NUM_BITS 16 -NUM_GENES 16 -MAX_SIZE 1024",
-
         "-NUM_BITS 64 -NUM_GENES 8 -MAX_SIZE 512",
         "-NUM_BITS 256 -NUM_GENES 32 -MAX_SIZE 2048"
     ]
@@ -80,6 +76,7 @@ def main():
     parser.add_argument("--config_dir", type=str, help="Where is the configuration directory for experiment?")
     parser.add_argument("--array_id", type=int, help="Which array ID is associated with each ")
     parser.add_argument("--replicates", type=int, default=default_num_replicates, help="How many replicates should we run of each condition?")
+    parser.add_argument("--query_condition_cnt", action="store_true", help="How many conditions?")
 
     args = parser.parse_args()
     data_dir = args.data_dir
@@ -93,7 +90,9 @@ def main():
 
     # Combine
     combos = gradient_combos + nk_combos
-
+    if (args.query_condition_cnt):
+        print(f"Number of conditions: {len(combos)}")
+        exit(0)
     # Array ID must be valid index into combos
     if (array_id >= len(combos)):
         print("Invalid array_id,", array_id)

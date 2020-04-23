@@ -25,10 +25,6 @@ shared_config = {
 
     "GENOME_SIZE": [
         "-NUM_BITS 128 -NUM_GENES 16 -MAX_SIZE 1024",
-        "-NUM_BITS 64 -NUM_GENES 16 -MAX_SIZE 1024",
-        "-NUM_BITS 32 -NUM_GENES 16 -MAX_SIZE 1024",
-        "-NUM_BITS 16 -NUM_GENES 16 -MAX_SIZE 1024",
-
         "-NUM_BITS 64 -NUM_GENES 8 -MAX_SIZE 512",
         "-NUM_BITS 256 -NUM_GENES 32 -MAX_SIZE 2048"
     ],
@@ -58,6 +54,7 @@ def main():
     parser.add_argument("--config_dir", type=str, help="Where is the configuration directory for experiment?")
     parser.add_argument("--array_id", type=int, help="Which array ID is associated with each ")
     parser.add_argument("--replicates", type=int, default=default_num_replicates, help="How many replicates should we run of each condition?")
+    parser.add_argument("--query_condition_cnt", action="store_true", help="How many conditions?")
 
     args = parser.parse_args()
     data_dir = args.data_dir
@@ -66,11 +63,11 @@ def main():
     num_replicates = args.replicates
 
     # Compute all combinations of NK fitness model settings and gradient fitness settings
-    # nk_combos = [f"{chg} {mut} {genome} -GRADIENT_MODEL 0" for chg in nk_config["environment_change"] for mut in nk_config["BIT_FLIP_PROB"] for genome in nk_config["GENOME_SIZE"] ]
-    combos = [f"{chg} {mut} {genome} -GRADIENT_MODEL 1" for chg in shared_config["environment_change"] for mut in shared_config["BIT_FLIP_PROB"] for genome in shared_config["GENOME_SIZE"] ]
-
-    # Combine
-    # combos = gradient_combos + nk_combos
+    combos = [f"{chg} {mut} {genome} {fitness}" for fitness in ["-GRADIENT_MODEL 0", "-GRADIENT_MODEL 1"] for chg in shared_config["environment_change"] for mut in shared_config["BIT_FLIP_PROB"] for genome in shared_config["GENOME_SIZE"] ]
+    if (args.query_condition_cnt):
+        print("Conditions", combos)
+        print(f"Number of conditions: {len(combos)}")
+        exit(0)
 
     # Array ID must be valid index into combos
     if (array_id >= len(combos)):
