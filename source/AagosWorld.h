@@ -671,8 +671,8 @@ void AagosWorld::InitFitnessEval() {
         fitness += fitness_contribution;
       }
       phen.fitness = fitness;
-      phen.coding_sites = ComputeCodingSites(org);
-      phen.neutral_sites = ComputeNeutralSites(org);
+      // phen.coding_sites = ComputeCodingSites(org);
+      // phen.neutral_sites = ComputeNeutralSites(org);
     };
   } else {
     std::cout << "Initializing NK model of fitness." << std::endl;
@@ -705,8 +705,8 @@ void AagosWorld::InitFitnessEval() {
         fitness += fitness_contribution;
       }
       phen.fitness = fitness;
-      phen.coding_sites = ComputeCodingSites(org);
-      phen.neutral_sites = ComputeNeutralSites(org);
+      // phen.coding_sites = ComputeCodingSites(org);
+      // phen.neutral_sites = ComputeNeutralSites(org);
     };
   }
   // Note that this assumes that this organism has been evaluated.
@@ -1028,13 +1028,13 @@ void AagosWorld::SetupSystematics() {
     return emp::to_string(taxon.GetData().GetFitness());
   }, "mean_fitness", "Taxon fitness");
   // - coding sites
-  sys_ptr->AddSnapshotFun([](const taxon_t & taxon) {
-    return emp::to_string(taxon.GetData().GetPhenotype().coding_sites);
-  }, "coding_sites", "Number of coding sites in taxon genotype.");
-  // - neutral sites
-  sys_ptr->AddSnapshotFun([](const taxon_t & taxon) {
-    return emp::to_string(taxon.GetData().GetPhenotype().neutral_sites);
-  }, "neutral_sites", "Number of neutral sites in taxon genotype.");
+  // sys_ptr->AddSnapshotFun([](const taxon_t & taxon) {
+  //   return emp::to_string(taxon.GetData().GetPhenotype().coding_sites);
+  // }, "coding_sites", "Number of coding sites in taxon genotype.");
+  // // - neutral sites
+  // sys_ptr->AddSnapshotFun([](const taxon_t & taxon) {
+  //   return emp::to_string(taxon.GetData().GetPhenotype().neutral_sites);
+  // }, "neutral_sites", "Number of neutral sites in taxon genotype.");
   // - mutations from parent
   sys_ptr->AddSnapshotFun([](const taxon_t & taxon) -> std::string {
     if (taxon.GetData().HasMutationType("gene_moves")) {

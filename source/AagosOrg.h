@@ -55,9 +55,9 @@ public:
     emp::vector<double> gene_fitness_contributions;
     // -- things that we want to know about phenotype for systematics tracking --
     // - coding_sites
-    size_t coding_sites=0;
+    // size_t coding_sites=0;
     // - neutral sites
-    size_t neutral_sites=0;
+    // size_t neutral_sites=0;
 
     Phenotype(size_t num_genes=0) : gene_fitness_contributions(num_genes, 0.0) { }
     Phenotype(const Phenotype &) = default;
@@ -67,14 +67,14 @@ public:
 
     void Reset() {
       fitness = 0.0;
-      coding_sites=0;
-      neutral_sites=0;
+      // coding_sites=0;
+      // neutral_sites=0;
       std::fill(gene_fitness_contributions.begin(), gene_fitness_contributions.end(), 0);
     }
 
     bool operator==(const Phenotype & other) const {
-      return std::tie(fitness, gene_fitness_contributions, coding_sites, neutral_sites)
-              == std::tie(other.fitness, other.gene_fitness_contributions, other.coding_sites, other.neutral_sites);
+      return std::tie(fitness, gene_fitness_contributions/*, coding_sites, neutral_sites*/)
+              == std::tie(other.fitness, other.gene_fitness_contributions/*, other.coding_sites, other.neutral_sites*/);
     }
 
     bool operator!=(const Phenotype & other) const {
@@ -82,8 +82,8 @@ public:
     }
 
     bool operator<(const Phenotype & other) const {
-      return std::tie(fitness, gene_fitness_contributions, coding_sites, neutral_sites)
-              < std::tie(other.fitness, other.gene_fitness_contributions, other.coding_sites, other.neutral_sites);
+      return std::tie(fitness, gene_fitness_contributions/*, coding_sites, neutral_sites*/)
+              < std::tie(other.fitness, other.gene_fitness_contributions/*, other.coding_sites, other.neutral_sites*/);
     }
   };
 
