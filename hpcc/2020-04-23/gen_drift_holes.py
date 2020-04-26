@@ -86,7 +86,7 @@ def is_run_complete(path):
     header_lu = {header[i].strip():i for i in range(0, len(header))}
     last_line = fitness_contents[-1].split(",")
     print(f"    len(header) == len(last_line)? {len(header) == len(last_line)}")
-    if len(header) != len(): return False
+    if len(header) != len(last_line): return False
 
     final_fitness_update = last_line[header_lu["update"]]
     print(f"    {final_fitness_update} =?= {final_gen}")
