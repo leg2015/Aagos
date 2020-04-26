@@ -74,7 +74,7 @@ def is_run_complete(path):
     if not os.path.exists(fitness_file_path): return False
     fitness_contents = None
     with open(fitness_file_path, "r") as fp:
-        fitness_contents = fp.read(fitness_file_path).strip().split("\n")
+        fitness_contents = fp.read().strip().split("\n")
     if len(fitness_contents) == 0: return False
     header = fitness_contents[0].split(",")
     header_lu = {header[i].strip():i for i in range(0, len(header))}
