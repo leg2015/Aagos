@@ -7,6 +7,10 @@ import argparse, os, sys, errno, subprocess, csv
 
 seed_offset = 60000
 default_num_replicates = 100
+job_time_request = "48:00:00"
+job_memory_request = "8G"
+job_name = "drift"
+job_config_dir = "/mnt/home/lalejini/devo_ws/Aagos/hpcc/2020-04-23"
 
 shared_config = {
 
@@ -36,6 +40,47 @@ shared_config = {
 
 }
 
+base_resub_script = \
+"""#!/bin/bash
+########## Define Resources Needed with SBATCH Lines ##########
+
+#SBATCH --time=<<TIME_REQUEST>>          # limit of wall clock time - how long the job will run (same as -t)
+#SBATCH --array=<<ARRAY_ID_RANGE>>
+#SBATCH --mem=<<MEMORY_REQUEST>>        # memory required per node - amount of memory (in bytes)
+#SBATCH --job-name <<JOB_NAME>>         # you can give your job a name for easier identification (same as -J)
+#SBATCH --account=devolab
+
+########## Command Lines to Run ##########
+
+EXEC=Aagos
+CONFIG_DIR=<<CONFIG_DIR>>
+
+module load GCC/7.3.0-2.30
+module load OpenMPI/3.1.1
+module load Python/3.7.0
+
+<<RESUBMISSION_LOGIC>>
+
+mkdir -p ${RUN_DIR}
+cd ${RUN_DIR}
+cp ${CONFIG_DIR}/Aagos.cfg .
+cp ${CONFIG_DIR}/${EXEC} .
+
+./${EXEC} ${RUN_PARAMS}
+
+rm Aagos.cfg
+rm ${EXEC}
+
+"""
+
+base_run_logic = \
+"""
+if [[ ${SLURM_ARRAY_TASK_ID} -eq <<RESUB_ID>> ]] ; then
+    RUN_DIR=<<RUN_DIR>>
+    RUN_PARAMS=<<RUN_PARAMS>>
+fi
+"""
+
 
 
 '''
@@ -58,7 +103,6 @@ def extract_settings(run_config_path):
     content = content[1:]
     configs = [l for l in csv.reader(content, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True)]
     return {param[header_lu["parameter"]]:param[header_lu["value"]] for param in configs}
-
 
 def is_run_complete(path):
     # (1) Does the run directory exist?
@@ -136,9 +180,8 @@ def main():
             run_complete = is_run_complete(run_dir)
             print(f"    finished? {run_complete}")
             num_finished += int(run_complete)
-            # if not run_complete: resubmissions.append({"run_dir": run_dir, "run_params": run_params})
-            if not run_complete: resubmissions.append(run_params)
-
+            if not run_complete: resubmissions.append({"run_dir": run_dir, "run_params": run_params})
+            # if not run_complete: resubmissions.append(run_params)
             # mkdir_p(run_dir)
             # subprocess.run(f"cd {run_dir}", shell=True)
             # Copy configuration files into the run directory
@@ -155,8 +198,32 @@ def main():
             # subprocess.run(f"rm {run_config}" , shell=True)
     print(f"Runs finished: {num_finished}")
     print(f"Resubmissions: {len(resubmissions)}")
+
+    print("Generating resubmission script...")
+    if len(resubmissions) == 0: return
+
+    resub_logic = ""
+    array_id = 1
     for resub in resubmissions:
-        print(f"  - {resub}")
+        run_params = resub["run_params"]
+        run_logic = base_run_logic
+        run_logic = run_logic.replace("<<RESUB_ID>>", str(array_id))
+        run_logic = run_logic.replace("<<RUN_DIR>>", resub["run_dir"])
+        run_logic = run_logic.replace("<<RUN_PARAMS>>", f"'{run_params}'")
+
+        resub_logic += run_logic
+        array_id += 1
+
+    script = base_resub_script
+    script = script.replace("<<TIME_REQUEST>>", job_time_request)
+    script = script.replace("<<ARRAY_ID_RANGE>>", f"1-{len(resubmissions)}")
+    script = script.replace("<<MEMORY_REQUEST>>", job_memory_request)
+    script = script.replace("<<JOB_NAME>>", job_name)
+    script = script.replace("<<CONFIG_DIR>>", job_config_dir)
+    script = script.replace("<<RESUBMISSION_LOGIC>>", resub_logic)
+
+    with open("drift_resub.sb", "w") as fp:
+        fp.write(script)
 
 if __name__ == "__main__":
     main()
