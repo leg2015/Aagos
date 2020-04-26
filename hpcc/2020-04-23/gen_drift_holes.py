@@ -62,6 +62,7 @@ def extract_settings(run_config_path):
 
 def is_run_complete(path):
     # (1) Does the run directory exist?
+    print(f"    Run dir? {os.path.exists(path)}")
     if not os.path.exists(path): return False
     # (2) If the run directory exists, did the run complete?
     #     Is there a run config file?
@@ -79,7 +80,9 @@ def is_run_complete(path):
     header = fitness_contents[0].split(",")
     header_lu = {header[i].strip():i for i in range(0, len(header))}
     if len(header_lu) != fitness_contents[-1].split(","): return False
-    if fitness_contents[-1].split(",")[header_lu["update"]] != final_gen: return False
+    final_fitness_update = fitness_contents[-1].split(",")[header_lu["update"]]
+    print(f"    {final_fitness_update} =?= {final_gen}")
+    if final_fitness_update != final_gen: return False
     return True
 
 def main():
@@ -121,7 +124,9 @@ def main():
             run_name = ("RUN " + run_params).replace("-", "_").replace(" ", "_")
             run_dir = os.path.join(data_dir, run_name)
             # (1) Does the run directory exist?
+            print(f"  {run_params}")
             run_complete = is_run_complete(run_dir)
+            print(f"    finished? {run_complete}")
             num_finished += int(run_complete)
             # if not run_complete: resubmissions.append({"run_dir": run_dir, "run_params": run_params})
             if not run_complete: resubmissions.append(run_params)
