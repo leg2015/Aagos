@@ -67,20 +67,28 @@ def is_run_complete(path):
     # (2) If the run directory exists, did the run complete?
     #     Is there a run config file?
     run_config_path = os.path.join(path, "output", "run_config.csv")
+    print(f"    Run config? {os.path.exists(run_config_path)}")
     if not os.path.exists(run_config_path): return False
     #    The run config file exists, extract parameters.
+
     run_params = extract_settings(run_config_path)
     final_gen = run_params["TOTAL_GENS"] # We'll look for this generation in the fitness.csv file
     fitness_file_path = os.path.join(path, "output", "fitness.csv")
+    print(f"    Fitness file? {os.path.exists(fitness_file_path)}")
     if not os.path.exists(fitness_file_path): return False
+
     fitness_contents = None
     with open(fitness_file_path, "r") as fp:
         fitness_contents = fp.read().strip().split("\n")
     if len(fitness_contents) == 0: return False
+
     header = fitness_contents[0].split(",")
     header_lu = {header[i].strip():i for i in range(0, len(header))}
-    if len(header_lu) != fitness_contents[-1].split(","): return False
-    final_fitness_update = fitness_contents[-1].split(",")[header_lu["update"]]
+    last_line = fitness_contents[-1].split(",")
+    print(f"    len(header) == len(last_line)? {len(header) == len(last_line)}")
+    if len(header) != len(): return False
+
+    final_fitness_update = last_line[header_lu["update"]]
     print(f"    {final_fitness_update} =?= {final_gen}")
     if final_fitness_update != final_gen: return False
     return True
