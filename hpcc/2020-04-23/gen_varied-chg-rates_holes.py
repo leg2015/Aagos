@@ -5,38 +5,60 @@ incomplete (unfinished or not started) runs.
 
 import argparse, os, sys, errno, subprocess, csv
 
-seed_offset = 60000
+seed_offset = 40000
 default_num_replicates = 100
 job_time_request = "48:00:00"
 job_memory_request = "8G"
-job_name = "drift"
+job_name = "chg-rate"
 
-shared_config = {
-
+nk_config = {
     "environment_change": [
         "-CHANGE_MAGNITUDE 0 -CHANGE_FREQUENCY 0",
-    ],
+        "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 2 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 4 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 8 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 16 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 32 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 64 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 128 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 256 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 512 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 1024 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 2048 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 4096 -CHANGE_FREQUENCY 1"
+    ]
+}
 
+gradient_config = {
+    "environment_change": [
+        "-CHANGE_MAGNITUDE 0 -CHANGE_FREQUENCY 0",
+        "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 256",
+        "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 128",
+        "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 64",
+        "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 32",
+        "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 16",
+        "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 8",
+        "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 4",
+        "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 2",
+        "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 2 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 4 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 8 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 16 -CHANGE_FREQUENCY 1"
+    ]
+}
+
+shared_config = {
     "BIT_FLIP_PROB": [
-        "-BIT_FLIP_PROB 0.0001 -PHASE_2_BIT_FLIP_PROB 0.0001",
-        "-BIT_FLIP_PROB 0.0003 -PHASE_2_BIT_FLIP_PROB 0.0003",
-        "-BIT_FLIP_PROB 0.001 -PHASE_2_BIT_FLIP_PROB 0.001",
-        "-BIT_FLIP_PROB 0.003 -PHASE_2_BIT_FLIP_PROB 0.003",
-        "-BIT_FLIP_PROB 0.01 -PHASE_2_BIT_FLIP_PROB 0.01",
-        "-BIT_FLIP_PROB 0.03 -PHASE_2_BIT_FLIP_PROB 0.03",
-        "-BIT_FLIP_PROB 0.1 -PHASE_2_BIT_FLIP_PROB 0.1"
+        "-BIT_FLIP_PROB 0.003 -PHASE_2_BIT_FLIP_PROB 0.003"
     ],
 
     "GENOME_SIZE": [
         "-NUM_BITS 128 -NUM_GENES 16 -MAX_SIZE 1024",
         "-NUM_BITS 64 -NUM_GENES 8 -MAX_SIZE 512",
         "-NUM_BITS 256 -NUM_GENES 32 -MAX_SIZE 2048"
-    ],
-
-    "SELECTION": [
-        "-TOURNAMENT_SIZE 1 -PHASE_2_TOURNAMENT_SIZE 8"
     ]
-
 }
 
 base_resub_script = \
@@ -140,18 +162,20 @@ def main():
     parser = argparse.ArgumentParser(description="Run submission script.")
     parser.add_argument("--data_dir", type=str, help="Where is the base output directory for each run?")
     parser.add_argument("--config_dir", type=str, help="Where is the configuration directory for experiment?")
-    # parser.add_argument("--array_id", type=int, help="Which array ID is associated with each ")
     parser.add_argument("--replicates", type=int, default=default_num_replicates, help="How many replicates should we run of each condition?")
     parser.add_argument("--query_condition_cnt", action="store_true", help="How many conditions?")
 
     args = parser.parse_args()
     data_dir = args.data_dir
     config_dir = args.config_dir
-    # array_id = args.array_id - 1        # -1 because job array starts at 1
     num_replicates = args.replicates
 
     # Compute all combinations of NK fitness model settings and gradient fitness settings
-    combos = [f"{chg} {mut} {genome} {fitness}" for fitness in ["-GRADIENT_MODEL 0", "-GRADIENT_MODEL 1"] for chg in shared_config["environment_change"] for mut in shared_config["BIT_FLIP_PROB"] for genome in shared_config["GENOME_SIZE"] ]
+    nk_combos = [f"{chg} {mut} {genome} -GRADIENT_MODEL 0" for chg in nk_config["environment_change"] for mut in shared_config["BIT_FLIP_PROB"] for genome in shared_config["GENOME_SIZE"] ]
+    gradient_combos = [f"{chg} {mut} {genome} -GRADIENT_MODEL 1" for chg in gradient_config["environment_change"] for mut in shared_config["BIT_FLIP_PROB"] for genome in shared_config["GENOME_SIZE"] ]
+
+    # Combine
+    combos = gradient_combos + nk_combos
     if (args.query_condition_cnt):
         print("Conditions", combos)
         print(f"Number of conditions: {len(combos)}")
@@ -207,7 +231,7 @@ def main():
     script = script.replace("<<CONFIG_DIR>>", config_dir)
     script = script.replace("<<RESUBMISSION_LOGIC>>", resub_logic)
 
-    with open("drift_resub.sb", "w") as fp:
+    with open("chg_rates_resub.sb", "w") as fp:
         fp.write(script)
 
 if __name__ == "__main__":
