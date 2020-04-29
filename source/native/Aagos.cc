@@ -25,7 +25,6 @@ int main(int argc, char* argv[])
   config.Write(std::cout);
   std::cout << "==============================\n" << std::endl;
 
-  emp::Random random(config.SEED());
-  AagosWorld world(random, config);
+  AagosWorld world(config);
   world.Run();
 }

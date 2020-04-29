@@ -354,7 +354,7 @@ protected:
   double CUR_BIT_DEL_PROB;
   size_t cur_phase=0;
 
-  const config_t & config;    ///< World configuration.
+  config_t & config;    ///< World configuration.
   std::string output_path;
 
   emp::Ptr<NKFitnessModel> fitness_model_nk;
@@ -412,61 +412,9 @@ protected:
   }
 
 public:
-  AagosWorld(emp::Random & random, const config_t & cfg)
-    : base_t(random), config(cfg)
-  {
-    std::cout << "-- Constructing AagosWorld -- " << std::endl;
-    // Asserts
-    emp_assert(config.NUM_GENES() > 0);
-
-    // Localize phase-one-specific configs
-    InitLocalConfigs();
-
-    // Basic setup
-    gene_mask = emp::MaskLow<size_t>(config.GENE_SIZE());
-    most_fit_id = 0;
-    output_path = config.DATA_FILEPATH();
-    SetPopStruct_Mixed(true);
-
-    // Initialize fitness evaluation.
-    std::cout << "Setting up fitness evaluation." << std::endl;
-    InitFitnessEval();
-    InitEnvironment();
-
-    // Configure mutator
-    std::cout << "Constructing mutator..." << std::endl;
-    mutator = emp::NewPtr<AagosMutator>(config.NUM_GENES(), emp::Range<size_t>(config.MIN_SIZE(), config.MAX_SIZE()),
-                                        CUR_GENE_MOVE_PROB, CUR_BIT_FLIP_PROB,
-                                        CUR_BIT_INS_PROB, CUR_BIT_DEL_PROB);
-    std::cout << "  ...done constructing mutator." << std::endl;
-    SetMutFun([this](org_t & org, emp::Random & rnd) {
-      // NOTE - here's where we would intercept mutation-type distributions (with some extra infrastructure
-      //        built into the mutator)!
-      org.ResetMutations();
-      mutator->ResetLastMutationTracker();
-      const size_t mut_cnt = mutator->ApplyMutations(org, rnd);
-      auto & mut_dist = mutator->GetLastMutations();
-      auto & org_mut_tracker = org.GetMutations();
-      org_mut_tracker["bit_flips"] = mut_dist[mutator_t::MUTATION_TYPES::BIT_FLIPS];
-      org_mut_tracker["bit_insertions"] = mut_dist[mutator_t::MUTATION_TYPES::BIT_INSERTIONS];
-      org_mut_tracker["bit_deletions"] = mut_dist[mutator_t::MUTATION_TYPES::BIT_DELETIONS];
-      org_mut_tracker["gene_moves"] = mut_dist[mutator_t::MUTATION_TYPES::GENE_MOVES];
-      return mut_cnt;
-    });
-
-    // Configure data tracking
-    InitDataTracking();
-
-    // Initialize population
-    std::cout << "Initialize the population" << std::endl;
-    InitPop();
-
-    // Configure world to auto-mutate organisms (if id > elite count)
-    // - mutations occur on_before_placement (right before organism added to systematics)
-    // SetAutoMutate(config.ELITE_COUNT());
-    SetAutoMutate();
-
-    DoConfigSnapshot(); // Snapshot run settings
+  // AagosWorld(emp::Random & random, config_t & cfg) : base_t(random), config(cfg) { Setup(); }
+  AagosWorld(config_t & cfg) : config(cfg) {
+    Setup();
   }
 
   ~AagosWorld() {
@@ -483,6 +431,8 @@ public:
 
   /// Run world for configured number of generations.
   void Run();
+
+  void Setup();
 
 };
 
@@ -559,6 +509,66 @@ void AagosWorld::Run() {
   for (size_t gen = 0; gen <= config.PHASE_2_MAX_GENS(); ++gen) {
     RunStep();
   }
+}
+
+// todo - make callable multiple times?
+void AagosWorld::Setup() {
+  std::cout << "-- Setting up AagosWorld -- " << std::endl;
+  // Reset world's random number seed.
+  random_ptr->ResetSeed(config.SEED());
+
+  // Asserts
+  emp_assert(config.NUM_GENES() > 0);
+
+  // Localize phase-one-specific configs
+  InitLocalConfigs();
+
+  // Basic setup
+  gene_mask = emp::MaskLow<size_t>(config.GENE_SIZE());
+  most_fit_id = 0;
+  output_path = config.DATA_FILEPATH();
+  SetPopStruct_Mixed(true);
+
+  // Initialize fitness evaluation.
+  std::cout << "Setting up fitness evaluation." << std::endl;
+  InitFitnessEval();
+  InitEnvironment();
+
+  // Configure mutator
+  std::cout << "Constructing mutator..." << std::endl;
+  mutator = emp::NewPtr<AagosMutator>(config.NUM_GENES(), emp::Range<size_t>(config.MIN_SIZE(), config.MAX_SIZE()),
+                                      CUR_GENE_MOVE_PROB, CUR_BIT_FLIP_PROB,
+                                      CUR_BIT_INS_PROB, CUR_BIT_DEL_PROB);
+  std::cout << "  ...done constructing mutator." << std::endl;
+  SetMutFun([this](org_t & org, emp::Random & rnd) {
+    // NOTE - here's where we would intercept mutation-type distributions (with some extra infrastructure
+    //        built into the mutator)!
+    org.ResetMutations();
+    mutator->ResetLastMutationTracker();
+    const size_t mut_cnt = mutator->ApplyMutations(org, rnd);
+    auto & mut_dist = mutator->GetLastMutations();
+    auto & org_mut_tracker = org.GetMutations();
+    org_mut_tracker["bit_flips"] = mut_dist[mutator_t::MUTATION_TYPES::BIT_FLIPS];
+    org_mut_tracker["bit_insertions"] = mut_dist[mutator_t::MUTATION_TYPES::BIT_INSERTIONS];
+    org_mut_tracker["bit_deletions"] = mut_dist[mutator_t::MUTATION_TYPES::BIT_DELETIONS];
+    org_mut_tracker["gene_moves"] = mut_dist[mutator_t::MUTATION_TYPES::GENE_MOVES];
+    return mut_cnt;
+  });
+
+  // Configure data tracking
+  InitDataTracking();
+
+  // Initialize population
+  std::cout << "Initialize the population" << std::endl;
+  InitPop();
+
+  // Configure world to auto-mutate organisms (if id > elite count)
+  // - mutations occur on_before_placement (right before organism added to systematics)
+  // SetAutoMutate(config.ELITE_COUNT());
+  SetAutoMutate();
+
+  DoConfigSnapshot(); // Snapshot run settings
+
 }
 
 // todo - add total_gens to config snapshot
