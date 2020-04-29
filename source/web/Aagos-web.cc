@@ -3,12 +3,13 @@
 //  Released under the MIT Software license; see doc/LICENSE
 
 #include "web/web.h"
+#include "../AagosConfig.h"
+#include "../AagosWeb.h"
+// #include "Evolve/NK.h"
 
-namespace UI = emp::web;
+AagosConfig cfg;
+AagosWebInterface interface(cfg);
 
-UI::Document doc("emp_base");
-
-int main()
-{
-  doc << "<h1>Hello, world!</h1>";
+int main() {
+  std::cout << "Hello?" << std::endl;
 }
