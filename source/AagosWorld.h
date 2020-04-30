@@ -356,6 +356,7 @@ protected:
 
   config_t & config;    ///< World configuration.
   std::string output_path;
+  bool setup;
 
   emp::Ptr<NKFitnessModel> fitness_model_nk;
   emp::Ptr<GradientFitnessModel> fitness_model_gradient;
@@ -413,9 +414,7 @@ protected:
 
 public:
   // AagosWorld(emp::Random & random, config_t & cfg) : base_t(random), config(cfg) { Setup(); }
-  AagosWorld(config_t & cfg) : config(cfg) {
-    Setup();
-  }
+  AagosWorld(config_t & cfg) : config(cfg) { }
 
   ~AagosWorld() {
     if (config.GRADIENT_MODEL()) fitness_model_gradient.Delete();
@@ -437,6 +436,7 @@ public:
 };
 
 void AagosWorld::RunStep() {
+  emp_assert(setup);
   // (1) evaluate population, (2) select parents, (3) update the world
   // == Do evaluation ==
   most_fit_id = 0;
@@ -498,6 +498,7 @@ void AagosWorld::RunStep() {
 }
 
 void AagosWorld::Run() {
+  emp_assert(setup);
   for (size_t gen = 0; gen <= config.MAX_GENS(); ++gen) {
     RunStep();
   }
@@ -514,6 +515,7 @@ void AagosWorld::Run() {
 // todo - make callable multiple times?
 void AagosWorld::Setup() {
   std::cout << "-- Setting up AagosWorld -- " << std::endl;
+  setup = false;
   // Reset world's random number seed.
   random_ptr->ResetSeed(config.SEED());
 
@@ -569,6 +571,7 @@ void AagosWorld::Setup() {
 
   DoConfigSnapshot(); // Snapshot run settings
 
+  setup = true;
 }
 
 // todo - add total_gens to config snapshot
@@ -753,7 +756,10 @@ void AagosWorld::InitEnvironment() {
 
 void AagosWorld::InitDataTracking() {
   // Create output directory
+  #ifndef EMSCRIPTEN
   mkdir(output_path.c_str(), ACCESSPERMS);
+  #endif
+
   if(output_path.back() != '/') {
       output_path += '/';
   }

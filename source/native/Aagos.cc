@@ -26,5 +26,6 @@ int main(int argc, char* argv[])
   std::cout << "==============================\n" << std::endl;
 
   AagosWorld world(config);
+  world.Setup();
   world.Run();
 }

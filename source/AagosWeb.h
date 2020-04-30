@@ -1,6 +1,12 @@
 #ifndef AAGOS_WEB_H
 #define AAGOS_WEB_H
 
+/**
+ * TODOs
+ * - [ ] Allow world to be configured by web user
+
+*/
+
 #include "web/web.h"
 
 #include "AagosWorld.h"
@@ -27,10 +33,30 @@ public:
   using config_t = AagosConfig;
 
 protected:
+
+  UI::Document world_div;
+  UI::Document control_div;
+
 public:
-  AagosWebInterface(config_t & cfg) : AagosWorld(cfg) {
+  AagosWebInterface(config_t & cfg)
+    : AagosWorld(cfg),
+      world_div("emp_world_view"),
+      control_div("emp_controls_view")
+  {
     std::cout << "AagowWebInterface constructor!" << std::endl;
+    SetupInterface();
+    // Setup world.
+    Setup();
   }
+
+  /// Configure the interface
+  void SetupInterface();
 };
+
+void AagosWebInterface::SetupInterface() {
+  world_div << "Hello world";
+  control_div << "Hello again";
+
+}
 
 #endif
