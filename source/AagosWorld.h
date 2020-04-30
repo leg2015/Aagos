@@ -723,7 +723,7 @@ void AagosWorld::InitFitnessEval() {
     };
   }
   // Note that this assumes that this organism has been evaluated.
-  SetFitFun([this](org_t & org) {
+  SetFitFun([](org_t & org) {
     return org.GetPhenotype().fitness;
   });
 }
@@ -1035,7 +1035,7 @@ void AagosWorld::SetupSystematics() {
   // We want to record mutations when an organism is added to the population
   // - because mutations are applied automatically by this->DoBirth => this->AddOrgAt => sys->OnNew
   std::function<void(emp::Ptr<taxon_t>, org_t&)> record_taxon_mut_data =
-    [this](emp::Ptr<taxon_t> taxon, org_t & org) {
+    [](emp::Ptr<taxon_t> taxon, org_t & org) {
       taxon->GetData().RecordMutation(org.GetMutations()); // TODO - add mutation tracking to organism!
     };
   sys_ptr->OnNew(record_taxon_mut_data); // Mutations safely happen right before this is triggered
@@ -1117,7 +1117,7 @@ void AagosWorld::DoPopulationSnapshot() {
   snapshot_file.AddVar(cur_phase, "evo_phase", "Current phase of evolution");
 
   // Organism ID
-  std::function<size_t()> org_id_fun = [this, &cur_org_id]() {
+  std::function<size_t()> org_id_fun = [&cur_org_id]() {
     return cur_org_id;
   };
   snapshot_file.AddFun(org_id_fun, "org_id", "Organism id");

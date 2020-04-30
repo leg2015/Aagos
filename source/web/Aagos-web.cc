@@ -18,6 +18,8 @@ struct AagosWebWrapper {
     cfg.SEED(2);
     cfg.TOURNAMENT_SIZE(4);
     cfg.GRADIENT_MODEL(true);
+    cfg.CHANGE_MAGNITUDE(0);
+    cfg.CHANGE_FREQUENCY(0);
     cfg.NUM_BITS(32);
     cfg.NUM_GENES(4);
     cfg.GENE_SIZE(4);
