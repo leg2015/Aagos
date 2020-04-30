@@ -37,6 +37,9 @@ protected:
   UI::Document world_div;
   UI::Document control_div;
 
+  UI::Button run_toggle_but;
+  UI::Button run_step_but;
+
 public:
   AagosWebInterface(config_t & cfg)
     : AagosWorld(cfg),
@@ -51,12 +54,36 @@ public:
 
   /// Configure the interface
   void SetupInterface();
+
+  /// Advance application by one frame.
+  void DoFrame();
 };
 
 void AagosWebInterface::SetupInterface() {
   world_div << "Hello world";
-  control_div << "Hello again";
 
+  // ---- Setup interface control buttons ----
+  // Run button setup.
+  // Manually create run/pause button to have full control over button's callback.
+  // NOTE - here's an example where Empirical's web tools are overly restrictive.
+  run_toggle_but = UI::Button([this]() {
+    ToggleActive();
+    run_toggle_but.SetLabel(active ? "Stop" : "Run"); // TODO - use icons
+    active ? run_step_but.SetDisabled(true) : run_step_but.SetDisabled(false);
+  }, "Run", "run-toggle-button");
+  run_toggle_but.SetAttr("class", "btn btn-primary m-1 ");
+
+  // Step button setup.
+  run_step_but = GetStepButton("run-step-button");
+  run_step_but.SetAttr("class", "btn btn-primary m-1");
+
+  // Add buttons to
+  control_div << run_step_but;
+  control_div << run_toggle_but;
+}
+
+void AagosWebInterface::DoFrame() {
+  std::cout << "Frame!" << std::endl;
 }
 
 #endif
