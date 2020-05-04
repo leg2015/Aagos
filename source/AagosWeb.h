@@ -29,6 +29,22 @@ double GetHTMLElementHeightByID(const std::string & id) {
     }, id.c_str());
 }
 
+double GetBoundingClientRectHeightByID(const std::string & id) {
+  return EM_ASM_DOUBLE({
+    var id = UTF8ToString($0);
+    var component = document.getElementById(id);
+    return component.GetBoundingClientRect().height;
+  }, id.c_str());
+}
+
+double GetBoundingClientRectWidthByID(const std::string & id) {
+  return EM_ASM_DOUBLE({
+    var id = UTF8ToString($0);
+    var component = document.getElementById(id);
+    return component.GetBoundingClientRect().width;
+  }, id.c_str());
+}
+
 class AagosWebInterface : public UI::Animate, public AagosWorld {
 public:
   // static constexpr double BIT_WIDTH
@@ -74,6 +90,9 @@ protected:
 
   void DrawPopCanvas_FullPop();
   void DrawPopCanvas_MaxFit();
+
+  void DrawBit_SimpleBlackWhite();
+  void DrawBit_SimpleText();
 
 public:
   AagosWebInterface(config_t & cfg)
@@ -269,9 +288,16 @@ void AagosWebInterface::DrawPopCanvas_FullPop() {
       const bool val = org.GetBits().Get(bit_id);
       const double bit_x = org_x + (bit_id * bit_width);
       const double bit_y = org_y;
-      // std::cout << "Draw bit? " << bit_x << "," << bit_y << "," << bit_width << "," << bit_height << std::endl;
-      // Draw a box around the bit.
-      pop_canvas.Rect(bit_x, bit_y, bit_width, bit_height, val ? "black" : "white", val ? "" : "black");
+      // Draw a box around the bit. Color based on value.
+      // pop_canvas.Rect(bit_x, bit_y, bit_width, bit_height, val ? "black" : "white", val ? "" : "black");
+      // Draw box around bit. Write value as text.
+      // pop_canvas.Rect(bit_x, bit_y, bit_width, bit_height, "white", "black");
+      // pop_canvas.CenterText(bit_x + (bit_width / 2), bit_y + (bit_height / 2), emp::to_string((int)val), "black", "");
+      // Draw a circle (filled for 1, not filled for 0)
+      const double radius = bit_width < bit_height ? (bit_width / 2) : (bit_height / 2);
+      pop_canvas.Circle(bit_x + (bit_width / 2), bit_y + (bit_height / 2), 0.9*radius, "black", "");
+      if (!val) pop_canvas.Circle(bit_x + (bit_width / 2), bit_y + (bit_height / 2), 0.7*radius, "white", "");
+
     }
 
   }
