@@ -433,6 +433,8 @@ public:
 
   void Setup();
 
+  size_t GetMostFitID() const { return most_fit_id; }
+
 };
 
 void AagosWorld::RunStep() {

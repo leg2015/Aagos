@@ -4,7 +4,7 @@
 
 #include "web/web.h"
 #include "../AagosConfig.h"
-#include "../AagosWeb.h"
+#include "../AagosWebD3.h"
 // #include "Evolve/NK.h"
 
 struct AagosWebWrapper {
@@ -18,8 +18,8 @@ struct AagosWebWrapper {
     cfg.SEED(2);
     cfg.TOURNAMENT_SIZE(4);
     cfg.GRADIENT_MODEL(true);
-    cfg.CHANGE_MAGNITUDE(0);
-    cfg.CHANGE_FREQUENCY(0);
+    cfg.CHANGE_MAGNITUDE(4);
+    cfg.CHANGE_FREQUENCY(4);
     cfg.NUM_BITS(32);
     cfg.NUM_GENES(4);
     cfg.GENE_SIZE(4);

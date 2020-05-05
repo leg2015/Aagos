@@ -261,11 +261,21 @@ void AagosWebInterface::ConfigEnvCanvasSize() {
 void AagosWebInterface::ConfigPopCanvasSize() {
   const size_t pop_size = GetSize();
   const double parent_width = GetHTMLElementWidthByID("emp_world_view");
-  pop_canvas.SetSize(parent_width, pop_size * (INDIV_VERT_MARGIN + BIT_HEIGHT));
+  const double w = parent_width;
+  const double h = pop_size * (INDIV_VERT_MARGIN + BIT_HEIGHT);
+  pop_canvas.SetSize(w, h);
+  EM_ASM({
+    // var dim = {width: $0,height: $1};
+    $('#pop-canvas').css('width', $0).css('height', $1).prop('width', $0).prop('height', $1);
+  }, w, h);
 }
 
 void AagosWebInterface::DrawPopCanvas_FullPop() {
   pop_canvas.Clear("white");
+  EM_ASM({
+    // var dim = {width: $0,height: $1};
+    $('#pop-canvas').css('width', $0).css('height', $1).prop('width', $0).prop('height', $1);
+  }, pop_canvas.GetWidth(), pop_canvas.GetHeight());
   // Find longest genome
   size_t max_genome_size = 0;
   for (emp::Ptr<org_t> org_ptr : pop) {
@@ -299,7 +309,6 @@ void AagosWebInterface::DrawPopCanvas_FullPop() {
       if (!val) pop_canvas.Circle(bit_x + (bit_width / 2), bit_y + (bit_height / 2), 0.7*radius, "white", "");
 
     }
-
   }
 }
 
