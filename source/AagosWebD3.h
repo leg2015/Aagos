@@ -184,7 +184,7 @@ public:
       // todo - move redundant stuff elsewhere/one-shot (no need to do multiple times)
       var elem_id = UTF8ToString($0);
       var width = $('#' + elem_id).width();
-      var height = 1000; // todo - make dynamic
+      var height = 3000; // todo - make dynamic
       var margins = ({top:20,right:20,bottom:20,left:20}); // todo - make dynamic
 
       var vis = emp.AagosPopVis[elem_id];
