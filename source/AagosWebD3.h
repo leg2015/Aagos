@@ -83,6 +83,7 @@ protected:
     for (size_t org_id = 0; org_id < world.GetSize(); ++org_id) {
       org_t & org = world.GetOrg(org_id);
       const size_t num_bits = org.GetNumBits();
+      const size_t gene_size = org.GetGeneSize();
       max_genome_size = num_bits > max_genome_size ? num_bits : max_genome_size;
       auto & gene_starts = org.GetGeneStarts();
       std::ostringstream stream;
@@ -95,17 +96,42 @@ protected:
       }
       const std::string gene_starts_str(stream.str());
       EM_ASM({
-        var elem_id = UTF8ToString($0);
-        var org_id = $1;
-        var bits = UTF8ToString($2).split('').map(Number);
-        var gene_starts = UTF8ToString($3).split(',').map(Number);
+        const elem_id = UTF8ToString($0);
+        const org_id = $1;
+        const bits = UTF8ToString($2).split('').map(Number);
+        const gene_starts = UTF8ToString($3).split(',').map(Number);
+        const gene_size = $4;
+        const num_bits = bits.length;
+        var gene_occupancy = new Map();
+        var position_occupants = new Map();
+        var gene_indicators = [];
+        for (let gene_id = 0; gene_id < gene_starts.length; gene_id++) {
+          gene_occupancy.set(gene_id, []);
+          var start = gene_starts[gene_id];
+          for (let k = 0; k < gene_size; k++) {
+            const position = (start + k) % num_bits;
+            gene_occupancy.get(gene_id).push(position);
+            if (!(position_occupants.has(position))) {
+              position_occupants.set(position, new Set());
+            }
+            gene_indicators.push({'gene_id': gene_id, 'pos': position, 'indicator_rank': position_occupants.get(position).size});
+            position_occupants.get(position).add(gene_id);
+          }
+        }
+        for (let i = 0; i < gene_indicators.length; i++) {
+          gene_indicators[i]['rank']
+        }
         emp.AagosPopVis[elem_id]['pop'].push({'org_id': org_id,
                                               'bits': bits,
-                                              'gene_starts': gene_starts});
+                                              'gene_starts': gene_starts,
+                                              'position_occupants': position_occupants,
+                                              'gene_occupancy': gene_occupancy,
+                                              'gene_indicators': gene_indicators});
       }, element_id.c_str(),       // 0
          org_id,                   // 1
          bits.c_str(),             // 2
-         gene_starts_str.c_str()); // 3
+         gene_starts_str.c_str(),  // 3
+         gene_size);               // 4
     }
 
     EM_ASM({
@@ -158,7 +184,7 @@ public:
       // todo - move redundant stuff elsewhere/one-shot (no need to do multiple times)
       var elem_id = UTF8ToString($0);
       var width = $('#' + elem_id).width();
-      var height = 5000; // todo - make dynamic
+      var height = 1000; // todo - make dynamic
       var margins = ({top:20,right:20,bottom:20,left:20}); // todo - make dynamic
 
       var vis = emp.AagosPopVis[elem_id];
@@ -196,6 +222,7 @@ public:
       axes.selectAll("path").style({"fill": "none", "stroke": "black", "shape-rendering": "crispEdges"});
       axes.selectAll("text").style({"font-family": "sans-serif", "font-size": "10px"});
 
+      var gene_colors = d3.scaleSequential(d3.interpolateSinebow).domain([0, 4]); // todo - get num genes
 
       var pop_data_canvas = d3.select("#AagosPopVis-"+elem_id+"-pop-data-canvas");
       pop_data_canvas.selectAll("*").remove();
@@ -212,11 +239,12 @@ public:
                  return "translate(" + x_trans + "," + y_trans + ")";
                 })
                 .each(function(org, i) {
-                      var bits = d3.select(this).selectAll("rect").data(org["bits"]);
-                      var rect_height = pop_y_scale(0.9);
-                      var rect_width = pop_x_scale(1);
+                      var bits = d3.select(this).selectAll("rect.bit").data(org["bits"]);
+                      const rect_height = pop_y_scale(0.9);
+                      const rect_width = pop_x_scale(1);
                       bits.enter()
                           .append("rect")
+                          .attr("class", "bit")
                           .attr("transform", function(d, i) {
                             return "translate(" + pop_x_scale(i) + ",0)";
                           })
@@ -228,21 +256,47 @@ public:
                           })
                           .attr("fill", "white")
                           .attr("stroke", "gray");
+                      var genes = d3.select(this).selectAll("rect.gene").data(org["gene_indicators"]);
+                      genes.enter()
+                           .append("rect")
+                           .attr("class", "gene-indicator")
+                           .attr("transform", function(indicator) {
+                              const pos = indicator['pos'];
+                              const num_occupants = org['position_occupants'].get(pos).size;
+                              const rank = indicator['indicator_rank'];
+                              const height = rect_height / num_occupants; // this should never be 0
+                              const x_trans = pop_x_scale(pos);
+                              const y_trans = height * rank;
+                              return "translate(" + x_trans + "," + y_trans + ")";
+                           })
+                           .attr("height", function(indicator) {
+                              const pos = indicator['pos'];
+                              const num_occupants = org['position_occupants'].get(pos).size;
+                              const height = rect_height / num_occupants;
+                              return height;
+                           })
+                           .attr("width", function(indicator) {
+                             return rect_width;
+                           })
+                           .attr("fill", function(indicator) {
+                             const gene_id = indicator['gene_id'];
+                             return gene_colors(gene_id);
+                           });
                       var bit_text = d3.select(this).selectAll("text").data(org["bits"]);
                       bit_text.enter()
                         .append("text")
+                        .attr("class", "bit-text")
                         .attr("transform", function(d, i) {
-                            var x_trans = pop_x_scale(i) + (rect_width/2.0);
-                            var y_trans = (rect_height/2.0);
-                            return "translate(" + x_trans + "," + y_trans + ")";
-                          })
+                          var x_trans = pop_x_scale(i) + (rect_width/2.0);
+                          var y_trans = (rect_height/2.0);
+                          return "translate(" + x_trans + "," + y_trans + ")";
+                        })
                         .attr("dominant-baseline", "middle")
                         .attr("text-anchor", "middle")
                         .text(function(d, i) {
                           return d;
                         });
                       });
-
 
     }, element_id.c_str()); // 0
     data_drawn=true;
