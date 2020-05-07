@@ -356,7 +356,7 @@ protected:
 
   config_t & config;    ///< World configuration.
   std::string output_path;
-  bool setup;
+  bool setup=false;
 
   emp::Ptr<NKFitnessModel> fitness_model_nk;
   emp::Ptr<GradientFitnessModel> fitness_model_gradient;
@@ -434,6 +434,11 @@ public:
   void Setup();
 
   size_t GetMostFitID() const { return most_fit_id; }
+  bool IsSetup() const { return setup; }
+  const config_t & GetConfig() const { return config; }
+
+  const NKFitnessModel & GetNKFitnessModel() const { emp_assert(!config.GRADIENT_MODEL()); return *fitness_model_nk; }
+  const GradientFitnessModel & GetGradientFitnessModel() const { emp_assert(config.GRADIENT_MODEL()); return *fitness_model_gradient; }
 
 };
 
