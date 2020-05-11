@@ -40,7 +40,7 @@
             </button>
           </div>
           <!-- Card body -->
-          <div id="abstract-card" class="collapse" area-labelledby="abstract-card-header">
+          <div id="abstract-card" class="collapse" aria-labelledby="abstract-card-header">
 
             <div class="card-body">
               <i class="fal fa-sparkles"></i>
@@ -54,31 +54,85 @@
     </div>
 
     <div class="row mb-2">
-      <div class="col">
-        <div class="card">
-          <div class="card-header">
-            <h3> Viewer </h3>
-          </div> <!-- End card-header -->
-          <div class="card-body">
-            <div id="emp_world_view">
-            </div>
-          </div> <!-- End card-body -->
-        </div> <!-- End card -->
-      </div>
-    </div>
+      <div class="col-8">
 
-    <div class="row mb-2">
-      <div class="col">
-        <div class="card">
-          <div class="card-header">
-            <h3> Controls </h3>
-          </div> <!-- End card-header -->
-          <div class="card-body">
-            <div id="emp_controls_view"></div>
-          </div> <!-- End card-body -->
-        </div> <!-- End card -->
-      </div>
-    </div>
+        <div class="row mb-2">
+
+          <div class="col">
+              <div class="card">
+                <div class="card-body pb-2 pt-2 pl-2 pr-2">
+                  <h4 class="card-title">Controls</h4>
+                    <div id="emp_controls_view"></div>
+                </div>
+              </div>
+          </div>
+
+        </div>
+
+
+        <div class="row mb-2">
+
+          <div class="col">
+            <div class="card">
+              <div class="card-header">
+                <h3> Viewer </h3>
+              </div> <!-- End card-header -->
+              <div class="card-body">
+                <div id="emp_world_view">
+                </div>
+              </div> <!-- End card-body -->
+            </div> <!-- End card -->
+          </div>
+        </div> <!-- End row -->
+
+      </div> <!-- End col -->
+
+      <div class="col-4">
+
+        <div class="row mb-2">
+
+          <div class="col">
+            <div class="card">
+              <div class="card-header" id="key-card-header">
+                <button class="btn btn-lg btn-block" type="button" data-toggle="collapse" data-target="#key-card" aria-expanded="true" aria-controls="key-card">
+                  <h3 class="mb-0 text-left"> Key </h3>
+                </button>
+              </div> <!-- End card-header -->
+              <div id="key-card" class="collapse" aria-labelledby="key-card-header">
+                <div class="card-body">
+                  <div id="emp_view_key"></div>
+                </div> <!-- End card-body -->
+              </div>
+            </div> <!-- End card -->
+          </div> <!-- End col -->
+
+        </div> <!-- End row -->
+
+        <div class="row mb-2">
+
+          <div class="col">
+            <div class="card">
+              <div class="card-header" id="config-card-header">
+                <button class="btn btn-lg btn-block" type="button" data-toggle="collapse" data-target="#config-card" aria-expanded="true" aria-controls="config-card">
+                  <h3 class="mb-0 text-left"> Configuration </h3>
+                </button>
+              </div> <!-- End card-header -->
+              <div id="config-card" class="collapse show" aria-labelledby="config-card-header">
+                <div class="card-body">
+                  <div id="emp_config_key"></div>
+                </div> <!-- End card-body -->
+              </div>
+            </div> <!-- End card -->
+          </div> <!-- End col -->
+
+        </div> <!-- End row -->
+
+      </div> <!-- End col -->
+
+    </div> <!-- End row -->
+
+
+
 
   </div>
 
