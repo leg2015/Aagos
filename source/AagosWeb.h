@@ -9,6 +9,8 @@
 #include "web/web.h"
 #include "web/Input.h"
 
+#include "tools/string_utils.h"
+
 #include "AagosWorld.h"
 #include "AagosConfig.h"
 #include "AagosOrg.h"
@@ -53,6 +55,8 @@ protected:
 
   UI::Button run_toggle_but;
   UI::Button run_step_but;
+
+  size_t draw_frequency=32;
 
   AagosPopulationVisualization pop_vis;
 
@@ -113,10 +117,19 @@ void AagosWebInterface::SetupInterface() {
     << "Render every";
 
   control_div.Div("render-wrapper")
-    << UI::Input([](std::string in) { std::cout << "Change!" << std::endl; },
+    << UI::Input([this](std::string in) {
+                  std::cout << "Change!" << std::endl;
+                  const size_t val = std::stoul(in);
+                  draw_frequency = val;
+                 },
                  "number",
                  "",
                  "render-frequency")
+        .Checker([](std::string in) { return (emp::is_digits(in) && in.size() && std::stoi(in) > 0); })
+        .Value((double)draw_frequency)
+        .Min("1")
+        .Max(emp::to_string(std::numeric_limits<size_t>::max()))
+        .Step("1")
         .SetAttr("class", "form-control")
         .SetCSS("min-width", "96px");
 
@@ -174,9 +187,9 @@ void AagosWebInterface::SetupInterface() {
 }
 
 void AagosWebInterface::DoFrame() {
-  std::cout << "Frame!" << std::endl;
+  // std::cout << "Frame!" << std::endl;
   RunStep();
-  if (GetUpdate() % 50 == 0) {
+  if (GetUpdate() % draw_frequency == 0) {
     RedrawPopulation();
     RedrawEnvironment();
   }

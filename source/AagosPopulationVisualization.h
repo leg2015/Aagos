@@ -305,14 +305,13 @@ public:
                     return "AagosPopVis-"+elem_id+"-gene-target-"+target.gene_id;
                   })
                   .attr("transform", function(target, gene_id) {
-                    console.log("-- " + gene_id + " --");
                     const row_pos = gene_id % targets_per_row;
                     const row_id = Math.floor(gene_id / targets_per_row);
                     const x_trans = env_x_scale(row_pos);
                     const y_trans = env_y_scale(row_id);
-                    console.log("targets_per_row=" + targets_per_row);
-                    console.log("row_pos=" + row_pos);
-                    console.log("row_id=" + row_id);
+                    // console.log("targets_per_row=" + targets_per_row);
+                    // console.log("row_pos=" + row_pos);
+                    // console.log("row_id=" + row_id);
                     return "translate(" + x_trans + "," + y_trans + ")";
                   })
                   .each(function(target, gene_id) {
