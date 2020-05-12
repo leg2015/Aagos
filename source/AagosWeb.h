@@ -7,6 +7,7 @@
 */
 
 #include "web/web.h"
+#include "web/Input.h"
 
 #include "AagosWorld.h"
 #include "AagosConfig.h"
@@ -48,6 +49,7 @@ protected:
 
   UI::Document world_div;
   UI::Document control_div;
+  UI::Document config_div;
 
   UI::Button run_toggle_but;
   UI::Button run_step_but;
@@ -62,6 +64,7 @@ public:
     : AagosWorld(cfg),
       world_div("emp_world_view"),
       control_div("emp_controls_view"),
+      config_div("emp_config_view"),
       pop_vis("emp-pop-vis")
   {
     std::cout << "AagowWebInterface constructor!" << std::endl;
@@ -85,27 +88,42 @@ void AagosWebInterface::SetupInterface() {
     run_toggle_but.SetLabel(active ? "Stop" : "Run"); // TODO - use icons
     active ? run_step_but.SetDisabled(true) : run_step_but.SetDisabled(false);
   }, "Run", "run-toggle-button");
-  run_toggle_but.SetAttr("class", "btn btn-primary m-1 ");
+  run_toggle_but.SetAttr("class", "btn btn-block btn-lg btn-primary");
 
   // Step button setup.
   run_step_but = GetStepButton("run-step-button");
-  run_step_but.SetAttr("class", "btn btn-primary m-1");
+  run_step_but.SetAttr("class", "btn btn-block btn-lg btn-primary");
 
   // Add buttons to controls view.
-  control_div
-    << UI::Div("button-row").SetAttr("class", "row");
+  control_div << UI::Div("button-row").SetAttr("class", "row justify-content-md-center");
 
   control_div.Div("button-row")
-    << UI::Div("step-col").SetAttr("class", "col")
+    << UI::Div("step-col").SetAttr("class", "col-lg-auto p-2")
     << run_step_but;
 
   control_div.Div("button-row")
-    << UI::Div("run-col").SetAttr("class", "col")
+    << UI::Div("run-col").SetAttr("class", "col-lg-auto p-2")
     << run_toggle_but;
 
-  // control_div.Div("button-row")
-  //   << UI::Div("render-col").SetAttr("class", "col")
-  //   <<
+  control_div.Div("button-row")
+    << UI::Div("render-frequency-col").SetAttr("class", "col-lg-auto p-2")
+    << UI::Div("render-wrapper").SetAttr("class", "input-group input-group-lg")
+    << UI::Div("render-input-prepend").SetAttr("class", "input-group-prepend")
+    << UI::Div("render-input-prepend-text").SetAttr("class", "input-group-text")
+    << "Render every";
+
+  control_div.Div("render-wrapper")
+    << UI::Input([](std::string in) { std::cout << "Change!" << std::endl; },
+                 "number",
+                 "",
+                 "render-frequency")
+        .SetAttr("class", "form-control")
+        .SetCSS("min-width", "96px");
+
+   control_div.Div("render-wrapper")
+    << UI::Div("input-group-append").SetAttr("class", "input-group-append")
+    << UI::Text().SetAttr("class", "input-group-text")
+    << "th generation";
 
   // ---- Setup world view interface ----
 
