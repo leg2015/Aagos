@@ -13,6 +13,7 @@
 #include "tools/string_utils.h"
 
 #include <unordered_map>
+#include <sstream>
 
 #include "AagosWorld.h"
 #include "AagosConfig.h"
@@ -33,6 +34,14 @@ double GetHTMLElementHeightByID(const std::string & id) {
       var id = UTF8ToString($0);
       return $('#' + id).height();
     }, id.c_str());
+}
+
+// https://stackoverflow.com/questions/29169153/how-do-i-verify-a-string-is-valid-double-even-if-it-has-a-point-in-it
+bool is_numeric(const std::string & str) {
+    double result = double();
+    auto i = std::istringstream(str);
+    i >> result;
+    return !i.fail() && i.eof();
 }
 
 class AagosWebInterface : public UI::Animate, public AagosWorld {
@@ -98,8 +107,10 @@ protected:
     input_elem.Min(min_val);
     input_elem.Max(max_val);
     input_elem.Step(step_val);
-    input_elem.Callback([config_name](std::string in) {
+    input_elem.Callback([config_name, this](std::string in) {
       std::cout << "Callback: " << config_name << std::endl;
+      // pretty sure that the callback only gets triggered if check is passed
+      config_input_elements[config_name].Value(in);
     });
     input_elem.Value(init_val);
     input_elem.SetCSS("min-width", "64px");       // todo - will this work for all?
@@ -114,8 +125,16 @@ protected:
       << UI::Div(config_name + "-config-input-prepend-text").SetAttr("class", "input-group-text")
     << config_name;
 
-    div.Find(config_name + "-config-wrapper")
-      << config_input_elements[config_name];
+    if (type == "checkbox") {
+      // Do slightly different HTML structure for checkboxes (slightly improves bootstrap styling)
+      div.Find(config_name + "-config-wrapper")
+        << UI::Div(config_name + "-config-input-append").SetAttr("class", "input-group-append")
+        << UI::Div(config_name + "-config-input-append-text").SetAttr("class", "input-group-text")
+        << config_input_elements[config_name];
+    } else {
+      div.Find(config_name + "-config-wrapper")
+        << config_input_elements[config_name];
+    }
 
     return config_input_elements[config_name];
   }
@@ -127,10 +146,66 @@ protected:
   }
 
   bool CheckInputSize_t(const std::string & in) {
-    return (emp::is_digits(in) && in.size() && std::stoi(in) > 0); // todo - FromString?
+    return (emp::is_digits(in) && in.size() && std::stoi(in) >= 0); // todo - FromString?
   }
 
+  bool CheckInputDouble(const std::string & in) {
+    return (in.size() && is_numeric(in));
+  }
 
+  bool CheckInputProbability(const std::string & in) {
+    if (!CheckInputDouble(in)) return false;
+    const double prob = emp::from_string<double>(in);
+    return prob >= 0.0 && prob <= 1.0;
+  }
+
+  bool CheckInput_GENE_SIZE(const std::string & in) {
+    if (!CheckInputSize_t(in)) return false;
+    const size_t val = emp::from_string<size_t>(in);
+    const size_t max_size = emp::Has(config_input_elements, "MAX_SIZE")
+                                  ? emp::from_string<size_t>(config_input_elements["MAX_SIZE"].GetValue())
+                                  : val;
+    // const size_t min_size = emp::Has(config_input_elements, "MIN_SIZE")
+    //                               ? emp::from_string<size_t>(config_input_elements["MIN_SIZE"].GetValue())
+    //                               : val;
+    return val <= max_size;
+  }
+
+  // todo - make such that this doesn't depend on order of input initialization!
+  bool CheckInput_MIN_SIZE(const std::string & in) {
+    if (!CheckInputSize_t(in)) return false;
+    const size_t val = emp::from_string<size_t>(in);
+    const size_t cur_gene_size = emp::from_string<size_t>(config_input_elements["GENE_SIZE"].GetValue());
+    const size_t cur_max_size = emp::Has(config_input_elements, "MAX_SIZE")
+                                  ? emp::from_string<size_t>(config_input_elements["MAX_SIZE"].GetValue())
+                                  : std::numeric_limits<size_t>::max();
+    const size_t num_bits = emp::Has(config_input_elements, "NUM_BITS")
+                                  ? emp::from_string<size_t>(config_input_elements["NUM_BITS"].GetValue())
+                                  : val;
+    return val >= cur_gene_size && val <= cur_max_size && val <= num_bits;
+  }
+
+  // todo - make such that this doesn't depend on order of input initialization!
+  bool CheckInput_MAX_SIZE(const std::string & in) {
+    if (!CheckInputSize_t(in)) { return false; }
+    const size_t in_num = emp::from_string<size_t>(in);
+    const size_t gene_size = emp::from_string<size_t>(config_input_elements["GENE_SIZE"].GetValue());
+    const size_t min_size = emp::from_string<size_t>(config_input_elements["MIN_SIZE"].GetValue());
+    const size_t num_bits = emp::Has(config_input_elements, "NUM_BITS")
+                                  ? emp::from_string<size_t>(config_input_elements["NUM_BITS"].GetValue())
+                                  : in_num;
+    return (in_num >= gene_size) && (in_num >= min_size) && (in_num >= num_bits);
+  }
+
+  // todo - make such that this doesn't depend on order of input initialization!
+  bool CheckInput_NUM_BITS(const std::string & in) {
+    if (!CheckInputSize_t(in)) return false;
+    const size_t in_num = emp::from_string<size_t>(in);
+    const size_t gene_size = emp::from_string<size_t>(config_input_elements["GENE_SIZE"].GetValue());
+    const size_t min_size = emp::from_string<size_t>(config_input_elements["MIN_SIZE"].GetValue());
+    const size_t max_size = emp::from_string<size_t>(config_input_elements["MAX_SIZE"].GetValue());
+    return (in_num >= gene_size) && (in_num <= max_size) && (in_num >= min_size);
+  }
 
 public:
   AagosWebInterface(config_t & cfg)
@@ -298,7 +373,7 @@ void AagosWebInterface::SetupConfigInterface() {
   // CHANGE_MAGNITUDE
   config_general_div.Find("general-config-ul")
     << UI::Element("li", "CHANGE_MAGNITUDE-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
         .SetCSS("min-width", "256px");
   AddConfigInput(config_general_div,
                 /* append_to_id   =*/ "CHANGE_MAGNITUDE-config-li",
@@ -314,7 +389,7 @@ void AagosWebInterface::SetupConfigInterface() {
   // CHANGE_FREQUENCY
   config_general_div.Find("general-config-ul")
     << UI::Element("li", "CHANGE_FREQUENCY-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
         .SetCSS("min-width", "256px");
   AddConfigInput(config_general_div,
                 /* append_to_id =*/ "CHANGE_FREQUENCY-config-li",
@@ -330,69 +405,373 @@ void AagosWebInterface::SetupConfigInterface() {
   // POP_SIZE
   config_general_div.Find("general-config-ul")
     << UI::Element("li", "POP_SIZE-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
         .SetCSS("min-width", "256px");
   AddConfigInput(config_general_div,
                 /* append_to_id =*/ "POP_SIZE-config-li",
                 /* config_name  =*/ "POP_SIZE",
                 /* type         =*/ "number",
                 /* checker      =*/ [this](std::string in) { return CheckInputSize_t(in); },
-                /* min_val      =*/ "0",
+                /* min_val      =*/ "1",
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().POP_SIZE()),
                 /* config_tooltip =*/ GetConfig()["POP_SIZE"]->GetDescription());
 
+  // MAX_GENS
+  config_general_div.Find("general-config-ul")
+    << UI::Element("li", "MAX_GENS-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_general_div,
+                /* append_to_id =*/ "MAX_GENS-config-li",
+                /* config_name  =*/ "MAX_GENS",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputSize_t(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().MAX_GENS()),
+                /* config_tooltip =*/ GetConfig()["MAX_GENS"]->GetDescription());
+
+  // TOURNAMENT_SIZE
+  config_general_div.Find("general-config-ul")
+    << UI::Element("li", "TOURNAMENT_SIZE-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_general_div,
+                /* append_to_id =*/ "TOURNAMENT_SIZE-config-li",
+                /* config_name  =*/ "TOURNAMENT_SIZE",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputSize_t(in); },
+                /* min_val      =*/ "1",
+                /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().TOURNAMENT_SIZE()),
+                /* config_tooltip =*/ GetConfig()["TOURNAMENT_SIZE"]->GetDescription());
+
+  // SEED
+  config_general_div.Find("general-config-ul")
+    << UI::Element("li", "SEED-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_general_div,
+                /* append_to_id =*/ "SEED-config-li",
+                /* config_name  =*/ "SEED",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputSize_t(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().SEED()),
+                /* config_tooltip =*/ GetConfig()["SEED"]->GetDescription());
 
 
+  // -- genetic architecture --
+  config_genetic_arch_div
+    << UI::Element("ul", "genetic-arch-config-ul")
+        .SetAttr("class", "list-group list-group-flush")
+        .SetCSS("overflow-x","scroll");
 
-  // config_input_elements["POP_SIZE"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["MAX_GENS"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["SEED"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["TOURNAMENT_SIZE"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["GRADIENT_MODEL"]={input_callback_fun_t(), "", ""};
+  // NUM_GENES
+  config_genetic_arch_div.Find("genetic-arch-config-ul")
+    << UI::Element("li", "NUM_GENES-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_genetic_arch_div,
+                /* append_to_id =*/ "NUM_GENES-config-li",
+                /* config_name  =*/ "NUM_GENES",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputSize_t(in); },
+                /* min_val      =*/ "1",
+                /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().NUM_GENES()),
+                /* config_tooltip =*/ GetConfig()["NUM_GENES"]->GetDescription());
 
-  // // // -- genetic architecture --
-  // config_input_elements["NUM_BITS_INPUT"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["NUM_GENES_INPUT"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["GENE_SIZE_INPUT"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["MAX_SIZE_INPUT"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["MIN_SIZE_INPUT"]={input_callback_fun_t(), "", ""};
+  // GENE_SIZE
+  config_genetic_arch_div.Find("genetic-arch-config-ul")
+    << UI::Element("li", "GENE_SIZE-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_genetic_arch_div,
+                /* append_to_id =*/ "GENE_SIZE-config-li",
+                /* config_name  =*/ "GENE_SIZE",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInput_GENE_SIZE(in); },
+                /* min_val      =*/ "1",
+                /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().GENE_SIZE()),
+                /* config_tooltip =*/ GetConfig()["GENE_SIZE"]->GetDescription());
 
-  // // // -- Mutations --
-  // config_input_elements["GENE_MOVE_PROB"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["BIT_FLIP_PROB"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["BIT_INS_PROB"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["BIT_DEL_PROB"]={input_callback_fun_t(), "", ""};
+  // MIN_SIZE
+  config_genetic_arch_div.Find("genetic-arch-config-ul")
+    << UI::Element("li", "MIN_SIZE-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_genetic_arch_div,
+                /* append_to_id =*/ "MIN_SIZE-config-li",
+                /* config_name  =*/ "MIN_SIZE",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInput_MIN_SIZE(in); },
+                /* min_val      =*/ "1",
+                /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().MIN_SIZE()),
+                /* config_tooltip =*/ GetConfig()["MIN_SIZE"]->GetDescription());
 
-  // // // -- phase 2 --
-  // config_input_elements["PHASE_2_ACTIVE"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["PHASE_2_CHANGE_MAGNITUDE"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["PHASE_2_CHANGE_FREQUENCY"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["PHASE_2_MAX_GENS"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["PHASE_2_TOURNAMENT_SIZE"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["PHASE_2_GENE_MOVE_PROB"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["PHASE_2_BIT_FLIP_PROB"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["PHASE_2_BIT_INS_PROB"]={input_callback_fun_t(), "", ""};
-  // config_input_elements["PHASE_2_BIT_DEL_PROB"]={input_callback_fun_t(), "", ""};
+  // MAX_SIZE
+  config_genetic_arch_div.Find("genetic-arch-config-ul")
+    << UI::Element("li", "MAX_SIZE-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_genetic_arch_div,
+                /* append_to_id =*/ "MAX_SIZE-config-li",
+                /* config_name  =*/ "MAX_SIZE",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInput_MAX_SIZE(in); },
+                /* min_val      =*/ "1",
+                /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().MAX_SIZE()),
+                /* config_tooltip =*/ GetConfig()["MAX_SIZE"]->GetDescription());
 
-  // -- Add inputs to interface --
-  // config_general_div
-  //   << UI::Element("ul", "general-config-ul")
-  //       .SetAttr("class", "list-group list-group-flush");
+  // NUM_BITS
+  config_genetic_arch_div.Find("genetic-arch-config-ul")
+    << UI::Element("li", "NUM_BITS-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_genetic_arch_div,
+                /* append_to_id =*/ "NUM_BITS-config-li",
+                /* config_name  =*/ "NUM_BITS",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInput_NUM_BITS(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().NUM_BITS()),
+                /* config_tooltip =*/ GetConfig()["NUM_BITS"]->GetDescription());
 
-  // // CHANGE_MAGNITUDE
-  // config_general_div.Find("general-config-ul")
-  //   << UI::Element("li", "CHANGE_MAGNITUDE-config-li")
-  //       .SetAttr("class", "list-group-item p-0")
-  //   << UI::Div("CHANGE_MAGNITUDE-config-wrapper").SetAttr("class", "input-group")
-  //   << UI::Div("CHANGE_MAGNITUDE-config-input-prepend").SetAttr("class", "input-group-prepend")
-  //   << UI::Div("CHANGE_MAGNITUDE-config-input-prepend-text").SetAttr("class", "input-group-text")
-  //   << "Change magnitude";
-  // config_general_div.Find("CHANGE_MAGNITUDE-config-wrapper")
-  //   << config_input_elements["CHANGE_MAGNITUDE"];
+  // -- Mutations --
+  config_mutation_div
+    << UI::Element("ul", "mutation-config-ul")
+        .SetAttr("class", "list-group list-group-flush")
+        .SetCSS("overflow-x","scroll");
 
-  // CHANGE_FREQUENCY
+  // GENE_MOVE_PROB
+  config_mutation_div.Find("mutation-config-ul")
+    << UI::Element("li", "GENE_MOVE_PROB-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_mutation_div,
+                /* append_to_id =*/ "GENE_MOVE_PROB-config-li",
+                /* config_name  =*/ "GENE_MOVE_PROB",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputProbability(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ "1.0",
+                /* step_val     =*/ "any",
+                /* init_val     =*/ emp::to_string(GetConfig().GENE_MOVE_PROB()),
+                /* config_tooltip =*/ GetConfig()["GENE_MOVE_PROB"]->GetDescription());
+
+  // BIT_FLIP_PROB
+  config_mutation_div.Find("mutation-config-ul")
+    << UI::Element("li", "BIT_FLIP_PROB-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_mutation_div,
+                /* append_to_id =*/ "BIT_FLIP_PROB-config-li",
+                /* config_name  =*/ "BIT_FLIP_PROB",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputProbability(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ "1.0",
+                /* step_val     =*/ "any",
+                /* init_val     =*/ emp::to_string(GetConfig().BIT_FLIP_PROB()),
+                /* config_tooltip =*/ GetConfig()["BIT_FLIP_PROB"]->GetDescription());
+
+  // BIT_INS_PROB
+  config_mutation_div.Find("mutation-config-ul")
+    << UI::Element("li", "BIT_INS_PROB-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_mutation_div,
+                /* append_to_id =*/ "BIT_INS_PROB-config-li",
+                /* config_name  =*/ "BIT_INS_PROB",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputProbability(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ "1.0",
+                /* step_val     =*/ "any",
+                /* init_val     =*/ emp::to_string(GetConfig().BIT_INS_PROB()),
+                /* config_tooltip =*/ GetConfig()["BIT_INS_PROB"]->GetDescription());
+
+  // BIT_DEL_PROB
+  config_mutation_div.Find("mutation-config-ul")
+    << UI::Element("li", "BIT_DEL_PROB-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_mutation_div,
+                /* append_to_id =*/ "BIT_DEL_PROB-config-li",
+                /* config_name  =*/ "BIT_DEL_PROB",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputProbability(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ "1.0",
+                /* step_val     =*/ "any",
+                /* init_val     =*/ emp::to_string(GetConfig().BIT_DEL_PROB()),
+                /* config_tooltip =*/ GetConfig()["BIT_DEL_PROB"]->GetDescription());
+
+  // -- phase 2 --
+  config_phase_2_evo_div
+    << UI::Element("ul", "phase-2-config-ul")
+        .SetAttr("class", "list-group list-group-flush")
+        .SetCSS("overflow-x","scroll");
+
+  // PHASE_2_ACTIVE
+  config_phase_2_evo_div.Find("phase-2-config-ul")
+    << UI::Element("li", "PHASE_2_ACTIVE-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_phase_2_evo_div,
+                /* append_to_id =*/ "PHASE_2_ACTIVE-config-li",
+                /* config_name  =*/ "PHASE_2_ACTIVE",
+                /* type         =*/ "checkbox",
+                /* checker      =*/ [](std::string in) { return true; },
+                /* min_val      =*/ "",
+                /* max_val      =*/ "",
+                /* step_val     =*/ "",
+                /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_ACTIVE()),
+                /* config_tooltip =*/ GetConfig()["PHASE_2_ACTIVE"]->GetDescription());
+
+  // PHASE_2_CHANGE_MAGNITUDE
+  config_phase_2_evo_div.Find("phase-2-config-ul")
+    << UI::Element("li", "PHASE_2_CHANGE_MAGNITUDE-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_phase_2_evo_div,
+                /* append_to_id =*/ "PHASE_2_CHANGE_MAGNITUDE-config-li",
+                /* config_name  =*/ "PHASE_2_CHANGE_MAGNITUDE",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputSize_t(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_CHANGE_MAGNITUDE()),
+                /* config_tooltip =*/ GetConfig()["PHASE_2_CHANGE_MAGNITUDE"]->GetDescription());
+
+  // PHASE_2_CHANGE_FREQUENCY
+  config_phase_2_evo_div.Find("phase-2-config-ul")
+    << UI::Element("li", "PHASE_2_CHANGE_FREQUENCY-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_phase_2_evo_div,
+                /* append_to_id =*/ "PHASE_2_CHANGE_FREQUENCY-config-li",
+                /* config_name  =*/ "PHASE_2_CHANGE_FREQUENCY",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputSize_t(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_CHANGE_FREQUENCY()),
+                /* config_tooltip =*/ GetConfig()["PHASE_2_CHANGE_FREQUENCY"]->GetDescription());
+
+  // PHASE_2_MAX_GENS
+  config_phase_2_evo_div.Find("phase-2-config-ul")
+    << UI::Element("li", "PHASE_2_MAX_GENS-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_phase_2_evo_div,
+                /* append_to_id =*/ "PHASE_2_MAX_GENS-config-li",
+                /* config_name  =*/ "PHASE_2_MAX_GENS",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputSize_t(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_MAX_GENS()),
+                /* config_tooltip =*/ GetConfig()["PHASE_2_MAX_GENS"]->GetDescription());
+
+  // PHASE_2_TOURNAMENT_SIZE
+  config_phase_2_evo_div.Find("phase-2-config-ul")
+    << UI::Element("li", "PHASE_2_TOURNAMENT_SIZE-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_phase_2_evo_div,
+                /* append_to_id =*/ "PHASE_2_TOURNAMENT_SIZE-config-li",
+                /* config_name  =*/ "PHASE_2_TOURNAMENT_SIZE",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputSize_t(in); },
+                /* min_val      =*/ "1",
+                /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_TOURNAMENT_SIZE()),
+                /* config_tooltip =*/ GetConfig()["PHASE_2_TOURNAMENT_SIZE"]->GetDescription());
+
+  // PHASE_2_GENE_MOVE_PROB
+  config_phase_2_evo_div.Find("phase-2-config-ul")
+    << UI::Element("li", "PHASE_2_GENE_MOVE_PROB-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_phase_2_evo_div,
+                /* append_to_id =*/ "PHASE_2_GENE_MOVE_PROB-config-li",
+                /* config_name  =*/ "PHASE_2_GENE_MOVE_PROB",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputProbability(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ "1.0",
+                /* step_val     =*/ "any",
+                /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_GENE_MOVE_PROB()),
+                /* config_tooltip =*/ GetConfig()["PHASE_2_GENE_MOVE_PROB"]->GetDescription());
+
+  // PHASE_2_BIT_FLIP_PROB
+  config_phase_2_evo_div.Find("phase-2-config-ul")
+    << UI::Element("li", "PHASE_2_BIT_FLIP_PROB-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_phase_2_evo_div,
+                /* append_to_id =*/ "PHASE_2_BIT_FLIP_PROB-config-li",
+                /* config_name  =*/ "PHASE_2_BIT_FLIP_PROB",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputProbability(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ "1.0",
+                /* step_val     =*/ "any",
+                /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_BIT_FLIP_PROB()),
+                /* config_tooltip =*/ GetConfig()["PHASE_2_BIT_FLIP_PROB"]->GetDescription());
+
+  // PHASE_2_BIT_INS_PROB
+  config_phase_2_evo_div.Find("phase-2-config-ul")
+    << UI::Element("li", "PHASE_2_BIT_INS_PROB-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_phase_2_evo_div,
+                /* append_to_id =*/ "PHASE_2_BIT_INS_PROB-config-li",
+                /* config_name  =*/ "PHASE_2_BIT_INS_PROB",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputProbability(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ "1.0",
+                /* step_val     =*/ "any",
+                /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_BIT_INS_PROB()),
+                /* config_tooltip =*/ GetConfig()["PHASE_2_BIT_INS_PROB"]->GetDescription());
+
+  // PHASE_2_BIT_DEL_PROB
+  config_phase_2_evo_div.Find("phase-2-config-ul")
+    << UI::Element("li", "PHASE_2_BIT_DEL_PROB-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_phase_2_evo_div,
+                /* append_to_id =*/ "PHASE_2_BIT_DEL_PROB-config-li",
+                /* config_name  =*/ "PHASE_2_BIT_DEL_PROB",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputProbability(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ "1.0",
+                /* step_val     =*/ "any",
+                /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_BIT_DEL_PROB()),
+                /* config_tooltip =*/ GetConfig()["PHASE_2_BIT_DEL_PROB"]->GetDescription());
 
 }
 

@@ -23,8 +23,8 @@ struct AagosWebWrapper {
     cfg.NUM_BITS(32);
     cfg.NUM_GENES(4);
     cfg.GENE_SIZE(8);
+    cfg.MIN_SIZE(8);
     cfg.MAX_SIZE(128);
-    cfg.MIN_SIZE(4);
     cfg.GENE_MOVE_PROB(0.003);
     cfg.BIT_FLIP_PROB(0.003);
     cfg.BIT_INS_PROB(0.001);
