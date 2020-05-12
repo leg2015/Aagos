@@ -75,6 +75,51 @@ protected:
 
   void SetupConfigInterface();
 
+  UI::Input & AddConfigInput(UI::Document & div,
+                             const std::string & append_to_id,
+                             const std::string & config_name,
+                             const std::string & type,
+                             const input_checker_fun_t & input_checker,
+                             const std::string & min_val="",
+                             const std::string & max_val="",
+                             const std::string & step_val="",
+                             const std::string & init_val="",
+                             const std::string & config_tooltip="")
+  {
+    // If config element doesn't exist yet, create a stub.
+    if (!emp::Has(config_input_elements, config_name)) {
+      config_input_elements[config_name]={[](std::string){ return true; }, "", ""};
+    }
+    // Configure config input.
+    auto & input_elem = config_input_elements[config_name];
+    input_elem.Type(type);
+    input_elem.Label("");
+    input_elem.Checker(input_checker);
+    input_elem.Min(min_val);
+    input_elem.Max(max_val);
+    input_elem.Step(step_val);
+    input_elem.Callback([config_name](std::string in) {
+      std::cout << "Callback: " << config_name << std::endl;
+    });
+    input_elem.Value(init_val);
+    input_elem.SetCSS("min-width", "64px");       // todo - will this work for all?
+    input_elem.SetAttr("class", "form-control");
+
+    div.Find(append_to_id)
+      << UI::Div(config_name + "-config-wrapper").SetAttr("class", "input-group")
+      << UI::Div(config_name + "-config-input-prepend").SetAttr("class", "input-group-prepend")
+          .SetAttr("data-toggle", "tooltip")
+          .SetAttr("data-placement", "top")
+          .SetAttr("title", config_tooltip)
+      << UI::Div(config_name + "-config-input-prepend-text").SetAttr("class", "input-group-text")
+    << config_name;
+
+    div.Find(config_name + "-config-wrapper")
+      << config_input_elements[config_name];
+
+    return config_input_elements[config_name];
+  }
+
   void DisableConfigInputs(bool in_dis=true) {
     for (auto & cfg : config_input_elements) {
       cfg.second.Disabled(in_dis);
@@ -82,8 +127,10 @@ protected:
   }
 
   bool CheckInputSize_t(const std::string & in) {
-    return (emp::is_digits(in) && in.size() && std::stoi(in) > 0);
+    return (emp::is_digits(in) && in.size() && std::stoi(in) > 0); // todo - FromString?
   }
+
+
 
 public:
   AagosWebInterface(config_t & cfg)
@@ -206,6 +253,13 @@ void AagosWebInterface::SetupInterface() {
 
     RedrawPopulation(); // Finally, go ahead and draw initial population.
     RedrawEnvironment();
+    // Enable tooltips!
+    EM_ASM({
+      $(function () {
+        $('[data-toggle="tooltip"]').tooltip(({container: 'body', boundary: 'window'}));
+      });
+    });
+
     std::cout << "-- OnDocumentReady (close) --"<<std::endl;
   });
 
@@ -234,18 +288,64 @@ void AagosWebInterface::SetupConfigInterface() {
 
   // --- Initialize relevant configuration options ---
   // -- general --
-  config_input_elements["CHANGE_MAGNITUDE"]={[](std::string){ return true; }, "", ""};
-  auto & chg_magnitude_input = config_input_elements["CHANGE_MAGNITUDE"];
-  chg_magnitude_input.Type("number");
-  chg_magnitude_input.Label("");
-  chg_magnitude_input.Min(0);
-  chg_magnitude_input.Max(std::numeric_limits<size_t>::max());
-  chg_magnitude_input.Step(1);
-  chg_magnitude_input.Checker([this](std::string in) { return CheckInputSize_t(in); });
-  chg_magnitude_input.Callback([](std::string in) { std::cout << "CHG_MAG" << std::endl; });
-  chg_magnitude_input.Value(GetConfig().CHANGE_MAGNITUDE());
 
-  // config_input_elements["CHANGE_FREQUENCY"]={input_callback_fun_t(), "", ""};
+  // --- General Configuration Settings ---
+  config_general_div
+    << UI::Element("ul", "general-config-ul")
+        .SetAttr("class", "list-group list-group-flush")
+        .SetCSS("overflow-x","scroll");
+
+  // CHANGE_MAGNITUDE
+  config_general_div.Find("general-config-ul")
+    << UI::Element("li", "CHANGE_MAGNITUDE-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_general_div,
+                /* append_to_id   =*/ "CHANGE_MAGNITUDE-config-li",
+                /* config_name    =*/ "CHANGE_MAGNITUDE",
+                /* type           =*/ "number",
+                /* checker        =*/ [this](std::string in) { return CheckInputSize_t(in); },
+                /* min_val        =*/ "0",
+                /* max_val        =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val       =*/ "1",
+                /* init_val       =*/ emp::to_string(GetConfig().CHANGE_MAGNITUDE()),
+                /* config_tooltip =*/ GetConfig()["CHANGE_MAGNITUDE"]->GetDescription());
+
+  // CHANGE_FREQUENCY
+  config_general_div.Find("general-config-ul")
+    << UI::Element("li", "CHANGE_FREQUENCY-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_general_div,
+                /* append_to_id =*/ "CHANGE_FREQUENCY-config-li",
+                /* config_name  =*/ "CHANGE_FREQUENCY",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputSize_t(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().CHANGE_FREQUENCY()),
+                /* config_tooltip =*/ GetConfig()["CHANGE_FREQUENCY"]->GetDescription());
+
+  // POP_SIZE
+  config_general_div.Find("general-config-ul")
+    << UI::Element("li", "POP_SIZE-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1")
+        .SetCSS("min-width", "256px");
+  AddConfigInput(config_general_div,
+                /* append_to_id =*/ "POP_SIZE-config-li",
+                /* config_name  =*/ "POP_SIZE",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInputSize_t(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().POP_SIZE()),
+                /* config_tooltip =*/ GetConfig()["POP_SIZE"]->GetDescription());
+
+
+
+
   // config_input_elements["POP_SIZE"]={input_callback_fun_t(), "", ""};
   // config_input_elements["MAX_GENS"]={input_callback_fun_t(), "", ""};
   // config_input_elements["SEED"]={input_callback_fun_t(), "", ""};
@@ -277,13 +377,22 @@ void AagosWebInterface::SetupConfigInterface() {
   // config_input_elements["PHASE_2_BIT_DEL_PROB"]={input_callback_fun_t(), "", ""};
 
   // -- Add inputs to interface --
+  // config_general_div
+  //   << UI::Element("ul", "general-config-ul")
+  //       .SetAttr("class", "list-group list-group-flush");
 
-  config_general_div
-    << UI::Element("ul", "general-config-ul")
-        .SetAttr("class", "list-group list-group-flush")
-    << UI::Element("li", "change-magnitude-config-li")
-        .SetAttr("class", "list-group-item")
-    << config_input_elements["CHANGE_MAGNITUDE"];
+  // // CHANGE_MAGNITUDE
+  // config_general_div.Find("general-config-ul")
+  //   << UI::Element("li", "CHANGE_MAGNITUDE-config-li")
+  //       .SetAttr("class", "list-group-item p-0")
+  //   << UI::Div("CHANGE_MAGNITUDE-config-wrapper").SetAttr("class", "input-group")
+  //   << UI::Div("CHANGE_MAGNITUDE-config-input-prepend").SetAttr("class", "input-group-prepend")
+  //   << UI::Div("CHANGE_MAGNITUDE-config-input-prepend-text").SetAttr("class", "input-group-text")
+  //   << "Change magnitude";
+  // config_general_div.Find("CHANGE_MAGNITUDE-config-wrapper")
+  //   << config_input_elements["CHANGE_MAGNITUDE"];
+
+  // CHANGE_FREQUENCY
 
 }
 
