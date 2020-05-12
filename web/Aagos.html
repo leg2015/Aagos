@@ -29,6 +29,7 @@
   <div class="container-fluid">
 
     <div class="row mb-2">
+
       <div class="col">
         <div class="card">
           <!-- Card heading -->
@@ -41,7 +42,6 @@
           </div>
           <!-- Card body -->
           <div id="abstract-card" class="collapse" aria-labelledby="abstract-card-header">
-
             <div class="card-body">
               <i class="fal fa-sparkles"></i>
               <p> PLACEHOLDER TEXT </p>
@@ -49,12 +49,11 @@
             </div> <!-- End card body -->
           </div> <!-- End collapse-able -->
         </div> <!-- End card -->
-
-      </div>
-    </div>
+      </div> <!-- End col -->
+    </div> <!-- End row -->
 
     <div class="row mb-2">
-      <div class="col-8">
+      <div class="col-md-8">
 
         <div class="row mb-2">
 
@@ -71,7 +70,6 @@
 
 
         <div class="row mb-2">
-
           <div class="col">
             <div class="card">
               <div class="card-header">
@@ -87,7 +85,7 @@
 
       </div> <!-- End col -->
 
-      <div class="col-4">
+      <div class="col-md-4">
 
         <div class="row mb-2">
 
@@ -109,7 +107,6 @@
         </div> <!-- End row -->
 
         <div class="row mb-2">
-
           <div class="col">
             <div class="card">
               <div class="card-header" id="config-card-header">
@@ -118,13 +115,84 @@
                 </button>
               </div> <!-- End card-header -->
               <div id="config-card" class="collapse show" aria-labelledby="config-card-header">
-                <div class="card-body">
-                  <div id="emp_config_view"></div>
+                <div class="card-body px-0 py-0" style="overflow-y:scroll; max-height:600px;">
+
+                  <div class="card border-0">
+                    <div class="card-header bg-light rounded-0" id="config-general-card-header">
+                      <button class="btn btn-lg btn-block bg-dark text-light" type="button" data-toggle="collapse" data-target="#config-general-card" aria-expanded="true" aria-controls="config-general-card">
+                        <h5 class="mb-0"> General </h5>
+                      </button>
+                    </div>
+                    <div id="config-general-card" class="collapse show" aria-labelledby="config-general-card-header">
+                      <div class="card-body px-0 pt-0 pb-1">
+                        <div id="emp_view_config_general"></div>
+                        <!-- <ul class="list-group list-group-flush">
+                          <li class="list-group-item">One</li>
+                          <li class="list-group-item">Two</li>
+                          <li class="list-group-item">Three</li>
+                        </ul> -->
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="card border-0">
+                    <div class="card-header rounded-0 border-top"  id="genetic-architecture-config-card-header">
+                      <button class="btn btn-lg bg-dark text-light btn-block" type="button" data-toggle="collapse" data-target="#genetic-architecture-config-card" aria-expanded="true" aria-controls="genetic-architecture-config-card">
+                        <h5 class="mb-0"> Genetic Architecture </h5>
+                      </button>
+                    </div>
+                    <div id="genetic-architecture-config-card" class="collapse show" aria-labelledby="genetic-architecture-config-card-header">
+                      <div class="card-body px-0 pt-0 pb-1">
+                        <div id="emp_view_config_genetic_architecture"></div>
+                        <!-- <ul class="list-group list-group-flush">
+                          <li class="list-group-item">One</li>
+                          <li class="list-group-item">Two</li>
+                          <li class="list-group-item">Three</li>
+                        </ul> -->
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="card border-0">
+                    <div class="card-header rounded-0 border-top" id="mutation-config-card-header">
+                      <button class="btn btn-lg bg-dark text-light btn-block" type="button" data-toggle="collapse" data-target="#mutation-config-card" aria-expanded="true" aria-controls="mutation-config-card">
+                        <h5 class="mb-0"> Mutation </h5>
+                      </button>
+                    </div>
+                    <div id="mutation-config-card" class="collapse show" aria-labelledby="mutation-config-card-header">
+                      <div class="card-body px-0 pt-0 pb-1">
+                        <div id="emp_view_config_mutation"></div>
+                        <!-- <ul class="list-group list-group-flush">
+                          <li class="list-group-item">One</li>
+                          <li class="list-group-item">Two</li>
+                          <li class="list-group-item">Three</li>
+                        </ul> -->
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="card border-0">
+                    <div class="card-header rounded-0 border-top" id="phase-2-config-card-header">
+                      <button class="btn btn-lg btn-block bg-dark text-light " type="button" data-toggle="collapse" data-target="#phase-2-config-card" aria-expanded="true" aria-controls="phase-2-config-card">
+                        <h5 class="mb-0"> Phase 2 </h5>
+                      </button>
+                    </div>
+                    <div id="phase-2-config-card" class="collapse show" aria-labelledby="phase-2-config-card-header">
+                      <div class="card-body px-0 pt-0 pb-1">
+                        <div id="emp_view_config_phase_2_evolution"></div>
+                        <!-- <ul class="list-group list-group-flush">
+                          <li class="list-group-item">One</li>
+                          <li class="list-group-item">Two</li>
+                          <li class="list-group-item">Three</li>
+                        </ul> -->
+                      </div>
+                    </div>
+                  </div>
+
                 </div> <!-- End card-body -->
               </div>
             </div> <!-- End card -->
-          </div> <!-- End col -->
-
+          </div>
         </div> <!-- End row -->
 
       </div> <!-- End col -->
