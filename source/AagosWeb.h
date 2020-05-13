@@ -73,6 +73,7 @@ protected:
 
   UI::Button run_toggle_but;
   UI::Button run_step_but;
+  UI::Button run_reset_but;
   UI::Button config_exp_but;
   UI::Button config_apply_but;
   UI::Button confirm_config_exp_but;
@@ -115,6 +116,7 @@ protected:
     input_elem.Step(step_val);
     input_elem.Callback([config_name, this](std::string in) {
       std::cout << "Callback: " << config_name << std::endl;
+      std::cout << "  Value = " << in << std::endl;
       // pretty sure that the callback only gets triggered if check is passed
       config_input_elements[config_name].Value(in);
     });
@@ -163,6 +165,12 @@ protected:
     if (!CheckInputDouble(in)) return false;
     const double prob = emp::from_string<double>(in);
     return prob >= 0.0 && prob <= 1.0;
+  }
+
+  bool CheckInput01(const std::string & in) {
+    if (!CheckInputSize_t(in)) return false;
+    const size_t val = emp::from_string<size_t>(in);
+    return val == 0 || val == 1;
   }
 
   bool CheckInput_GENE_SIZE(const std::string & in) {
@@ -391,9 +399,35 @@ void AagosWebInterface::SetupInterface() {
 void AagosWebInterface::DoFrame() {
   // std::cout << "Frame!" << std::endl;
   RunStep();
-  if (GetUpdate() % draw_frequency == 0) {
+  if (   (GetUpdate() % draw_frequency == 0)
+      || (GetUpdate() == config.MAX_GENS())
+      || (GetUpdate() == TOTAL_GENS))
+  {
     RedrawPopulation();
     RedrawEnvironment();
+  }
+
+  // Do all the checks, etc
+  if ((cur_phase==0) && (GetUpdate() >= config.MAX_GENS())) {
+    // Trigger phase 1 || stop!
+    if (config.PHASE_2_ACTIVE()) {
+      ActivateEvoPhaseTwo();
+    } else {
+      // Stop!
+      ToggleActive();
+      run_toggle_but.SetLabel("Run");
+      run_toggle_but.SetDisabled(true);
+      run_step_but.SetDisabled(true);
+      config_exp_but.SetDisabled(false);
+    }
+
+  } else if (cur_phase == 1 && GetUpdate() >= TOTAL_GENS) {
+    // Trigger stop!
+    ToggleActive();
+    run_toggle_but.SetLabel("Run");
+    run_toggle_but.SetDisabled(true);
+    run_step_but.SetDisabled(true);
+    config_exp_but.SetDisabled(false);
   }
 }
 
@@ -410,9 +444,10 @@ void AagosWebInterface::ReconfigureWorld() {
   // Loop over config inputs, reconfiguring.
   for (auto & cfg : config_input_elements) {
     // cfg.second.Disabled(in_dis);
-    std::cout << "Old config value = " << config.Get(cfg.first) << std::endl;
+    std::cout << "- Config option: " << cfg.first << std::endl;
+    std::cout << "  Old config value = " << config.Get(cfg.first) << std::endl;
     config.Set(cfg.first, cfg.second.GetValue());
-    std::cout << "New config value = " << config.Get(cfg.first) << std::endl;
+    std::cout << "  New config value = " << config.Get(cfg.first) << std::endl;
   }
   // Setup the world again...
   Setup();
@@ -702,11 +737,11 @@ void AagosWebInterface::SetupConfigInterface() {
   AddConfigInput(config_phase_2_evo_div,
                 /* append_to_id =*/ "PHASE_2_ACTIVE-config-li",
                 /* config_name  =*/ "PHASE_2_ACTIVE",
-                /* type         =*/ "checkbox",
-                /* checker      =*/ [](std::string in) { return true; },
-                /* min_val      =*/ "",
-                /* max_val      =*/ "",
-                /* step_val     =*/ "",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInput01(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ "1",
+                /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_ACTIVE()),
                 /* config_tooltip =*/ GetConfig()["PHASE_2_ACTIVE"]->GetDescription());
 

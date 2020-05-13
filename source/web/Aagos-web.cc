@@ -29,6 +29,16 @@ struct AagosWebWrapper {
     cfg.BIT_FLIP_PROB(0.003);
     cfg.BIT_INS_PROB(0.001);
     cfg.BIT_DEL_PROB(0.001);
+    cfg.PHASE_2_ACTIVE(false);
+    cfg.PHASE_2_LOAD_ENV_FROM_FILE(false);
+    cfg.PHASE_2_CHANGE_MAGNITUDE(0);
+    cfg.PHASE_2_CHANGE_FREQUENCY(0);
+    cfg.PHASE_2_MAX_GENS(1000);
+    cfg.PHASE_2_TOURNAMENT_SIZE(cfg.TOURNAMENT_SIZE());
+    cfg.PHASE_2_GENE_MOVE_PROB(0.0);
+    cfg.PHASE_2_BIT_FLIP_PROB(cfg.BIT_FLIP_PROB());
+    cfg.PHASE_2_BIT_INS_PROB(0.0);
+    cfg.PHASE_2_BIT_DEL_PROB(0.0);
     interface = emp::NewPtr<AagosWebInterface>(cfg);
   }
 
