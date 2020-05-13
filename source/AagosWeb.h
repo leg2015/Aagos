@@ -64,6 +64,7 @@ public:
 protected:
 
   UI::Document world_div;
+  UI::Document pop_vis_div;
   UI::Document control_div;
   UI::Document config_general_div;
   UI::Document config_genetic_arch_div;
@@ -225,6 +226,7 @@ public:
   AagosWebInterface(config_t & cfg)
     : AagosWorld(cfg),
       world_div("emp_world_view"),
+      pop_vis_div("emp_pop_vis_view"),
       control_div("emp_controls_view"),
       config_general_div("emp_view_config_general"),
       config_genetic_arch_div("emp_view_config_genetic_architecture"),
@@ -269,7 +271,7 @@ void AagosWebInterface::SetupInterface() {
     run_step_but.SetDisabled(active);
     config_exp_but.SetDisabled(active);
   }, "Restart", "run-reset-button");
-  run_reset_but.SetAttr("class", "btn btn-block btn-lg btn-primary");
+  run_reset_but.SetAttr("class", "btn btn-block btn-lg btn-warning");
 
   // Config experiment button setup.
   config_exp_but = UI::Button([]() { ; }, "Configure Experiment", "config-exp-button");
@@ -367,14 +369,28 @@ void AagosWebInterface::SetupInterface() {
 
   // Setup world view.
   // - environment -
-  world_div << UI::Div("env-canvas-row").SetAttr("class", "row mb-2");
-  world_div.Div("env-canvas-row")
-    << UI::Div("env-canvas-col").SetAttr("class", "col");
+  world_div << UI::Div("hud-row").SetAttr("class", "row justify-content-center");
+  world_div.Div("hud-row")
+    << UI::Div("generation-counter-col").SetAttr("class", "col-sm-auto pr-1")
+    << UI::Element("h4", "")
+    << UI::Element("span", "generation-counter-badge").SetAttr("class", "badge badge-primary")
+    << "Generation: ";
+  world_div.Div("generation-counter-badge")
+    << UI::Live([this]() { return GetUpdate(); });
 
-  // - population -
-  world_div << UI::Div("pop-canvas-row").SetAttr("class", "row");
+  world_div.Div("hud-row")
+    << UI::Div("phase-counter-col").SetAttr("class", "col-sm-auto pl-1")
+    << UI::Element("h4", "")
+    << UI::Element("span", "phase-counter-badge").SetAttr("class", "badge badge-primary")
+    << "Experiment phase: ";
+  world_div.Div("phase-counter-badge")
+    << UI::Live([this]() { return cur_phase; });
 
-  world_div.Div("pop-canvas-row")
+  world_div << UI::Element("hr").SetAttr("class", "mt-1");
+
+  // ---- Pop vis view ----
+  pop_vis_div << UI::Div("pop-canvas-row").SetAttr("class", "row");
+  pop_vis_div.Div("pop-canvas-row")
     << UI::Div("pop-canvas-col").SetAttr("class", "col")
     << UI::Div("emp-pop-vis");
 
@@ -447,6 +463,7 @@ void AagosWebInterface::DoFrame() {
     config_exp_but.SetDisabled(false);
     run_reset_but.SetDisabled(false);
   }
+  world_div.Redraw();
 }
 
 void AagosWebInterface::RedrawPopulation(bool update_data) {
