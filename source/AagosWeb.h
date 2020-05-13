@@ -252,6 +252,7 @@ void AagosWebInterface::SetupInterface() {
   run_toggle_but = UI::Button([this]() {
     ToggleActive();
     run_toggle_but.SetLabel(active ? "Stop" : "Run"); // TODO - use icons
+    run_reset_but.SetDisabled(active);
     run_step_but.SetDisabled(active);
     config_exp_but.SetDisabled(active);
   }, "Run", "run-toggle-button");
@@ -260,6 +261,15 @@ void AagosWebInterface::SetupInterface() {
   // Step button setup.
   run_step_but = GetStepButton("run-step-button");
   run_step_but.SetAttr("class", "btn btn-block btn-lg btn-primary");
+
+  // Reset run button setup.
+  run_reset_but = UI::Button([this]() {
+    ReconfigureWorld();
+    run_reset_but.SetDisabled(active);
+    run_step_but.SetDisabled(active);
+    config_exp_but.SetDisabled(active);
+  }, "Restart", "run-reset-button");
+  run_reset_but.SetAttr("class", "btn btn-block btn-lg btn-primary");
 
   // Config experiment button setup.
   config_exp_but = UI::Button([]() { ; }, "Configure Experiment", "config-exp-button");
@@ -279,6 +289,7 @@ void AagosWebInterface::SetupInterface() {
 
     run_toggle_but.SetDisabled(config_mode);
     run_step_but.SetDisabled(config_mode);
+    run_reset_but.SetDisabled(config_mode);
     DisableConfigInputs(!config_mode);
   }, "Apply configuration", "config-apply-button");
   config_apply_but.SetAttr("class", "d-none");
@@ -291,6 +302,7 @@ void AagosWebInterface::SetupInterface() {
 
     run_toggle_but.SetDisabled(config_mode);
     run_step_but.SetDisabled(config_mode);
+    run_reset_but.SetDisabled(config_mode);
     DisableConfigInputs(!config_mode);
   }, "Confirm", "confirm-config-exp-button");
   confirm_config_exp_but.SetAttr("class", "btn btn-danger");
@@ -307,6 +319,10 @@ void AagosWebInterface::SetupInterface() {
   control_div.Div("button-row")
     << UI::Div("run-col").SetAttr("class", "col-lg-auto p-2")
     << run_toggle_but;
+
+  control_div.Div("button-row")
+    << UI::Div("reset-col").SetAttr("class", "col-lg-auto p-2")
+    << run_reset_but;
 
   control_div.Div("button-row")
     << UI::Div("config-exp-col").SetAttr("class", "col-lg-auto p-2")
@@ -419,6 +435,7 @@ void AagosWebInterface::DoFrame() {
       run_toggle_but.SetDisabled(true);
       run_step_but.SetDisabled(true);
       config_exp_but.SetDisabled(false);
+      run_reset_but.SetDisabled(false);
     }
 
   } else if (cur_phase == 1 && GetUpdate() >= TOTAL_GENS) {
@@ -428,6 +445,7 @@ void AagosWebInterface::DoFrame() {
     run_toggle_but.SetDisabled(true);
     run_step_but.SetDisabled(true);
     config_exp_but.SetDisabled(false);
+    run_reset_but.SetDisabled(false);
   }
 }
 
@@ -444,10 +462,10 @@ void AagosWebInterface::ReconfigureWorld() {
   // Loop over config inputs, reconfiguring.
   for (auto & cfg : config_input_elements) {
     // cfg.second.Disabled(in_dis);
-    std::cout << "- Config option: " << cfg.first << std::endl;
-    std::cout << "  Old config value = " << config.Get(cfg.first) << std::endl;
+    // std::cout << "- Config option: " << cfg.first << std::endl;
+    // std::cout << "  Old config value = " << config.Get(cfg.first) << std::endl;
     config.Set(cfg.first, cfg.second.GetValue());
-    std::cout << "  New config value = " << config.Get(cfg.first) << std::endl;
+    // std::cout << "  New config value = " << config.Get(cfg.first) << std::endl;
   }
   // Setup the world again...
   Setup();
