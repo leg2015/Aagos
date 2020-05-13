@@ -53,7 +53,7 @@
     </div> <!-- End row -->
 
     <div class="row mb-2">
-      <div class="col-md-8">
+      <div class="col-lg-8">
 
         <div class="row mb-2">
 
@@ -85,7 +85,7 @@
 
       </div> <!-- End col -->
 
-      <div class="col-md-4">
+      <div class="col-lg-4">
 
         <div class="row mb-2">
 
@@ -117,8 +117,12 @@
               <div id="config-card" class="collapse show" aria-labelledby="config-card-header">
                 <div class="card-body px-0 py-0" style="overflow-y:scroll; max-height:600px;">
 
+                  <!-- <div class="row m-0 justify-content-center bg-light">
+                    <button class="btn btn-lg bg-danger text-light m-1 w-100"> Configure Experiment </button>
+                  </div> -->
+
                   <div class="card border-0">
-                    <div class="card-header bg-light rounded-0" id="config-general-card-header">
+                    <div class="card-header bg-light rounded-0 border-top" id="config-general-card-header">
                       <button class="btn btn-lg btn-block bg-dark text-light" type="button" data-toggle="collapse" data-target="#config-general-card" aria-expanded="true" aria-controls="config-general-card">
                         <h5 class="mb-0"> General </h5>
                       </button>
@@ -199,7 +203,28 @@
 
     </div> <!-- End row -->
 
-
+    <!-- Modal -->
+    <div class="modal fade" id="config-exp-modal" tabindex="-1" role="dialog" aria-labelledby="config-exp-model-label" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="config-exp-model-label">Configure experiment confirmation</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            Re-configuring the experiment will lose all current experiment progress, resetting the run.
+            Are you sure?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <div id="emp_config_exp_confirmation"></div>
+            <!-- <button type="button" class="btn btn-primary">Confirm</button> -->
+          </div>
+        </div>
+      </div>
+    </div>
 
 
   </div>

@@ -69,13 +69,18 @@ protected:
   UI::Document config_genetic_arch_div;
   UI::Document config_mutation_div;
   UI::Document config_phase_2_evo_div;
+  UI::Document confirm_exp_config_div;
 
   UI::Button run_toggle_but;
   UI::Button run_step_but;
+  UI::Button config_exp_but;
+  UI::Button config_apply_but;
+  UI::Button confirm_config_exp_but;
 
   std::unordered_map<std::string, UI::Input> config_input_elements;
 
   size_t draw_frequency=32;
+  bool config_mode=false;
 
   AagosPopulationVisualization pop_vis;
 
@@ -216,6 +221,7 @@ public:
       config_genetic_arch_div("emp_view_config_genetic_architecture"),
       config_mutation_div("emp_view_config_mutation"),
       config_phase_2_evo_div("emp_view_config_phase_2_evolution"),
+      confirm_exp_config_div("emp_config_exp_confirmation"),
       pop_vis("emp-pop-vis")
   {
     std::cout << "AagowWebInterface constructor!" << std::endl;
@@ -238,14 +244,47 @@ void AagosWebInterface::SetupInterface() {
     ToggleActive();
     run_toggle_but.SetLabel(active ? "Stop" : "Run"); // TODO - use icons
     run_step_but.SetDisabled(active);
-    DisableConfigInputs(active);
+    config_exp_but.SetDisabled(active);
   }, "Run", "run-toggle-button");
   run_toggle_but.SetAttr("class", "btn btn-block btn-lg btn-primary");
-  std::cout << "setup run_toggle_but" << std::endl;
 
   // Step button setup.
   run_step_but = GetStepButton("run-step-button");
   run_step_but.SetAttr("class", "btn btn-block btn-lg btn-primary");
+
+  // Config experiment button setup.
+  config_exp_but = UI::Button([]() { ; }, "Configure Experiment", "config-exp-button");
+  config_exp_but.SetAttr("class", "btn btn-block btn-lg btn-danger");
+  config_exp_but.SetAttr("data-toggle", "modal");
+  config_exp_but.SetAttr("data-target", "#config-exp-modal");
+
+  config_apply_but = UI::Button([this]() {
+    // In config mode, so we need to apply configuration.
+    config_mode = false;
+
+    config_exp_but.SetAttr("class", "btn btn-block btn-lg btn-danger");
+    config_apply_but.SetAttr("class", "d-none");
+
+    // todo - apply config to world
+    run_toggle_but.SetDisabled(config_mode);
+    run_step_but.SetDisabled(config_mode);
+    DisableConfigInputs(!config_mode);
+  }, "Apply configuration", "config-apply-button");
+  config_apply_but.SetAttr("class", "d-none");
+
+  confirm_config_exp_but = UI::Button([this]() {
+    config_mode = true;
+
+    config_exp_but.SetAttr("class", "d-none");
+    config_apply_but.SetAttr("class", "btn btn-block btn-lg btn-danger");
+
+    run_toggle_but.SetDisabled(config_mode);
+    run_step_but.SetDisabled(config_mode);
+    DisableConfigInputs(!config_mode);
+  }, "Confirm", "confirm-config-exp-button");
+  confirm_config_exp_but.SetAttr("class", "btn btn-danger");
+  confirm_config_exp_but.SetAttr("data-dismiss", "modal");
+  confirm_exp_config_div << confirm_config_exp_but;
 
   // Add buttons to controls view.
   control_div << UI::Div("button-row").SetAttr("class", "row justify-content-md-center");
@@ -257,6 +296,12 @@ void AagosWebInterface::SetupInterface() {
   control_div.Div("button-row")
     << UI::Div("run-col").SetAttr("class", "col-lg-auto p-2")
     << run_toggle_but;
+
+  control_div.Div("button-row")
+    << UI::Div("config-exp-col").SetAttr("class", "col-lg-auto p-2")
+    << config_exp_but;
+  control_div.Div("config-exp-col")
+    << config_apply_but;
 
   control_div.Div("button-row")
     << UI::Div("render-frequency-col").SetAttr("class", "col-lg-auto p-2")
@@ -367,14 +412,14 @@ void AagosWebInterface::SetupConfigInterface() {
   // --- General Configuration Settings ---
   config_general_div
     << UI::Element("ul", "general-config-ul")
-        .SetAttr("class", "list-group list-group-flush")
-        .SetCSS("overflow-x","scroll");
+        .SetAttr("class", "list-group list-group-flush");
+        // .SetCSS("overflow-x","scroll");
 
   // CHANGE_MAGNITUDE
   config_general_div.Find("general-config-ul")
     << UI::Element("li", "CHANGE_MAGNITUDE-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_general_div,
                 /* append_to_id   =*/ "CHANGE_MAGNITUDE-config-li",
                 /* config_name    =*/ "CHANGE_MAGNITUDE",
@@ -389,8 +434,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // CHANGE_FREQUENCY
   config_general_div.Find("general-config-ul")
     << UI::Element("li", "CHANGE_FREQUENCY-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_general_div,
                 /* append_to_id =*/ "CHANGE_FREQUENCY-config-li",
                 /* config_name  =*/ "CHANGE_FREQUENCY",
@@ -405,8 +450,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // POP_SIZE
   config_general_div.Find("general-config-ul")
     << UI::Element("li", "POP_SIZE-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_general_div,
                 /* append_to_id =*/ "POP_SIZE-config-li",
                 /* config_name  =*/ "POP_SIZE",
@@ -421,8 +466,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // MAX_GENS
   config_general_div.Find("general-config-ul")
     << UI::Element("li", "MAX_GENS-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_general_div,
                 /* append_to_id =*/ "MAX_GENS-config-li",
                 /* config_name  =*/ "MAX_GENS",
@@ -437,8 +482,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // TOURNAMENT_SIZE
   config_general_div.Find("general-config-ul")
     << UI::Element("li", "TOURNAMENT_SIZE-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_general_div,
                 /* append_to_id =*/ "TOURNAMENT_SIZE-config-li",
                 /* config_name  =*/ "TOURNAMENT_SIZE",
@@ -453,8 +498,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // SEED
   config_general_div.Find("general-config-ul")
     << UI::Element("li", "SEED-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_general_div,
                 /* append_to_id =*/ "SEED-config-li",
                 /* config_name  =*/ "SEED",
@@ -476,8 +521,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // NUM_GENES
   config_genetic_arch_div.Find("genetic-arch-config-ul")
     << UI::Element("li", "NUM_GENES-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_genetic_arch_div,
                 /* append_to_id =*/ "NUM_GENES-config-li",
                 /* config_name  =*/ "NUM_GENES",
@@ -492,8 +537,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // GENE_SIZE
   config_genetic_arch_div.Find("genetic-arch-config-ul")
     << UI::Element("li", "GENE_SIZE-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_genetic_arch_div,
                 /* append_to_id =*/ "GENE_SIZE-config-li",
                 /* config_name  =*/ "GENE_SIZE",
@@ -508,8 +553,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // MIN_SIZE
   config_genetic_arch_div.Find("genetic-arch-config-ul")
     << UI::Element("li", "MIN_SIZE-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_genetic_arch_div,
                 /* append_to_id =*/ "MIN_SIZE-config-li",
                 /* config_name  =*/ "MIN_SIZE",
@@ -524,8 +569,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // MAX_SIZE
   config_genetic_arch_div.Find("genetic-arch-config-ul")
     << UI::Element("li", "MAX_SIZE-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_genetic_arch_div,
                 /* append_to_id =*/ "MAX_SIZE-config-li",
                 /* config_name  =*/ "MAX_SIZE",
@@ -540,8 +585,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // NUM_BITS
   config_genetic_arch_div.Find("genetic-arch-config-ul")
     << UI::Element("li", "NUM_BITS-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_genetic_arch_div,
                 /* append_to_id =*/ "NUM_BITS-config-li",
                 /* config_name  =*/ "NUM_BITS",
@@ -562,8 +607,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // GENE_MOVE_PROB
   config_mutation_div.Find("mutation-config-ul")
     << UI::Element("li", "GENE_MOVE_PROB-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_mutation_div,
                 /* append_to_id =*/ "GENE_MOVE_PROB-config-li",
                 /* config_name  =*/ "GENE_MOVE_PROB",
@@ -578,8 +623,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // BIT_FLIP_PROB
   config_mutation_div.Find("mutation-config-ul")
     << UI::Element("li", "BIT_FLIP_PROB-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_mutation_div,
                 /* append_to_id =*/ "BIT_FLIP_PROB-config-li",
                 /* config_name  =*/ "BIT_FLIP_PROB",
@@ -594,8 +639,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // BIT_INS_PROB
   config_mutation_div.Find("mutation-config-ul")
     << UI::Element("li", "BIT_INS_PROB-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_mutation_div,
                 /* append_to_id =*/ "BIT_INS_PROB-config-li",
                 /* config_name  =*/ "BIT_INS_PROB",
@@ -610,8 +655,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // BIT_DEL_PROB
   config_mutation_div.Find("mutation-config-ul")
     << UI::Element("li", "BIT_DEL_PROB-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_mutation_div,
                 /* append_to_id =*/ "BIT_DEL_PROB-config-li",
                 /* config_name  =*/ "BIT_DEL_PROB",
@@ -632,8 +677,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // PHASE_2_ACTIVE
   config_phase_2_evo_div.Find("phase-2-config-ul")
     << UI::Element("li", "PHASE_2_ACTIVE-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_phase_2_evo_div,
                 /* append_to_id =*/ "PHASE_2_ACTIVE-config-li",
                 /* config_name  =*/ "PHASE_2_ACTIVE",
@@ -648,8 +693,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // PHASE_2_CHANGE_MAGNITUDE
   config_phase_2_evo_div.Find("phase-2-config-ul")
     << UI::Element("li", "PHASE_2_CHANGE_MAGNITUDE-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_phase_2_evo_div,
                 /* append_to_id =*/ "PHASE_2_CHANGE_MAGNITUDE-config-li",
                 /* config_name  =*/ "PHASE_2_CHANGE_MAGNITUDE",
@@ -664,8 +709,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // PHASE_2_CHANGE_FREQUENCY
   config_phase_2_evo_div.Find("phase-2-config-ul")
     << UI::Element("li", "PHASE_2_CHANGE_FREQUENCY-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_phase_2_evo_div,
                 /* append_to_id =*/ "PHASE_2_CHANGE_FREQUENCY-config-li",
                 /* config_name  =*/ "PHASE_2_CHANGE_FREQUENCY",
@@ -680,8 +725,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // PHASE_2_MAX_GENS
   config_phase_2_evo_div.Find("phase-2-config-ul")
     << UI::Element("li", "PHASE_2_MAX_GENS-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_phase_2_evo_div,
                 /* append_to_id =*/ "PHASE_2_MAX_GENS-config-li",
                 /* config_name  =*/ "PHASE_2_MAX_GENS",
@@ -696,8 +741,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // PHASE_2_TOURNAMENT_SIZE
   config_phase_2_evo_div.Find("phase-2-config-ul")
     << UI::Element("li", "PHASE_2_TOURNAMENT_SIZE-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_phase_2_evo_div,
                 /* append_to_id =*/ "PHASE_2_TOURNAMENT_SIZE-config-li",
                 /* config_name  =*/ "PHASE_2_TOURNAMENT_SIZE",
@@ -712,8 +757,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // PHASE_2_GENE_MOVE_PROB
   config_phase_2_evo_div.Find("phase-2-config-ul")
     << UI::Element("li", "PHASE_2_GENE_MOVE_PROB-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_phase_2_evo_div,
                 /* append_to_id =*/ "PHASE_2_GENE_MOVE_PROB-config-li",
                 /* config_name  =*/ "PHASE_2_GENE_MOVE_PROB",
@@ -728,8 +773,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // PHASE_2_BIT_FLIP_PROB
   config_phase_2_evo_div.Find("phase-2-config-ul")
     << UI::Element("li", "PHASE_2_BIT_FLIP_PROB-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_phase_2_evo_div,
                 /* append_to_id =*/ "PHASE_2_BIT_FLIP_PROB-config-li",
                 /* config_name  =*/ "PHASE_2_BIT_FLIP_PROB",
@@ -744,8 +789,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // PHASE_2_BIT_INS_PROB
   config_phase_2_evo_div.Find("phase-2-config-ul")
     << UI::Element("li", "PHASE_2_BIT_INS_PROB-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_phase_2_evo_div,
                 /* append_to_id =*/ "PHASE_2_BIT_INS_PROB-config-li",
                 /* config_name  =*/ "PHASE_2_BIT_INS_PROB",
@@ -760,8 +805,8 @@ void AagosWebInterface::SetupConfigInterface() {
   // PHASE_2_BIT_DEL_PROB
   config_phase_2_evo_div.Find("phase-2-config-ul")
     << UI::Element("li", "PHASE_2_BIT_DEL_PROB-config-li")
-        .SetAttr("class", "list-group-item p-0 mt-1 border-0")
-        .SetCSS("min-width", "256px");
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+        // .SetCSS("min-width", "256px");
   AddConfigInput(config_phase_2_evo_div,
                 /* append_to_id =*/ "PHASE_2_BIT_DEL_PROB-config-li",
                 /* config_name  =*/ "PHASE_2_BIT_DEL_PROB",
@@ -773,6 +818,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_BIT_DEL_PROB()),
                 /* config_tooltip =*/ GetConfig()["PHASE_2_BIT_DEL_PROB"]->GetDescription());
 
+    config_mode=false;
+    DisableConfigInputs();
 }
 
 #endif
