@@ -79,13 +79,14 @@ protected:
 
   std::unordered_map<std::string, UI::Input> config_input_elements;
 
-  size_t draw_frequency=32;
+  size_t draw_frequency=64;
   bool config_mode=false;
 
   AagosPopulationVisualization pop_vis;
 
   void RedrawPopulation(bool update_data=true);
   void RedrawEnvironment();
+  void ReconfigureWorld();
 
   void SetupConfigInterface();
 
@@ -266,6 +267,8 @@ void AagosWebInterface::SetupInterface() {
     config_apply_but.SetAttr("class", "d-none");
 
     // todo - apply config to world
+    ReconfigureWorld();
+
     run_toggle_but.SetDisabled(config_mode);
     run_step_but.SetDisabled(config_mode);
     DisableConfigInputs(!config_mode);
@@ -363,7 +366,6 @@ void AagosWebInterface::SetupInterface() {
 
     // Configure
     pop_vis.Setup(*this);
-    pop_vis.Start();
 
     emp::OnResize([this]() {
       std::cout << "Resize?" << std::endl;
@@ -401,6 +403,24 @@ void AagosWebInterface::RedrawPopulation(bool update_data) {
 
 void AagosWebInterface::RedrawEnvironment() {
   pop_vis.DrawGradientEnv(*this, true);
+}
+
+void AagosWebInterface::ReconfigureWorld() {
+  std::cout << "--- reconfigure world ---" << std::endl;
+  // Loop over config inputs, reconfiguring.
+  for (auto & cfg : config_input_elements) {
+    // cfg.second.Disabled(in_dis);
+    std::cout << "Old config value = " << config.Get(cfg.first) << std::endl;
+    config.Set(cfg.first, cfg.second.GetValue());
+    std::cout << "New config value = " << config.Get(cfg.first) << std::endl;
+  }
+  // Setup the world again...
+  Setup();
+
+  pop_vis.Setup(*this); // Re-configure pop_vis
+
+  RedrawPopulation(); // Finally, go ahead and draw initial population.
+  RedrawEnvironment();
 }
 
 void AagosWebInterface::SetupConfigInterface() {

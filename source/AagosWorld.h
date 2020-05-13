@@ -522,7 +522,9 @@ void AagosWorld::Run() {
 // todo - make callable multiple times?
 void AagosWorld::Setup() {
   std::cout << "-- Setting up AagosWorld -- " << std::endl;
-  setup = false;
+
+  Reset(); // Reset the world
+
   // Reset world's random number seed.
   random_ptr->ResetSeed(config.SEED());
 
@@ -545,6 +547,7 @@ void AagosWorld::Setup() {
 
   // Configure mutator
   std::cout << "Constructing mutator..." << std::endl;
+  if (mutator != nullptr) mutator.Delete();
   mutator = emp::NewPtr<AagosMutator>(config.NUM_GENES(), emp::Range<size_t>(config.MIN_SIZE(), config.MAX_SIZE()),
                                       CUR_GENE_MOVE_PROB, CUR_BIT_FLIP_PROB,
                                       CUR_BIT_INS_PROB, CUR_BIT_DEL_PROB);
@@ -565,7 +568,7 @@ void AagosWorld::Setup() {
   });
 
   // Configure data tracking
-  InitDataTracking();
+  if (!setup) InitDataTracking();
 
   // Initialize population
   std::cout << "Initialize the population" << std::endl;
@@ -649,6 +652,7 @@ void AagosWorld::InitFitnessEval() {
   // Current model options: gradient, no gradient
   if (config.GRADIENT_MODEL()) {
     std::cout << "Initializing gradient model of fitness." << std::endl;
+    if (fitness_model_gradient != nullptr) fitness_model_gradient.Delete();
     fitness_model_gradient = emp::NewPtr<GradientFitnessModel>(*random_ptr, config.NUM_GENES(), config.GENE_SIZE());
     // Print out the gene targets
     std::cout << "Initial gene targets:" << std::endl;
@@ -696,6 +700,7 @@ void AagosWorld::InitFitnessEval() {
     };
   } else {
     std::cout << "Initializing NK model of fitness." << std::endl;
+    if (fitness_model_nk != nullptr) fitness_model_nk.Delete();
     fitness_model_nk = emp::NewPtr<NKFitnessModel>(*random_ptr, config.NUM_GENES(), config.GENE_SIZE());
     // Configure the organism evaluation function.
     evaluate_org = [this](org_t & org) {

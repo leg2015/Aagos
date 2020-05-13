@@ -234,10 +234,6 @@ public:
     init = true;
   }
 
-  void Start() {
-    // todo
-  }
-
   void DrawGradientEnv(world_t & world, bool update_data=true) {
     std::cout << "draw env" << std::endl;
     if (update_data) UpdateGradientEnvData(world);
