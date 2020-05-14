@@ -17,11 +17,12 @@ public:
 
 protected:
 
-  UI::Document vis_div;
 
   bool init=false;
   bool data_drawn=false;
   std::string element_id;
+
+  UI::Document vis_div;
 
   size_t org_height=30;
   size_t pop_view_max_height_px=500;
@@ -188,6 +189,7 @@ public:
 
   void Setup(world_t & world) {
     std::cout << "Pop visualization setup" << std::endl;
+
     InitializeVariables(world);
 
     // Clean out contents of vis_div
@@ -210,7 +212,7 @@ public:
         << UI::Div(element_id + "-gene-target-" + emp::to_string(gene_id) + "-id-label").SetAttr("class", "d-flex align-items-center h-100 bg-dark text-light px-1")
         << gene_id;
       vis_div.Div(element_id + "-gene-target-" + emp::to_string(gene_id) + "-d-flex-container")
-        << UI::Div(element_id + "-gene-target" + emp::to_string(gene_id) + "-canvas-div");
+        << UI::Div(element_id + "-gene-target-" + emp::to_string(gene_id) + "-canvas-div");
       // NOTE - 'element_id + "-gene-target" + emp::to_string(gene_id) + "-canvas-div"' is where we'll
       //         put each gene target svg
     }
@@ -224,43 +226,30 @@ public:
       << "Population";
     vis_div << UI::Div(element_id + "-population-canvas-row").SetAttr("class", "row");
     vis_div.Div(element_id + "-population-canvas-row")
-      << UI::Div(element_id + "-population-canvas-div").SetAttr("class", "AagosPopVis-canvas-div");
-
+      << UI::Div(element_id + "-population-canvas-div")
+        .SetAttr("class", "AagosPopVis-canvas-div")
+        .SetCSS("overflow-y", "scroll")
+        .SetCSS("max-height", emp::to_string(pop_view_max_height_px) + "px");
 
     // Add SVG to #element_id
     EM_ASM({
-      var elem_id = UTF8ToString($0);
-      var elem = d3.select("#"+elem_id);
-      // elem.selectAll("*").remove(); // Clean out root div.
-      // ---- Configure environment view (div/svg/canvas/data-canvas) ----
-      var env_div = elem.append("div")
-                        .attr("id", "AagosPopVis-"+elem_id+"-env-canvas-div")
-                        .style("overflow-x", "scroll");
-
-      var env_svg = env_div.append("svg")
-                           .attr("width",1)
-                           .attr("height",1)
-                           .attr("id","AagosPopVis-"+elem_id+"-env-svg")
-                           .attr("class","AagosPopVis-svg");
-
-      var env_canvas = env_svg.append("g")
-                              .attr("id","AagosPopVis-"+elem_id+"-env-canvas")
-                              .attr("class","AagosPopVis-canvas");
-
-      var env_data_canvas = env_canvas.append("g")
-                                      .attr("id","AagosPopVis-"+elem_id+"-env-data-canvas")
-                                      .attr("class","AagosPopVis-canvas");
+      const elem_id = UTF8ToString($0);
+      const num_genes = $1;
 
       // ---- Configure population view (div/svg/canvas/data-canvas) ----
-      var pop_div = elem.append("div")
-                        .attr("id", "AagosPopVis-"+elem_id+"-pop-canvas-div")
-                        .style("overflow-y", "scroll");
+      const pop_canvas_div_id = elem_id+"-population-canvas-div";
+      emp.AagosPopVis[elem_id]["pop_canvas_div_id"] = pop_canvas_div_id;
 
-      var pop_svg = pop_div.append("svg")
-                           .attr("width",1)
-                           .attr("height",1)
-                           .attr("id","AagosPopVis-"+elem_id+"-pop-svg")
-                           .attr("class","AagosPopVis-svg");
+      var pop_canvas_div = d3.select("#"+pop_canvas_div_id);
+      pop_canvas_div.select("*").remove();
+
+      // pop_canvas_div.style("overflow-y", "scroll");
+
+      var pop_svg = pop_canvas_div.append("svg")
+                                  .attr("width",1)
+                                  .attr("height",1)
+                                  .attr("id","AagosPopVis-"+elem_id+"-pop-svg")
+                                  .attr("class","AagosPopVis-svg");
 
       var pop_canvas = pop_svg.append("g")
                               .attr("id","AagosPopVis-"+elem_id+"-pop-canvas")
@@ -269,123 +258,37 @@ public:
       var pop_data_canvas = pop_canvas.append("g")
                                       .attr("id","AagosPopVis-"+elem_id+"-pop-data-canvas")
                                       .attr("class","AagosPopVis-canvas");
-    }, element_id.c_str());
+
+      // Setup gene target canvas/svg
+      emp.AagosPopVis[elem_id]["gene_target_canvas_div_ids"] = [];
+      for (let gene_id = 0; gene_id < num_genes; gene_id++) {
+        const gene_target_canvas_div_id = elem_id + "-gene-target-" + gene_id + "-canvas-div";
+        emp.AagosPopVis[elem_id]["gene_target_canvas_div_ids"].push(gene_target_canvas_div_id);
+
+        var gene_target_canvas_div = d3.select("#"+gene_target_canvas_div_id); // todo - debug here! svg not added...
+
+        gene_target_canvas_div.select("*").remove(); // Clean out any old stuff.
+
+        var gene_target_svg = gene_target_canvas_div.append("svg")
+                                                    .attr("width", 1)
+                                                    .attr("height", 1)
+                                                    .attr("id", "AagosPopVis-"+elem_id+"-gene-target-"+gene_id+"-svg")
+                                                    .attr("class", "AagosPopVis-svg");
+        var gene_target_canvas = gene_target_svg.append("g")
+                                                .attr("id", "AagosPopVis-"+elem_id+"-gene-target-"+gene_id+"-canvas");
+        var gene_target_data_canvas = gene_target_canvas.append("g")
+                                                        .attr("id","AagosPopVis-"+elem_id+"-gene-target-"+gene_id+"-data-canvas")
+                                                        .attr("class","AagosPopVis-canvas");
+
+      }
+
+    }, element_id.c_str(), world.GetConfig().NUM_GENES());
 
     init = true;
   }
 
   void DrawGradientEnv(world_t & world, bool update_data=true) {
-    std::cout << "draw env" << std::endl;
-    if (update_data) UpdateGradientEnvData(world);
-    EM_ASM({
-      const elem_id = UTF8ToString($0);
-      const org_height = $1;
 
-      var vis_info = emp.AagosPopVis[elem_id];
-      var gene_colors = vis_info["gene_color_scale"];
-      const num_gene_targets = vis_info["num_gene_targets"];
-      const gene_target_size = vis_info["gene_target_size"];
-      const max_genome_size = vis_info["max_genome_size"];
-
-      const env_div_id = "#AagosPopVis-" + elem_id + "-env-canvas-div";
-      const env_svg_id =  "#AagosPopVis-" + elem_id + "-env-svg";
-      const env_canvas_id = "#AagosPopVis-" + elem_id + "-env-canvas";
-      const env_data_canvas_id = "#AagosPopVis-" + elem_id + "-env-data-canvas";
-
-      var margins = ({top:20, right:20, bottom:20, left:30}); // todo - make dynamic
-      const width = $('#' + elem_id).width(); // Width of surrounding div
-      const canvas_width = width - margins.left - margins.right;
-
-      // todo - handle case where canvas_width < gene_target_width
-      const bit_width = width / (max_genome_size); // Approximately the same size as genome bits (a little bigger).
-      const bit_height = org_height; // Approximately the same size as genome bits (a little bigger).
-      const gene_target_h_padding = 10;
-      const gene_target_v_padding = 5;
-
-      const gene_target_width = (bit_width * (gene_target_size+2)); // spot for label + spacer
-      var targets_per_row = Math.max(Math.floor(canvas_width / gene_target_width), 1);
-      d3.select(env_div_id).style("width", width);
-      const num_rows = Math.ceil(num_gene_targets / targets_per_row);
-
-      const canvas_height = ((bit_height + gene_target_v_padding) * num_rows) + margins.top + margins.bottom;
-
-      // Configure x/y range/domains (with a little bit of flex room?)
-      var env_x_domain = ([0, targets_per_row]);
-      var env_x_range  = ([0, canvas_width]);
-      var env_y_domain = ([0, num_rows+1]);
-      var env_y_range  = ([0, canvas_height]);
-      var env_x_scale  = d3.scaleLinear().domain(env_x_domain).range(env_x_range);
-      var env_y_scale  = d3.scaleLinear().domain(env_y_domain).range(env_y_range);
-
-      var svg = d3.select(env_svg_id);
-      svg.attr("width", canvas_width);
-      svg.attr("height", canvas_height);
-
-      var env_canvas = d3.select(env_canvas_id);
-      env_canvas.attr("transform", "translate(" + margins.left + "," + margins.top + ")");
-
-      env_canvas.selectAll(".env-canvas-title").remove();
-      env_canvas.append("text")
-                .attr("class", "env-canvas-title")
-                .attr("transform", "translate(" + (canvas_width / 2) + ",-5)")
-                .style("text-anchor", "middle")
-                .text("Gene Targets");
-
-      var env_data_canvas = d3.select(env_data_canvas_id);
-      env_data_canvas.selectAll("*").remove();
-      var gene_targets = env_data_canvas.selectAll("g").data(vis_info["gradient_env"]);
-      gene_targets.enter()
-                  .append("g")
-                  .attr("class", "AagosPopVis-gene-target")
-                  .attr("id", function(target) {
-                    return "AagosPopVis-"+elem_id+"-gene-target-"+target.gene_id;
-                  })
-                  .attr("transform", function(target, gene_id) {
-                    const row_pos = gene_id % targets_per_row;
-                    const row_id = Math.floor(gene_id / targets_per_row);
-                    const x_trans = env_x_scale(row_pos);
-                    const y_trans = env_y_scale(row_id);
-                    // console.log("targets_per_row=" + targets_per_row);
-                    // console.log("row_pos=" + row_pos);
-                    // console.log("row_id=" + row_id);
-                    return "translate(" + x_trans + "," + y_trans + ")";
-                  })
-                  .each(function(target, gene_id) {
-                    var bits = d3.select(this).selectAll("rect.bit").data(target["bits"]);
-                    const rect_height = bit_height;
-                    const rect_width = bit_width;
-                    const row_pos = gene_id % targets_per_row;
-                    const row_id = Math.floor(gene_id / targets_per_row);
-                    bits.enter()
-                        .append("rect")
-                        .attr("class", "bit")
-                        .attr("transform", function(bit, bit_i) {
-                          const x_trans = (rect_width * bit_i); // +1.5 rw for label in front
-                          const y_trans = 0;
-                          return "translate(" + x_trans + "," + y_trans + ")";
-                        })
-                        .attr("height", rect_height)
-                        .attr("width", rect_width)
-                        .attr("fill", gene_colors(gene_id))
-                        .attr('stroke', 'black');
-                    var bit_text = d3.select(this).selectAll("text").data(target["bits"]);
-                    bit_text.enter()
-                            .append("text")
-                            .attr("class", "bit-text")
-                            .attr("transform", function(bit, bit_i) {
-                              const x_trans = (rect_width * bit_i) + (rect_width / 2.0); // +1.5 rw for label in front
-                              const y_trans = (rect_height / 2.0);
-                              return "translate(" + x_trans + "," + y_trans + ")";
-                            })
-                            .attr("dominant-baseline", "middle")
-                            .attr("text-anchor", "middle")
-                            .text(function(bit, bit_i) {
-                              return bit;
-                            });
-                  });
-
-    }, element_id.c_str(),
-       org_height);
   }
 
   void DrawPop(world_t & world, bool update_data=true) {
@@ -403,7 +306,7 @@ public:
       const most_fit_id = vis_info["most_fit_id"];
       var gene_colors = vis_info["gene_color_scale"];
 
-      const pop_div_id = "#AagosPopVis-" + elem_id + "-pop-canvas-div";
+      const pop_div_id = emp.AagosPopVis[elem_id]["pop_canvas_div_id"];
       const pop_svg_id =  "#AagosPopVis-" + elem_id + "-pop-svg";
       const pop_canvas_id = "#AagosPopVis-" + elem_id + "-pop-canvas";
       const pop_data_canvas_id = "#AagosPopVis-" + elem_id + "-pop-data-canvas";
@@ -418,7 +321,6 @@ public:
       } else {
         d3.select(pop_div_id).style("height", "");
       }
-
 
       var canvas_width = width - margins.left - margins.right;
       var canvas_height = height - margins.top - margins.bottom;
@@ -447,14 +349,6 @@ public:
       // Grab the pop canvas inside of the svg, add transform to respect margins.
       var pop_canvas = d3.select(pop_canvas_id);
       pop_canvas.attr("transform", "translate(" + margins.left + "," + margins.top + ")");
-
-      // Add label that will hangout in top margin
-      pop_canvas.selectAll(".pop-canvas-title").remove();
-      pop_canvas.append("text")
-                .attr("class", "pop-canvas-title")
-                .attr("transform", "translate(" + (canvas_width / 2) + ",-3)")
-                .style("text-anchor", "middle")
-                .text("Population");
 
       // --- Axes ---
       pop_canvas.selectAll(".y_axis").remove();
