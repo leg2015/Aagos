@@ -248,6 +248,30 @@ public:
 };
 
 void AagosWebInterface::SetupInterface() {
+
+  // emp::JSWrap([this](){ ReconfigureWorld(); }, "reconfigure_world");
+  emp::JSWrap([this]() {
+
+    ReconfigureWorld();
+
+    config_exp_but.SetAttr("class", "btn btn-block btn-lg btn-danger");
+    config_apply_but.SetAttr("class", "d-none");
+    config_apply_but.SetLabel("Apply configuration");
+
+    run_toggle_but.SetDisabled(config_mode);
+    run_step_but.SetDisabled(config_mode);
+    run_reset_but.SetDisabled(config_mode);
+
+    DisableConfigInputs(!config_mode);
+  }, "do_apply_config"); // Yikes, yucking up empirical's 'global' js namespace
+
+  emp::JSWrap([this]() {
+    ReconfigureWorld();
+    run_reset_but.SetDisabled(active);
+    run_step_but.SetDisabled(active);
+    config_exp_but.SetDisabled(active);
+  }, "do_reset_world");
+
   // ---- Setup interface control buttons ----
   // Run button setup.
   // Manually create run/pause button to have full control over button's callback.
@@ -267,10 +291,13 @@ void AagosWebInterface::SetupInterface() {
 
   // Reset run button setup.
   run_reset_but = UI::Button([this]() {
-    ReconfigureWorld();
-    run_reset_but.SetDisabled(active);
-    run_step_but.SetDisabled(active);
-    config_exp_but.SetDisabled(active);
+    EM_ASM({
+      // Hi-jack button's html to show dope spinner while doing World's Setup (which can take a min)
+      $("#run-reset-button").html('<div class="d-flex align-items-center justify-content-center"><span class="spinner-border spinner-border-sm mr-1" role="status"></span>Restarting...</div>');
+      setTimeout(function() {
+        emp.do_reset_world();
+      });
+    }, 42);
   }, "Restart", "run-reset-button");
   run_reset_but.SetAttr("class", "btn btn-block btn-lg btn-warning");
 
@@ -284,18 +311,38 @@ void AagosWebInterface::SetupInterface() {
     // In config mode, so we need to apply configuration.
     config_mode = false;
 
-    config_exp_but.SetAttr("class", "btn btn-block btn-lg btn-danger");
-    config_apply_but.SetAttr("class", "d-none");
+    EM_ASM({
+      // Hi-jack config-apply-button's html to show dope spinner while doing World's Setup (which can take a min)
+      $("#config-apply-button").html('<div class="d-flex align-items-center justify-content-center"><span class="spinner-border spinner-border-sm mr-1" role="status"></span>Applying configuration...</div>');
+      setTimeout(function() {
+        emp.do_apply_config();
+        // $("#config-loading-spinner").attr("class", "spinner-border d-none");
+      });
+    }, 42);
 
-    // todo - apply config to world
-    ReconfigureWorld();
+    // config_exp_but.SetAttr("class", "btn btn-block btn-lg btn-danger");
+    // config_apply_but.SetAttr("class", "d-none");
 
-    run_toggle_but.SetDisabled(config_mode);
-    run_step_but.SetDisabled(config_mode);
-    run_reset_but.SetDisabled(config_mode);
-    DisableConfigInputs(!config_mode);
+    // run_toggle_but.SetDisabled(config_mode);
+    // run_step_but.SetDisabled(config_mode);
+    // run_reset_but.SetDisabled(config_mode);
+
+    // DisableConfigInputs(!config_mode);
   }, "Apply configuration", "config-apply-button");
   config_apply_but.SetAttr("class", "d-none");
+
+  // EM_ASM({
+    // $("#config-apply-button").html('<div class="d-flex align-items-center justify-content-center"><span class="spinner-border spinner-border-sm mr-1" role="status"></span>Words</div>');
+  // });
+
+  // config_apply_but << UI::Div("1").SetAttr("class", "d-flex align-items-center justify-content-center")
+  //   << UI::Element("span", "2")
+  //     .SetAttr("class", "spinner-border spinner-border-sm mr-1")
+  //     .SetAttr("role", "status");
+  // config_apply_but.Div("1") << "Apply...";
+  // config_apply_but.SetLabel(
+    // "<span class=\"spinner-border spinner-border-sm\" role=\"status\" aria-hidden=\"true\"></span> Apply Config..."
+  // );
 
   confirm_config_exp_but = UI::Button([this]() {
     config_mode = true;
@@ -333,6 +380,10 @@ void AagosWebInterface::SetupInterface() {
   control_div.Div("config-exp-col")
     << config_apply_but;
 
+    // control_div << UI::Div("config-loading-spinner")
+  //   .SetAttr("class", "spinner-border d-none")
+  //   .SetAttr("role", "status");
+
   control_div.Div("button-row")
     << UI::Div("render-frequency-col").SetAttr("class", "col-lg-auto p-2")
     << UI::Div("render-wrapper").SetAttr("class", "input-group input-group-lg")
@@ -356,10 +407,14 @@ void AagosWebInterface::SetupInterface() {
         .SetAttr("class", "form-control")
         .SetCSS("min-width", "96px");
 
-   control_div.Div("render-wrapper")
+  control_div.Div("render-wrapper")
     << UI::Div("input-group-append").SetAttr("class", "input-group-append")
     << UI::Text().SetAttr("class", "input-group-text")
     << "th generation";
+
+  // control_div << UI::Div("config-loading-spinner")
+  //   .SetAttr("class", "spinner-border d-none")
+  //   .SetAttr("role", "status");
 
   // ---- Setup config view interface ----
   std::cout << "Setup config interface.."<< std::endl;
@@ -477,22 +532,26 @@ void AagosWebInterface::RedrawEnvironment() {
 }
 
 void AagosWebInterface::ReconfigureWorld() {
+
+  // control_div.Div("config-loading-spinner").SetAttr("class", "spinner-border");
+  // std::cout << control_div.Div("config-loading-spinner").GetAttr("class") << std::endl;
   std::cout << "--- reconfigure world ---" << std::endl;
+
   // Loop over config inputs, reconfiguring.
   for (auto & cfg : config_input_elements) {
-    // cfg.second.Disabled(in_dis);
-    // std::cout << "- Config option: " << cfg.first << std::endl;
-    // std::cout << "  Old config value = " << config.Get(cfg.first) << std::endl;
     config.Set(cfg.first, cfg.second.GetValue());
-    // std::cout << "  New config value = " << config.Get(cfg.first) << std::endl;
   }
   // Setup the world again...
+  // config_apply_but.SetLabel("<div class=\"spinner-border\" role=\"status\"><span class=\"sr-only\">Loading...</span></div>");
   Setup();
-
   pop_vis.Setup(*this); // Re-configure pop_vis
 
   RedrawPopulation(); // Finally, go ahead and draw initial population.
   RedrawEnvironment();
+  std::cout << "--- done reconfiguring world ---" << std::endl;
+
+  // control_div.Div("config-loading-spinner").SetAttr("class", "spinner-border d-none");
+  // std::cout << control_div.Div("config-loading-spinner").GetAttr("class") << std::endl;
 }
 
 void AagosWebInterface::SetupConfigInterface() {

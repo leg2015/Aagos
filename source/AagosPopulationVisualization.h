@@ -46,7 +46,9 @@ protected:
     EM_ASM({
       const elem_id = UTF8ToString($0);
       const num_genes = $1;
-      emp.AagosPopVis[elem_id]["gene_color_scale"] = d3.scaleSequential(d3.interpolateSinebow).domain([0, num_genes]);
+      // emp.AagosPopVis[elem_id]["gene_color_scale"] = d3.scaleSequential(d3.interpolateSinebow).domain([0, num_genes]);
+      emp.AagosPopVis[elem_id]["gene_color_scale"] = d3.scaleSequential(d3.interpolateRainbow).domain([0, num_genes]);
+      // emp.AagosPopVis[elem_id]["gene_color_scale"] = d3.scaleOrdinal().domain([0, num_genes]).range(d3["schemeAccent"]);
     }, element_id.c_str(),
        world.GetConfig().NUM_GENES());
   }
@@ -70,7 +72,7 @@ protected:
   }
 
   void UpdatePopData(world_t & world) {
-    std::cout << "Update pop data..." << std::endl;
+    // std::cout << "Update pop data..." << std::endl;
     if (!init || !world.IsSetup()) return;
 
     // info to update: bits, gene starts, num genes, gene size, num_bits
@@ -150,7 +152,7 @@ protected:
   }
 
   void UpdateGradientEnvData(world_t & world) {
-    std::cout << "Update env data..." << std::endl;
+    // std::cout << "Update env data..." << std::endl;
     emp_assert(world.GetConfig().GRADIENT_MODEL());
     if (!init || !world.IsSetup()) return;
     const size_t num_gene_targets = world.GetConfig().NUM_GENES();
@@ -181,7 +183,7 @@ protected:
          gene_bits.c_str(),
          gene_id);
     }
-    std::cout << "..done updating the environment" << std::endl;
+    // std::cout << "..done updating the environment" << std::endl;
   }
 
 public:
@@ -288,11 +290,98 @@ public:
   }
 
   void DrawGradientEnv(world_t & world, bool update_data=true) {
+    if (update_data) UpdateGradientEnvData(world);
+    EM_ASM({
+      const elem_id = UTF8ToString($0);
+      const org_height = $1;
 
+      var vis_info = emp.AagosPopVis[elem_id];
+      var gene_colors = vis_info["gene_color_scale"];
+      const num_gene_targets = vis_info["num_gene_targets"];
+      const gene_target_size = vis_info["gene_target_size"];
+      const max_genome_size = vis_info["max_genome_size"];
+
+      const margins = ({top: 5, right: 5, bottom: 5, left: 5});
+
+      if (!"org_bit_width" in vis_info) {
+        vis_info["org_bit_width"] = 20;
+      }
+      if (!"org_bit_height" in vis_info) {
+        vis_info["org_bit_height"] = 15;
+      }
+
+      const org_bit_height = vis_info["org_bit_height"];
+      const org_bit_width = vis_info["org_bit_width"];
+
+      const gene_target_width = gene_target_size * org_bit_width;
+      const gene_target_height = org_bit_height;
+
+      const canvas_width = gene_target_width + margins.left + margins.right;
+      const canvas_height = gene_target_height + margins.top + margins.bottom;
+
+      var gene_target_x_domain = ([0, gene_target_size]);
+      var gene_target_x_range = ([0, canvas_width - margins.left - margins.right]);
+      var x_scale = d3.scaleLinear().domain(gene_target_x_domain).range(gene_target_x_range);
+
+      for (let gene_id = 0; gene_id < num_gene_targets; ++gene_id) {
+        div_id = vis_info["gene_target_canvas_div_ids"][gene_id];
+        svg_id = "AagosPopVis-"+elem_id+"-gene-target-"+gene_id+"-svg";
+        canvas_id = "AagosPopVis-"+elem_id+"-gene-target-"+gene_id+"-canvas";
+        data_canvas_id = "AagosPopVis-"+elem_id+"-gene-target-"+gene_id+"-data-canvas";
+
+        // todo - update min width of div w/width of single gene + label!
+
+        var svg = d3.select("#"+svg_id);
+        svg.attr("width", canvas_width);
+        svg.attr("height", canvas_height);
+
+        var canvas = d3.select("#"+canvas_id);
+        canvas.attr("transform", "translate(" + margins.left + "," + margins.top + ")");
+
+        var data_canvas = d3.select("#"+data_canvas_id);
+        data_canvas.selectAll("*").remove();
+
+        var bits = data_canvas.selectAll("rect.bit").data(vis_info["gradient_env"][gene_id]["bits"]);
+        bits.enter()
+            .append("rect")
+            .attr("class", "bit")
+            .attr("id", function(bit, bit_i) {
+              return "AagosPopVis-"+elem_id+"-gene-target-"+gene_id + "-bit-" + bit_i;
+            })
+            .attr("transform", function(bit, bit_i) {
+              const x_trans = x_scale(bit_i);
+              const y_trans = 0;
+              return "translate(" + x_trans + "," + y_trans + ")";
+            })
+            .attr("height", org_bit_height)
+            .attr("width", org_bit_width)
+            .attr("fill", function(bit, bit_i) {
+              return gene_colors(gene_id);
+            })
+            .attr("stroke", "gray");
+        var bit_text = data_canvas.selectAll("text.bit").data(vis_info["gradient_env"][gene_id]["bits"]);
+        bit_text.enter()
+                .append("text")
+                .attr("class", "bit-text")
+                .attr("transform", function(bit, bit_i) {
+                  const x_trans = x_scale(bit_i) + (org_bit_width / 2.0);
+                  const y_trans = (org_bit_height / 2.0);
+                  return "translate(" + x_trans + "," + y_trans + ")";
+                })
+                .attr("dominant-baseline", "middle")
+                .attr("text-anchor", "middle")
+                .text(function(bit, bit_i) {
+                  return bit;
+                });
+
+      }
+
+    }, element_id.c_str(),
+       org_height);
   }
 
   void DrawPop(world_t & world, bool update_data=true) {
-    std::cout << "draw pop" << std::endl;
+    // std::cout << "draw pop" << std::endl;
     if (update_data) UpdatePopData(world); // todo - only do this if data is dirty
     EM_ASM({
       // todo - move redundant stuff elsewhere/one-shot (no need to do multiple times)
@@ -313,7 +402,7 @@ public:
 
       const width = $('#' + elem_id).width(); // Width of surrounding div
       const height = org_height * pop_size;
-      var margins = ({top:20, right:20, bottom:20, left:30}); // todo - make dynamic
+      const margins = ({top:20, right:20, bottom:20, left:30}); // todo - make dynamic
 
       // If computed height is > minimum size, limit view height to maximum size.
       if (height > pop_view_max_height_px) {
@@ -346,6 +435,11 @@ public:
       svg.attr("width", canvas_width);
       svg.attr("height", canvas_height);
 
+      const org_bit_width = pop_x_scale(1);
+      const org_bit_height = pop_y_scale(0.9);
+      vis_info["org_bit_width"] = org_bit_width;
+      vis_info["org_bit_height"] = org_bit_height;
+
       // Grab the pop canvas inside of the svg, add transform to respect margins.
       var pop_canvas = d3.select(pop_canvas_id);
       pop_canvas.attr("transform", "translate(" + margins.left + "," + margins.top + ")");
@@ -377,8 +471,8 @@ public:
                 })
                 .each(function(org) {
                       var bits = d3.select(this).selectAll("rect.bit").data(org["bits"]);
-                      const rect_height = pop_y_scale(0.9);
-                      const rect_width = pop_x_scale(1);
+                      const rect_height = org_bit_height;
+                      const rect_width = org_bit_width;
                       bits.enter()
                           .append("rect")
                           .attr("class", "bit")
