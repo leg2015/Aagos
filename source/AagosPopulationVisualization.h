@@ -7,7 +7,7 @@
 #include "AagosConfig.h"
 #include "AagosOrg.h"
 
-// namespace UI = emp::web;
+namespace UI = emp::web;
 
 // NOTE - at the moment, this will explode if multiple instances of this object exist at once
 class AagosPopulationVisualization  {
@@ -16,6 +16,8 @@ public:
   using org_t = typename AagosWorld::org_t;
 
 protected:
+
+  UI::Document vis_div;
 
   bool init=false;
   bool data_drawn=false;
@@ -182,16 +184,54 @@ protected:
   }
 
 public:
-  AagosPopulationVisualization(const std::string & id="pop-vis") : element_id(id) { ; }
+  AagosPopulationVisualization(const std::string & id="pop-vis") : element_id(id), vis_div(id) { ; }
 
   void Setup(world_t & world) {
     std::cout << "Pop visualization setup" << std::endl;
     InitializeVariables(world);
+
+    // Clean out contents of vis_div
+    vis_div.Clear();
+
+    // Add gene targets infrastructure
+    vis_div << UI::Div(element_id + "-gene-targets-label-row").SetAttr("class", "row justify-content-center");
+    vis_div.Div(element_id + "-gene-targets-label-row")
+      << UI::Element("h5", element_id + "-gene-targets-label").SetAttr("class", "card-title")
+      << "Gene Targets";
+
+    vis_div << UI::Div(element_id + "-gene-targets-row").SetAttr("class", "row justify-content-center");
+    vis_div.Div(element_id + "-gene-targets-row")
+      << UI::Div(element_id + "-gene-targets-flex-row").SetAttr("class", "d-flex flex-row flex-wrap justify-content-center list-group-horizontal");
+
+    for (size_t gene_id = 0; gene_id < world.GetConfig().NUM_GENES(); ++gene_id) {
+      vis_div.Div(element_id + "-gene-targets-flex-row")
+        << UI::Div(element_id + "-gene-target-" + emp::to_string(gene_id) + "-list-group-item").SetAttr("class", "list-group-item border border-dark rounded-0 m-1 p-0")
+        << UI::Div(element_id + "-gene-target-" + emp::to_string(gene_id) + "-d-flex-container").SetAttr("class", "d-flex align-items-center h-100")
+        << UI::Div(element_id + "-gene-target-" + emp::to_string(gene_id) + "-id-label").SetAttr("class", "d-flex align-items-center h-100 bg-dark text-light px-1")
+        << gene_id;
+      vis_div.Div(element_id + "-gene-target-" + emp::to_string(gene_id) + "-d-flex-container")
+        << UI::Div(element_id + "-gene-target" + emp::to_string(gene_id) + "-canvas-div");
+      // NOTE - 'element_id + "-gene-target" + emp::to_string(gene_id) + "-canvas-div"' is where we'll
+      //         put each gene target svg
+    }
+
+    vis_div << UI::Element("hr", element_id + "-gene-targets-hr");
+
+    // Add population view infrastructure
+    vis_div << UI::Div(element_id + "-population-label-row").SetAttr("class", "row justify-content-center");
+    vis_div.Div(element_id + "-population-label-row")
+      << UI::Element("h5", element_id + "-population-label").SetAttr("class", "card-title")
+      << "Population";
+    vis_div << UI::Div(element_id + "-population-canvas-row").SetAttr("class", "row");
+    vis_div.Div(element_id + "-population-canvas-row")
+      << UI::Div(element_id + "-population-canvas-div").SetAttr("class", "AagosPopVis-canvas-div");
+
+
     // Add SVG to #element_id
     EM_ASM({
       var elem_id = UTF8ToString($0);
       var elem = d3.select("#"+elem_id);
-      elem.selectAll("*").remove(); // Clean out root div.
+      // elem.selectAll("*").remove(); // Clean out root div.
       // ---- Configure environment view (div/svg/canvas/data-canvas) ----
       var env_div = elem.append("div")
                         .attr("id", "AagosPopVis-"+elem_id+"-env-canvas-div")
@@ -230,7 +270,7 @@ public:
                                       .attr("id","AagosPopVis-"+elem_id+"-pop-data-canvas")
                                       .attr("class","AagosPopVis-canvas");
     }, element_id.c_str());
-    // todo - setup auto-resizing
+
     init = true;
   }
 
@@ -252,7 +292,7 @@ public:
       const env_canvas_id = "#AagosPopVis-" + elem_id + "-env-canvas";
       const env_data_canvas_id = "#AagosPopVis-" + elem_id + "-env-data-canvas";
 
-      var margins = ({top:20, right:20, bottom:20, left:20}); // todo - make dynamic
+      var margins = ({top:20, right:20, bottom:20, left:30}); // todo - make dynamic
       const width = $('#' + elem_id).width(); // Width of surrounding div
       const canvas_width = width - margins.left - margins.right;
 
@@ -370,7 +410,7 @@ public:
 
       const width = $('#' + elem_id).width(); // Width of surrounding div
       const height = org_height * pop_size;
-      var margins = ({top:20, right:20, bottom:20, left:20}); // todo - make dynamic
+      var margins = ({top:20, right:20, bottom:20, left:30}); // todo - make dynamic
 
       // If computed height is > minimum size, limit view height to maximum size.
       if (height > pop_view_max_height_px) {

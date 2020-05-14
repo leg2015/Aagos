@@ -233,7 +233,8 @@ public:
       config_mutation_div("emp_view_config_mutation"),
       config_phase_2_evo_div("emp_view_config_phase_2_evolution"),
       confirm_exp_config_div("emp_config_exp_confirmation"),
-      pop_vis("emp-pop-vis")
+      pop_vis("emp_pop_vis_view")
+      // pop_vis("emp-pop-vis")
   {
     std::cout << "AagowWebInterface constructor!" << std::endl;
     SetupInterface();
@@ -373,7 +374,7 @@ void AagosWebInterface::SetupInterface() {
   world_div.Div("hud-row")
     << UI::Div("generation-counter-col").SetAttr("class", "col-sm-auto pr-1")
     << UI::Element("h4", "")
-    << UI::Element("span", "generation-counter-badge").SetAttr("class", "badge badge-primary")
+    << UI::Element("span", "generation-counter-badge").SetAttr("class", "badge badge-secondary")
     << "Generation: ";
   world_div.Div("generation-counter-badge")
     << UI::Live([this]() { return GetUpdate(); });
@@ -381,7 +382,7 @@ void AagosWebInterface::SetupInterface() {
   world_div.Div("hud-row")
     << UI::Div("phase-counter-col").SetAttr("class", "col-sm-auto pl-1")
     << UI::Element("h4", "")
-    << UI::Element("span", "phase-counter-badge").SetAttr("class", "badge badge-primary")
+    << UI::Element("span", "phase-counter-badge").SetAttr("class", "badge badge-secondary")
     << "Experiment phase: ";
   world_div.Div("phase-counter-badge")
     << UI::Live([this]() { return cur_phase; });
@@ -389,10 +390,11 @@ void AagosWebInterface::SetupInterface() {
   world_div << UI::Element("hr").SetAttr("class", "mt-1");
 
   // ---- Pop vis view ----
-  pop_vis_div << UI::Div("pop-canvas-row").SetAttr("class", "row");
-  pop_vis_div.Div("pop-canvas-row")
-    << UI::Div("pop-canvas-col").SetAttr("class", "col")
-    << UI::Div("emp-pop-vis");
+  // todo - maybe get rid of this little bit?
+  // pop_vis_div << UI::Div("pop-canvas-row").SetAttr("class", "row");
+  // pop_vis_div.Div("pop-canvas-row")
+  //   << UI::Div("pop-canvas-col").SetAttr("class", "col")
+  //   << UI::Div("emp-pop-vis");
 
 
   // Initial world configuration + pop canvas configuration.
