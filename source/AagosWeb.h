@@ -78,6 +78,7 @@ protected:
   UI::Button config_exp_but;
   UI::Button config_apply_but;
   UI::Button confirm_config_exp_but;
+  UI::Button draw_mode_toggle_but;
 
   std::unordered_map<std::string, UI::Input> config_input_elements;
 
@@ -320,29 +321,9 @@ void AagosWebInterface::SetupInterface() {
       });
     }, 42);
 
-    // config_exp_but.SetAttr("class", "btn btn-block btn-lg btn-danger");
-    // config_apply_but.SetAttr("class", "d-none");
-
-    // run_toggle_but.SetDisabled(config_mode);
-    // run_step_but.SetDisabled(config_mode);
-    // run_reset_but.SetDisabled(config_mode);
-
-    // DisableConfigInputs(!config_mode);
   }, "Apply configuration", "config-apply-button");
   config_apply_but.SetAttr("class", "d-none");
 
-  // EM_ASM({
-    // $("#config-apply-button").html('<div class="d-flex align-items-center justify-content-center"><span class="spinner-border spinner-border-sm mr-1" role="status"></span>Words</div>');
-  // });
-
-  // config_apply_but << UI::Div("1").SetAttr("class", "d-flex align-items-center justify-content-center")
-  //   << UI::Element("span", "2")
-  //     .SetAttr("class", "spinner-border spinner-border-sm mr-1")
-  //     .SetAttr("role", "status");
-  // config_apply_but.Div("1") << "Apply...";
-  // config_apply_but.SetLabel(
-    // "<span class=\"spinner-border spinner-border-sm\" role=\"status\" aria-hidden=\"true\"></span> Apply Config..."
-  // );
 
   confirm_config_exp_but = UI::Button([this]() {
     config_mode = true;
@@ -354,10 +335,28 @@ void AagosWebInterface::SetupInterface() {
     run_step_but.SetDisabled(config_mode);
     run_reset_but.SetDisabled(config_mode);
     DisableConfigInputs(!config_mode);
+
+    // TODO - clear d3 vis
+
   }, "Confirm", "confirm-config-exp-button");
   confirm_config_exp_but.SetAttr("class", "btn btn-danger");
   confirm_config_exp_but.SetAttr("data-dismiss", "modal");
   confirm_exp_config_div << confirm_config_exp_but;
+
+  draw_mode_toggle_but = UI::Button([this]() {
+    if (pop_vis.IsDrawModeFullPop()) {
+      pop_vis.SetDrawModeMaxFit();
+      draw_mode_toggle_but.SetLabel("Draw Full Population");
+    } else if (pop_vis.IsDrawModeMaxFit()) {
+      pop_vis.SetDrawModeFullPop();
+      draw_mode_toggle_but.SetLabel("Draw Max Fitness Organism");
+    }
+    if (!config_mode) {
+      RedrawPopulation();
+      RedrawEnvironment();
+    }
+  }, "Draw Full Population", "population-draw-mode-toggle-button");
+  draw_mode_toggle_but.SetAttr("class", "btn btn-block btn-lg btn-secondary");
 
   // Add buttons to controls view.
   control_div << UI::Div("button-row").SetAttr("class", "row justify-content-md-center");
@@ -380,9 +379,9 @@ void AagosWebInterface::SetupInterface() {
   control_div.Div("config-exp-col")
     << config_apply_but;
 
-    // control_div << UI::Div("config-loading-spinner")
-  //   .SetAttr("class", "spinner-border d-none")
-  //   .SetAttr("role", "status");
+  control_div.Div("button-row")
+    << UI::Div("draw-mode-col").SetAttr("class", "col-lg-auto p-2")
+    << draw_mode_toggle_but;
 
   control_div.Div("button-row")
     << UI::Div("render-frequency-col").SetAttr("class", "col-lg-auto p-2")
@@ -412,9 +411,6 @@ void AagosWebInterface::SetupInterface() {
     << UI::Text().SetAttr("class", "input-group-text")
     << "th generation";
 
-  // control_div << UI::Div("config-loading-spinner")
-  //   .SetAttr("class", "spinner-border d-none")
-  //   .SetAttr("role", "status");
 
   // ---- Setup config view interface ----
   std::cout << "Setup config interface.."<< std::endl;
@@ -444,20 +440,10 @@ void AagosWebInterface::SetupInterface() {
 
   world_div << UI::Element("hr").SetAttr("class", "mt-1");
 
-  // ---- Pop vis view ----
-  // todo - maybe get rid of this little bit?
-  // pop_vis_div << UI::Div("pop-canvas-row").SetAttr("class", "row");
-  // pop_vis_div.Div("pop-canvas-row")
-  //   << UI::Div("pop-canvas-col").SetAttr("class", "col")
-  //   << UI::Div("emp-pop-vis");
-
-
   // Initial world configuration + pop canvas configuration.
   Setup(); // Call world setup
 
-
   // ---- Wire up event handlers ----
-
   UI::OnDocumentReady([this]() {
     std::cout << "-- OnDocumentReady (open) --"<<std::endl;
 
@@ -481,7 +467,6 @@ void AagosWebInterface::SetupInterface() {
 
     std::cout << "-- OnDocumentReady (close) --"<<std::endl;
   });
-
 
 }
 
@@ -532,9 +517,6 @@ void AagosWebInterface::RedrawEnvironment() {
 }
 
 void AagosWebInterface::ReconfigureWorld() {
-
-  // control_div.Div("config-loading-spinner").SetAttr("class", "spinner-border");
-  // std::cout << control_div.Div("config-loading-spinner").GetAttr("class") << std::endl;
   std::cout << "--- reconfigure world ---" << std::endl;
 
   // Loop over config inputs, reconfiguring.
@@ -542,7 +524,6 @@ void AagosWebInterface::ReconfigureWorld() {
     config.Set(cfg.first, cfg.second.GetValue());
   }
   // Setup the world again...
-  // config_apply_but.SetLabel("<div class=\"spinner-border\" role=\"status\"><span class=\"sr-only\">Loading...</span></div>");
   Setup();
   pop_vis.Setup(*this); // Re-configure pop_vis
 
@@ -550,9 +531,6 @@ void AagosWebInterface::ReconfigureWorld() {
   RedrawEnvironment();
   world_div.Redraw();
   std::cout << "--- done reconfiguring world ---" << std::endl;
-
-  // control_div.Div("config-loading-spinner").SetAttr("class", "spinner-border d-none");
-  // std::cout << control_div.Div("config-loading-spinner").GetAttr("class") << std::endl;
 }
 
 void AagosWebInterface::SetupConfigInterface() {

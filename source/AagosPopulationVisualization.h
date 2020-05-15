@@ -299,7 +299,7 @@ public:
     vis_div << UI::Div(element_id + "-population-label-row").SetAttr("class", "row justify-content-center");
     vis_div.Div(element_id + "-population-label-row")
       << UI::Element("h5", element_id + "-population-label").SetAttr("class", "card-title")
-      << "Population";
+      << ((draw_mode == POP_DRAW_MODE::MAX_FIT) ? "Max Fit Organism" : "Population");
     vis_div << UI::Div(element_id + "-population-canvas-row").SetAttr("class", "row");
     vis_div.Div(element_id + "-population-canvas-row")
       << UI::Div(element_id + "-population-canvas-div")
@@ -614,6 +614,24 @@ public:
 
     data_drawn=true;
   }
+
+  void SetDrawModeFullPop() {
+    draw_mode = POP_DRAW_MODE::FULL_POP;
+    EM_ASM({
+      const elem_id = UTF8ToString($0);
+      $("#" + elem_id + "-population-label").html("Population");
+    }, element_id.c_str());
+  }
+  void SetDrawModeMaxFit() {
+    draw_mode = POP_DRAW_MODE::MAX_FIT;
+    EM_ASM({
+      const elem_id = UTF8ToString($0);
+      $("#" + elem_id + "-population-label").html("Max Fit Organism");
+    }, element_id.c_str());
+  }
+  bool IsDrawModeFullPop() const { return draw_mode == POP_DRAW_MODE::FULL_POP; }
+  bool IsDrawModeMaxFit() const { return draw_mode == POP_DRAW_MODE::MAX_FIT; }
+
 };
 
 #endif
