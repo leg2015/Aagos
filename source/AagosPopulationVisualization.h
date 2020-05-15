@@ -26,11 +26,12 @@ protected:
 
   UI::Document vis_div;
 
-  size_t org_height=30;
+  size_t pop_org_height=30;     // height of organism in population view mode
+  size_t max_fit_org_height=60; // Height of organism in max fit view mode
   size_t pop_view_max_height_px=500;
 
-  // POP_DRAW_MODE draw_mode=POP_DRAW_MODE::MAX_FIT;
-  POP_DRAW_MODE draw_mode=POP_DRAW_MODE::FULL_POP;
+  POP_DRAW_MODE draw_mode=POP_DRAW_MODE::MAX_FIT;
+  // POP_DRAW_MODE draw_mode=POP_DRAW_MODE::FULL_POP;
 
   void InitializeVariables(world_t & world) {
     // jswrap whatever it is that we need to jswrap
@@ -365,7 +366,7 @@ public:
     if (update_data) UpdateGradientEnvData(world);
     EM_ASM({
       const elem_id = UTF8ToString($0);
-      const org_height = $1;
+      const bit_height = $1;
 
       var vis_info = emp.AagosPopVis[elem_id];
       var gene_colors = vis_info["gene_color_scale"];
@@ -373,16 +374,16 @@ public:
       const gene_target_size = vis_info["gene_target_size"];
       const max_genome_size = vis_info["max_genome_size"];
 
-      const margins = ({top: 5, right: 5, bottom: 5, left: 5});
+      const margins = ({top: 5, right: 5, bottom: 5, left: 5}); // todo - make class param
 
       if (!"org_bit_width" in vis_info) {
-        vis_info["org_bit_width"] = 20;
+        vis_info["org_bit_width"] = 15; // todo - make class param
       }
       if (!"org_bit_height" in vis_info) {
-        vis_info["org_bit_height"] = 15;
+        vis_info["org_bit_height"] = bit_height;
       }
 
-      const org_bit_height = vis_info["org_bit_height"];
+      const org_bit_height = Math.min(bit_height, vis_info["org_bit_height"]);
       const org_bit_width = vis_info["org_bit_width"];
 
       const gene_target_width = gene_target_size * org_bit_width;
@@ -449,7 +450,7 @@ public:
       }
 
     }, element_id.c_str(),
-       org_height);
+       pop_org_height);
   }
 
   void DrawPop(world_t & world, bool update_data=true) {
@@ -478,8 +479,8 @@ public:
       const pop_data_canvas_id = "#AagosPopVis-" + elem_id + "-pop-data-canvas";
 
       const width = $('#' + elem_id).width(); // Width of surrounding div
-      const height = org_height * pop_size;
       const margins = ({top:20, right:25, bottom:20, left:30}); // todo - make dynamic
+      const height = (org_height * pop_size) + margins.top + margins.bottom;
 
       var canvas_height = height - margins.top - margins.bottom;
 
@@ -497,9 +498,9 @@ public:
       }
 
       // Configure x/y range/domains (with a little bit of wiggle room)
-      var pop_x_domain = ([0, max_genome_size+1]);
+      var pop_x_domain = ([0, max_genome_size]);
       var pop_x_range  = ([0, canvas_width]);
-      var pop_y_domain = ([0, pop_size + 1]);
+      var pop_y_domain = ([0, pop_size]);
       var pop_y_range  = ([0, canvas_height]);
       var pop_x_scale  = d3.scaleLinear().domain(pop_x_domain).range(pop_x_range);
       var pop_y_scale  = d3.scaleLinear().domain(pop_y_domain).range(pop_y_range);
@@ -507,7 +508,7 @@ public:
       // Grab the pop svg to re-size appropriately!
       var svg = d3.select(pop_svg_id);
       svg.attr("width", canvas_width + margins.left + margins.right);
-      svg.attr("height", canvas_height + margins.top + margins.bottom);
+      svg.attr("height", height);
 
       const org_bit_width = pop_x_scale(1);
       const org_bit_height = pop_y_scale(0.9);
@@ -520,11 +521,14 @@ public:
 
       // --- Axes ---
       pop_canvas.selectAll(".axis").remove();
-      var y_axis = d3.axisLeft();
-      y_axis.scale(pop_y_scale);
-      pop_canvas.append("g").attr("class", "axis y_axis")
-                            .attr("id", "AagosPopVis-"+elem_id+"-pop-y-axis")
-                            .call(y_axis);
+      if (pop_size > 1) {
+        var y_axis = d3.axisLeft();
+        y_axis.scale(pop_y_scale);
+        pop_canvas.append("g").attr("class", "axis y_axis")
+                              .attr("id", "AagosPopVis-"+elem_id+"-pop-y-axis")
+                              .call(y_axis);
+      }
+
       var x_axis = d3.axisTop();
       x_axis.scale(pop_x_scale);
       pop_canvas.append("g").attr("class", "axis x_axis")
@@ -545,8 +549,8 @@ public:
                .attr("id", function(org) {
                   return "AagosPopVis-"+elem_id+"-organism-"+org.org_id;
                 })
-               .attr("transform", function(org) {
-                 const y_trans = pop_y_scale(org.org_id);
+               .attr("transform", function(org, org_i) {
+                 const y_trans = pop_y_scale(org_i);
                  const x_trans = pop_x_scale(0);
                  return "translate(" + x_trans + "," + y_trans + ")";
                 })
@@ -605,7 +609,7 @@ public:
                       });
 
     }, element_id.c_str(),
-       org_height,
+       draw_mode==POP_DRAW_MODE::FULL_POP ? pop_org_height : max_fit_org_height,
        pop_view_max_height_px);
 
     data_drawn=true;

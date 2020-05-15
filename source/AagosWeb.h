@@ -548,6 +548,7 @@ void AagosWebInterface::ReconfigureWorld() {
 
   RedrawPopulation(); // Finally, go ahead and draw initial population.
   RedrawEnvironment();
+  world_div.Redraw();
   std::cout << "--- done reconfiguring world ---" << std::endl;
 
   // control_div.Div("config-loading-spinner").SetAttr("class", "spinner-border d-none");
