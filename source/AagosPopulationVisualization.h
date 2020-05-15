@@ -15,6 +15,8 @@ public:
   using world_t = AagosWorld;
   using org_t = typename AagosWorld::org_t;
 
+  enum class POP_DRAW_MODE { FULL_POP=0, MAX_FIT };
+
 protected:
 
 
@@ -26,6 +28,9 @@ protected:
 
   size_t org_height=30;
   size_t pop_view_max_height_px=500;
+
+  // POP_DRAW_MODE draw_mode=POP_DRAW_MODE::MAX_FIT;
+  POP_DRAW_MODE draw_mode=POP_DRAW_MODE::FULL_POP;
 
   void InitializeVariables(world_t & world) {
     // jswrap whatever it is that we need to jswrap
@@ -71,8 +76,7 @@ protected:
     }, element_id.c_str());
   }
 
-  void UpdatePopData(world_t & world) {
-    // std::cout << "Update pop data..." << std::endl;
+  void UpdatePopDataFull(world_t & world) {
     if (!init || !world.IsSetup()) return;
 
     // info to update: bits, gene starts, num genes, gene size, num_bits
@@ -149,6 +153,75 @@ protected:
     }, element_id.c_str(),   // 0
        world.GetMostFitID(), // 1
        max_genome_size);     // 2
+  }
+
+  // Do this separately instead of relying on D3 filters to save time!
+  void UpdatePopDataMaxFit(world_t & world) {
+    if (!init || !world.IsSetup()) return;
+
+    const size_t most_fit_id = world.GetMostFitID();
+    org_t & org = world.GetOrg(most_fit_id);
+    const size_t genome_size = org.GetNumBits();
+    const size_t gene_size = org.GetGeneSize();
+
+    // Collect string representation of bits
+    std::ostringstream stream;
+    stream << org.GetBits();
+    const std::string bits(stream.str());
+    stream.str(std::string());
+    // Collect string representation of gene starts
+    auto & gene_starts = org.GetGeneStarts();
+    for (size_t gene_id = 0; gene_id < gene_starts.size(); ++gene_id) {
+      if (gene_id) stream << ",";
+      stream << gene_starts[gene_id];
+    }
+    const std::string gene_starts_str(stream.str());
+
+    // info to update: bits, gene starts, num genes, gene size, num_bits
+    EM_ASM({
+      const elem_id = UTF8ToString($0);
+      const most_fit_id = $1;
+      const genome_size = $2;
+      const gene_starts = UTF8ToString($3).split(',').map(Number);
+      const bits = UTF8ToString($4).split('').map(Number);
+      const gene_size = $5;
+      emp.AagosPopVis[elem_id]['most_fit_id'] = most_fit_id;
+      emp.AagosPopVis[elem_id]['max_genome_size'] = genome_size;
+
+      // Clear population information.
+      emp.AagosPopVis[elem_id]['pop'] = [];
+
+      var gene_occupancy = new Map();
+      var position_occupants = new Map();
+      var gene_indicators = [];
+      for (let gene_id = 0; gene_id < gene_starts.length; gene_id++) {
+        gene_occupancy.set(gene_id, []);
+        var start = gene_starts[gene_id];
+        for (let k = 0; k < gene_size; k++) {
+          const position = (start + k) % genome_size;
+          gene_occupancy.get(gene_id).push(position);
+          if (!(position_occupants.has(position))) {
+            position_occupants.set(position, new Set());
+          }
+          gene_indicators.push({'gene_id': gene_id, 'pos': position, 'indicator_rank': position_occupants.get(position).size});
+          position_occupants.get(position).add(gene_id);
+        }
+      }
+      for (let i = 0; i < gene_indicators.length; i++) {
+        gene_indicators[i]['rank']
+      }
+      emp.AagosPopVis[elem_id]['pop'].push({'org_id': most_fit_id,
+                                            'bits': bits,
+                                            'gene_starts': gene_starts,
+                                            'position_occupants': position_occupants,
+                                            'gene_occupancy': gene_occupancy,
+                                            'gene_indicators': gene_indicators});
+    }, element_id.c_str(),      // 0
+       most_fit_id,             // 1
+       genome_size,             // 2
+       gene_starts_str.c_str(), // 3
+       bits.c_str(),            // 4
+       gene_size);              // 5
   }
 
   void UpdateGradientEnvData(world_t & world) {
@@ -231,6 +304,7 @@ public:
       << UI::Div(element_id + "-population-canvas-div")
         .SetAttr("class", "AagosPopVis-canvas-div")
         .SetCSS("overflow-y", "scroll")
+        .SetCSS("overflow-x", "scroll")
         .SetCSS("max-height", emp::to_string(pop_view_max_height_px) + "px");
 
     // Add SVG to #element_id
@@ -244,8 +318,6 @@ public:
 
       var pop_canvas_div = d3.select("#"+pop_canvas_div_id);
       pop_canvas_div.select("*").remove();
-
-      // pop_canvas_div.style("overflow-y", "scroll");
 
       var pop_svg = pop_canvas_div.append("svg")
                                   .attr("width",1)
@@ -381,7 +453,13 @@ public:
   }
 
   void DrawPop(world_t & world, bool update_data=true) {
-    if (update_data) UpdatePopData(world); // todo - only do this if data is dirty
+    std::cout << "====== DRAWING POPULATION =========" << std::endl;
+    if (update_data && draw_mode == POP_DRAW_MODE::FULL_POP) {
+      UpdatePopDataFull(world);
+    } else if (update_data && draw_mode == POP_DRAW_MODE::MAX_FIT) {
+      UpdatePopDataMaxFit(world);
+    }
+
     EM_ASM({
       // todo - move redundant stuff elsewhere/one-shot (no need to do multiple times)
       const elem_id = UTF8ToString($0);
@@ -401,28 +479,25 @@ public:
 
       const width = $('#' + elem_id).width(); // Width of surrounding div
       const height = org_height * pop_size;
-      const margins = ({top:20, right:20, bottom:20, left:30}); // todo - make dynamic
+      const margins = ({top:20, right:25, bottom:20, left:30}); // todo - make dynamic
 
-      // If computed height is > minimum size, limit view height to maximum size.
-      if (height > pop_view_max_height_px) {
-        d3.select(pop_div_id).style("height", pop_view_max_height_px + "px");
-      } else {
-        d3.select(pop_div_id).style("height", "");
-      }
-
-      var canvas_width = width - margins.left - margins.right;
       var canvas_height = height - margins.top - margins.bottom;
 
+      console.log("height = " + height);
+
+      min_bit_width = 15;
+      min_canvas_width = (max_genome_size+1) * min_bit_width;
+
+      var canvas_width = width - margins.left - margins.right;
+      // todo - compute the min width based on a minimum bit size
       // If page is super small, allow left-right scrolling (don't shrink genomes too small)
-      if (width < 350) {
-        d3.select(pop_div_id).style("width", width);
-        canvas_width = 350 - margins.left - margins.right;
-      } else {
-        d3.select(pop_div_id).style("width", "");
+      if (canvas_width < min_canvas_width) {
+        canvas_width = min_canvas_width;
+        // d3.select(pop_div_id).attr()
       }
 
       // Configure x/y range/domains (with a little bit of wiggle room)
-      var pop_x_domain = ([0, max_genome_size + 2]);
+      var pop_x_domain = ([0, max_genome_size+1]);
       var pop_x_range  = ([0, canvas_width]);
       var pop_y_domain = ([0, pop_size + 1]);
       var pop_y_range  = ([0, canvas_height]);
@@ -431,8 +506,8 @@ public:
 
       // Grab the pop svg to re-size appropriately!
       var svg = d3.select(pop_svg_id);
-      svg.attr("width", canvas_width);
-      svg.attr("height", canvas_height);
+      svg.attr("width", canvas_width + margins.left + margins.right);
+      svg.attr("height", canvas_height + margins.top + margins.bottom);
 
       const org_bit_width = pop_x_scale(1);
       const org_bit_height = pop_y_scale(0.9);
@@ -459,7 +534,6 @@ public:
       var axes = pop_canvas.selectAll(".axis");
       axes.selectAll("path").style({"fill": "none", "stroke": "black", "shape-rendering": "crispEdges"});
       axes.selectAll("text").style({"font-family": "sans-serif", "font-size": "10px"});
-
 
 
       var pop_data_canvas = d3.select(pop_data_canvas_id);
