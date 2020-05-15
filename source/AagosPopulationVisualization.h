@@ -267,7 +267,7 @@ public:
         const gene_target_canvas_div_id = elem_id + "-gene-target-" + gene_id + "-canvas-div";
         emp.AagosPopVis[elem_id]["gene_target_canvas_div_ids"].push(gene_target_canvas_div_id);
 
-        var gene_target_canvas_div = d3.select("#"+gene_target_canvas_div_id); // todo - debug here! svg not added...
+        var gene_target_canvas_div = d3.select("#"+gene_target_canvas_div_id);
 
         gene_target_canvas_div.select("*").remove(); // Clean out any old stuff.
 
@@ -381,7 +381,6 @@ public:
   }
 
   void DrawPop(world_t & world, bool update_data=true) {
-    // std::cout << "draw pop" << std::endl;
     if (update_data) UpdatePopData(world); // todo - only do this if data is dirty
     EM_ASM({
       // todo - move redundant stuff elsewhere/one-shot (no need to do multiple times)
@@ -445,15 +444,23 @@ public:
       pop_canvas.attr("transform", "translate(" + margins.left + "," + margins.top + ")");
 
       // --- Axes ---
-      pop_canvas.selectAll(".y_axis").remove();
+      pop_canvas.selectAll(".axis").remove();
       var y_axis = d3.axisLeft();
       y_axis.scale(pop_y_scale);
       pop_canvas.append("g").attr("class", "axis y_axis")
                             .attr("id", "AagosPopVis-"+elem_id+"-pop-y-axis")
                             .call(y_axis);
+      var x_axis = d3.axisTop();
+      x_axis.scale(pop_x_scale);
+      pop_canvas.append("g").attr("class", "axis x_axis")
+                            .attr("id", "AagosPopVis-"+elem_id+"-pop-x-axis")
+                            .call(x_axis);
+
       var axes = pop_canvas.selectAll(".axis");
       axes.selectAll("path").style({"fill": "none", "stroke": "black", "shape-rendering": "crispEdges"});
       axes.selectAll("text").style({"font-family": "sans-serif", "font-size": "10px"});
+
+
 
       var pop_data_canvas = d3.select(pop_data_canvas_id);
       pop_data_canvas.selectAll("*").remove();

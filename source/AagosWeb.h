@@ -290,7 +290,7 @@ void AagosWebInterface::SetupInterface() {
   run_step_but.SetAttr("class", "btn btn-block btn-lg btn-primary");
 
   // Reset run button setup.
-  run_reset_but = UI::Button([this]() {
+  run_reset_but = UI::Button([]() {
     EM_ASM({
       // Hi-jack button's html to show dope spinner while doing World's Setup (which can take a min)
       $("#run-reset-button").html('<div class="d-flex align-items-center justify-content-center"><span class="spinner-border spinner-border-sm mr-1" role="status"></span>Restarting...</div>');
