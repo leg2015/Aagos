@@ -332,7 +332,7 @@ public:
 
       var pop_data_canvas = pop_canvas.append("g")
                                       .attr("id","AagosPopVis-"+elem_id+"-pop-data-canvas")
-                                      .attr("class","AagosPopVis-canvas");
+                                      .attr("class","AagosPopVis-canvas AagosPopVis-data-canvas");
 
       // Setup gene target canvas/svg
       emp.AagosPopVis[elem_id]["gene_target_canvas_div_ids"] = [];
@@ -353,7 +353,7 @@ public:
                                                 .attr("id", "AagosPopVis-"+elem_id+"-gene-target-"+gene_id+"-canvas");
         var gene_target_data_canvas = gene_target_canvas.append("g")
                                                         .attr("id","AagosPopVis-"+elem_id+"-gene-target-"+gene_id+"-data-canvas")
-                                                        .attr("class","AagosPopVis-canvas");
+                                                        .attr("class","AagosPopVis-canvas AagosPopVis-data-canvas");
 
       }
 
@@ -613,6 +613,14 @@ public:
        pop_view_max_height_px);
 
     data_drawn=true;
+  }
+
+  void Clear() {
+    // Clear environment text
+    // Clear population
+    EM_ASM({
+      $(".AagosPopVis-data-canvas").html("");
+    });
   }
 
   void SetDrawModeFullPop() {

@@ -337,6 +337,7 @@ void AagosWebInterface::SetupInterface() {
     DisableConfigInputs(!config_mode);
 
     // TODO - clear d3 vis
+    pop_vis.Clear();
 
   }, "Confirm", "confirm-config-exp-button");
   confirm_config_exp_but.SetAttr("class", "btn btn-danger");
