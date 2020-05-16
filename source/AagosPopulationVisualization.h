@@ -31,7 +31,7 @@ protected:
   size_t max_fit_org_height=60; // Height of organism in max fit view mode
   size_t pop_view_max_height_px=500;
 
-  bool prev_tooltops=false;
+  // bool prev_tooltops=false;
 
   POP_DRAW_MODE draw_mode=POP_DRAW_MODE::MAX_FIT;
   // POP_DRAW_MODE draw_mode=POP_DRAW_MODE::FULL_POP;
@@ -98,6 +98,7 @@ protected:
       org_t & org = world.GetOrg(org_id);
       const size_t num_bits = org.GetNumBits();
       const size_t gene_size = org.GetGeneSize();
+      const bool is_evaluated = org.GetPhenotype().IsEvaluated();
       max_genome_size = num_bits > max_genome_size ? num_bits : max_genome_size;
       auto & gene_starts = org.GetGeneStarts();
       std::ostringstream stream;
@@ -115,6 +116,7 @@ protected:
         const bits = UTF8ToString($2).split('').map(Number).reverse();
         const gene_starts = UTF8ToString($3).split(',').map(Number);
         const gene_size = $4;
+        const is_evaluated = $5;
         const num_bits = bits.length;
         var gene_occupancy = new Map();
         var position_occupants = new Map();
@@ -129,6 +131,7 @@ protected:
               position_occupants.set(position, new Set());
             }
             gene_indicators.push({'gene_id': gene_id,
+                                  'is_evaluated': is_evaluated,
                                   'pos': position,
                                   'indicator_rank': position_occupants.get(position).size,
                                   'gene_fitness_contribution': 0});
@@ -140,6 +143,7 @@ protected:
         }
         emp.AagosPopVis[elem_id]['pop'].push({'org_id': org_id,
                                               'bits': bits,
+                                              'is_evaluated': is_evaluated,
                                               'gene_starts': gene_starts,
                                               'position_occupants': position_occupants,
                                               'gene_occupancy': gene_occupancy,
@@ -149,29 +153,32 @@ protected:
          org_id,                   // 1
          bits.c_str(),             // 2
          gene_starts_str.c_str(),  // 3
-         gene_size);               // 4
+         gene_size,                // 4
+         is_evaluated);            // 5
 
-      // Update gene fitness contributions
-      for (size_t gene_id = 0; gene_id < gene_starts.size(); ++gene_id) {
-        const double gene_fitness = org.GetPhenotype().gene_fitness_contributions[gene_id];
-        EM_ASM({
-          const elem_id = UTF8ToString($0);
-          const org_id = $1;
-          const gene_id = $2;
-          const gene_fitness = $3;
-          const gene_size = $4;
-          const num_genes = emp.AagosPopVis[elem_id]['pop'][org_id].gene_starts.length;
-          emp.AagosPopVis[elem_id]['pop'][org_id]['gene_fitness_contributions'][gene_id] = gene_fitness;
-          const indicator_start = gene_id * gene_size;
-          const indicator_stop = (indicator_start) + gene_size;
-          for (let i = indicator_start; i < indicator_stop; ++i) {
-            emp.AagosPopVis[elem_id]['pop'][org_id]['gene_indicators'][i]['gene_fitness_contribution'] = gene_fitness;
-          }
-        }, element_id.c_str(),
-           org_id,
-           gene_id,
-           gene_fitness,
-           gene_size);
+      // Update gene fitness contributions (but only if the organism has been evaluated)
+      if (is_evaluated) {
+          for (size_t gene_id = 0; gene_id < gene_starts.size(); ++gene_id) {
+          const double gene_fitness = org.GetPhenotype().gene_fitness_contributions[gene_id];
+          EM_ASM({
+            const elem_id = UTF8ToString($0);
+            const org_id = $1;
+            const gene_id = $2;
+            const gene_fitness = $3;
+            const gene_size = $4;
+            const num_genes = emp.AagosPopVis[elem_id]['pop'][org_id].gene_starts.length;
+            emp.AagosPopVis[elem_id]['pop'][org_id]['gene_fitness_contributions'][gene_id] = gene_fitness;
+            const indicator_start = gene_id * gene_size;
+            const indicator_stop = (indicator_start) + gene_size;
+            for (let i = indicator_start; i < indicator_stop; ++i) {
+              emp.AagosPopVis[elem_id]['pop'][org_id]['gene_indicators'][i]['gene_fitness_contribution'] = gene_fitness;
+            }
+          }, element_id.c_str(),
+            org_id,
+            gene_id,
+            gene_fitness,
+            gene_size);
+        }
       }
     }
 
@@ -196,6 +203,7 @@ protected:
     org_t & org = world.GetOrg(most_fit_id);
     const size_t genome_size = org.GetNumBits();
     const size_t gene_size = org.GetGeneSize();
+    const bool is_evaluated = org.GetPhenotype().IsEvaluated();
 
     // Collect string representation of bits
     std::ostringstream stream;
@@ -219,6 +227,7 @@ protected:
       const gene_starts = UTF8ToString($3).split(',').map(Number);
       const bits = UTF8ToString($4).split('').map(Number).reverse(); // Reverse because representation r=>l, want to draw l=>r
       const gene_size = $5;
+      const is_evaluated = $6;
       emp.AagosPopVis[elem_id]['most_fit_id'] = most_fit_id;
       emp.AagosPopVis[elem_id]['max_genome_size'] = genome_size;
 
@@ -240,6 +249,7 @@ protected:
           gene_indicators.push({'gene_id': gene_id,
                                 'pos': position,
                                 'indicator_rank': position_occupants.get(position).size,
+                                'is_evaluated': is_evaluated,
                                 'gene_fitness_contribution': 0});
           position_occupants.get(position).add(gene_id);
         }
@@ -250,6 +260,7 @@ protected:
       emp.AagosPopVis[elem_id]['pop'].push({'org_id': most_fit_id,
                                             'bits': bits,
                                             'gene_starts': gene_starts,
+                                            'is_evaluated': is_evaluated,
                                             'position_occupants': position_occupants,
                                             'gene_occupancy': gene_occupancy,
                                             'gene_indicators': gene_indicators,
@@ -259,31 +270,31 @@ protected:
        genome_size,             // 2
        gene_starts_str.c_str(), // 3
        bits.c_str(),            // 4
-       gene_size);              // 5
+       gene_size,               // 5
+       is_evaluated);           // 6
 
-    // Update gene fitness contributions
-    // todo - make this less tacked on... wrap an accessor?
-    for (size_t gene_id = 0; gene_id < gene_starts.size(); ++gene_id) {
-      const double gene_fitness = org.GetPhenotype().gene_fitness_contributions[gene_id];
-      EM_ASM({
-        const elem_id = UTF8ToString($0);
-        const gene_id = $1;
-        const gene_fitness = $2;
-        const gene_size = $3;
-        const num_genes = emp.AagosPopVis[elem_id]['pop'][0].gene_starts.length;
-        emp.AagosPopVis[elem_id]['pop'][0]['gene_fitness_contributions'][gene_id] = gene_fitness;
-        const indicator_start = gene_id * gene_size;
-        const indicator_stop = (indicator_start) + gene_size;
-        for (let i = indicator_start; i < indicator_stop; ++i) {
-          emp.AagosPopVis[elem_id]['pop'][0]['gene_indicators'][i]['gene_fitness_contribution'] = gene_fitness;
-        }
-        // emp.AagosPopVis[elem_id]['pop'][0]['gene_indicators'][gene_id]['gene_fitness_contribution'] = gene_fitness;
-      }, element_id.c_str(),
-          gene_id,
-          gene_fitness,
-          gene_size);
+    // Update gene fitness contributions (only if org has been evaluated)
+    if (is_evaluated) {
+      for (size_t gene_id = 0; gene_id < gene_starts.size(); ++gene_id) {
+        const double gene_fitness = org.GetPhenotype().gene_fitness_contributions[gene_id];
+        EM_ASM({
+          const elem_id = UTF8ToString($0);
+          const gene_id = $1;
+          const gene_fitness = $2;
+          const gene_size = $3;
+          const num_genes = emp.AagosPopVis[elem_id]['pop'][0].gene_starts.length;
+          emp.AagosPopVis[elem_id]['pop'][0]['gene_fitness_contributions'][gene_id] = gene_fitness;
+          const indicator_start = gene_id * gene_size;
+          const indicator_stop = (indicator_start) + gene_size;
+          for (let i = indicator_start; i < indicator_stop; ++i) {
+            emp.AagosPopVis[elem_id]['pop'][0]['gene_indicators'][i]['gene_fitness_contribution'] = gene_fitness;
+          }
+        }, element_id.c_str(),
+            gene_id,
+            gene_fitness,
+            gene_size);
+      }
     }
-
   }
 
   void UpdateGradientEnvData(world_t & world) {
@@ -519,8 +530,7 @@ public:
        pop_org_height);
   }
 
-  void DrawPop(world_t & world, bool update_data=true, bool enable_tooltips=false) {
-    std::cout << "====== DRAWING POPULATION =========" << std::endl;
+  void DrawPop(world_t & world, bool update_data=true) {
     if (update_data && draw_mode == POP_DRAW_MODE::FULL_POP) {
       UpdatePopDataFull(world);
     } else if (update_data && draw_mode == POP_DRAW_MODE::MAX_FIT) {
@@ -532,7 +542,7 @@ public:
       const elem_id = UTF8ToString($0);
       const org_height = $1;
       const pop_view_max_height_px = $2;
-      const enable_tooltips = $3;
+      // const enable_tooltips = $3;
 
       var vis_info = emp.AagosPopVis[elem_id];
       const pop_size = vis_info["pop"].length;
@@ -550,8 +560,6 @@ public:
       const height = (org_height * pop_size) + margins.top + margins.bottom;
 
       var canvas_height = height - margins.top - margins.bottom;
-
-      console.log("height = " + height);
 
       min_bit_width = 15;
       min_canvas_width = (max_genome_size+1) * min_bit_width;
@@ -606,19 +614,17 @@ public:
       axes.selectAll("text").style({"font-family": "sans-serif", "font-size": "10px"});
 
       d3.selectAll(".d3-tip").remove(); // todo - move this out of the draw function...
-      if (enable_tooltips) {
-        var tool_tip = d3.tip()
-          .attr("class", "d3-tip")
-          .html(function(indicator) {
-            content =
-              "<table class='table  table-sm table-dark'>" +
-                "<tr><th>Gene ID: </th><td>" + indicator["gene_id"] + "</td></tr>" +
-                "<tr><th>Fitness contribution: </th><td>" + indicator["gene_fitness_contribution"] + "</td></tr>" +
-              "</table>";
-            return content;
-          });
-        svg.call(tool_tip);
-      }
+      var tool_tip = d3.tip()
+        .attr("class", "d3-tip")
+        .html(function(indicator) {
+          content =
+            "<table class='table  table-sm table-dark'>" +
+              "<tr><th>Gene ID: </th><td>" + indicator["gene_id"] + "</td></tr>" +
+              "<tr><th>Fitness contribution: </th><td>" + indicator["gene_fitness_contribution"] + "</td></tr>" +
+            "</table>";
+          return content;
+        });
+      svg.call(tool_tip);
 
       var pop_data_canvas = d3.select(pop_data_canvas_id);
       pop_data_canvas.selectAll("*").remove();
@@ -638,6 +644,7 @@ public:
                       var bits = d3.select(this).selectAll("rect.bit").data(org["bits"]);
                       const rect_height = org_bit_height;
                       const rect_width = org_bit_width;
+                      const is_evaluated = org['is_evaluated'];
                       bits.enter()
                           .append("rect")
                           .attr("class", "bit")
@@ -690,7 +697,7 @@ public:
                         });
 
                       // Draw transparent box over gene indicators to have
-                      if (enable_tooltips) {
+                      if (is_evaluated) {
                         var gene_indicator_hover_boxes = d3.select(this).selectAll("rect.gene-indicator-hover").data(org["gene_indicators"]);
                         gene_indicator_hover_boxes.enter()
                           .append("rect")
@@ -727,11 +734,9 @@ public:
 
     }, element_id.c_str(),
        draw_mode==POP_DRAW_MODE::FULL_POP ? pop_org_height : max_fit_org_height,
-       pop_view_max_height_px,
-       enable_tooltips);
+       pop_view_max_height_px);
 
     data_drawn=true;
-    prev_tooltops=enable_tooltips;
   }
 
   void Clear() {
@@ -758,7 +763,7 @@ public:
   }
   bool IsDrawModeFullPop() const { return draw_mode == POP_DRAW_MODE::FULL_POP; }
   bool IsDrawModeMaxFit() const { return draw_mode == POP_DRAW_MODE::MAX_FIT; }
-  bool IsPrevTooltips() const { return prev_tooltops; } // ew this is bad
+  // bool IsPrevTooltips() const { return prev_tooltops; } // ew this is bad
 
 };
 

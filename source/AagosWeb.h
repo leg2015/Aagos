@@ -89,7 +89,7 @@ protected:
 
   AagosPopulationVisualization pop_vis;
 
-  void RedrawPopulation(bool update_data=true, bool enable_tooltips=false);
+  void RedrawPopulation(bool update_data=true);
   void RedrawEnvironment();
   void ReconfigureWorld();
 
@@ -358,7 +358,7 @@ void AagosWebInterface::SetupInterface() {
       draw_mode_toggle_but.SetLabel("Draw Max Fitness Organism");
     }
     if (!config_mode) {
-      RedrawPopulation(true, false); // update data, disable tooltips
+      RedrawPopulation(true); // update data, disable tooltips
       RedrawEnvironment();
     }
   }, "Draw Full Population", "population-draw-mode-toggle-button");
@@ -471,7 +471,7 @@ void AagosWebInterface::SetupInterface() {
 
     emp::OnResize([this]() {
       std::cout << "Resize?" << std::endl;
-      RedrawPopulation(false, pop_vis.IsPrevTooltips());
+      RedrawPopulation(false);
       RedrawEnvironment();
     });
 
@@ -498,7 +498,7 @@ void AagosWebInterface::DoFrame() {
       || (GetUpdate() == config.MAX_GENS())
       || (GetUpdate() == TOTAL_GENS))
   {
-    RedrawPopulation(true, true);
+    RedrawPopulation(true);
     RedrawEnvironment();
   }
 
@@ -543,11 +543,11 @@ void AagosWebInterface::DoFrame() {
   AdvanceWorld();
 }
 
-void AagosWebInterface::RedrawPopulation(bool update_data/*=true*/, bool enable_tooltips/*=false*/) {
+void AagosWebInterface::RedrawPopulation(bool update_data/*=true*/) {
   if (update_data) {
     generation_last_drawn = GetUpdate();
   }
-  pop_vis.DrawPop(*this, update_data, enable_tooltips);
+  pop_vis.DrawPop(*this, update_data);
 }
 
 void AagosWebInterface::RedrawEnvironment() {

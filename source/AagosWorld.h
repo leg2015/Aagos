@@ -706,6 +706,7 @@ void AagosWorld::InitFitnessEval() {
         fitness += fitness_contribution;
       }
       phen.fitness = fitness;
+      phen.evaluated = true;
       // phen.coding_sites = ComputeCodingSites(org);
       // phen.neutral_sites = ComputeNeutralSites(org);
     };
@@ -743,6 +744,7 @@ void AagosWorld::InitFitnessEval() {
         fitness += fitness_contribution;
       }
       phen.fitness = fitness;
+      phen.evaluated = true;
       // phen.coding_sites = ComputeCodingSites(org);
       // phen.neutral_sites = ComputeNeutralSites(org);
     };

@@ -53,6 +53,7 @@ public:
   struct Phenotype {
     double fitness=0.0;
     emp::vector<double> gene_fitness_contributions;
+    bool evaluated=false;
     // -- things that we want to know about phenotype for systematics tracking --
     // - coding_sites
     // size_t coding_sites=0;
@@ -66,6 +67,7 @@ public:
     Phenotype & operator=(const Phenotype &) = default;
 
     void Reset() {
+      evaluated=false;
       fitness = 0.0;
       // coding_sites=0;
       // neutral_sites=0;
@@ -73,8 +75,8 @@ public:
     }
 
     bool operator==(const Phenotype & other) const {
-      return std::tie(fitness, gene_fitness_contributions/*, coding_sites, neutral_sites*/)
-              == std::tie(other.fitness, other.gene_fitness_contributions/*, other.coding_sites, other.neutral_sites*/);
+      return std::tie(fitness, gene_fitness_contributions, evaluated/*, coding_sites, neutral_sites*/)
+              == std::tie(other.fitness, other.gene_fitness_contributions, other.evaluated/*, other.coding_sites, other.neutral_sites*/);
     }
 
     bool operator!=(const Phenotype & other) const {
@@ -82,9 +84,11 @@ public:
     }
 
     bool operator<(const Phenotype & other) const {
-      return std::tie(fitness, gene_fitness_contributions/*, coding_sites, neutral_sites*/)
-              < std::tie(other.fitness, other.gene_fitness_contributions/*, other.coding_sites, other.neutral_sites*/);
+      return std::tie(fitness, gene_fitness_contributions, evaluated/*, coding_sites, neutral_sites*/)
+              < std::tie(other.fitness, other.gene_fitness_contributions, other.evaluated/*, other.coding_sites, other.neutral_sites*/);
     }
+
+    bool IsEvaluated() const { return evaluated; }
   };
 
   using histogram_t = emp::DataNode<int, emp::data::Histogram, emp::data::Stats>;
