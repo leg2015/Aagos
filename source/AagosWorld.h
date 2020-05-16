@@ -811,7 +811,6 @@ void AagosWorld::SetupStatsFile() {
     for (emp::Ptr<org_t> org_ptr : pop) {
       if (!org_ptr) continue;
       pop_neut.emplace_back(ComputeNeutralSites(*org_ptr));
-      // pop_neut.emplace_back(org_ptr->GetGeneOccupancyHistogram().GetHistCount(0));
     }
     return pop_neut;
   });
@@ -853,12 +852,6 @@ void AagosWorld::SetupStatsFile() {
     for (emp::Ptr<org_t> org_ptr : pop) {
       if (!org_ptr) continue;
       pop_coding.emplace_back(ComputeCodingSites(*org_ptr));
-      // size_t count = 0;
-      // const emp::vector<size_t> & bins = org_ptr->GetGeneOccupancyHistogram().GetHistCounts();
-      // for (size_t i = 1; i < bins.size(); ++i) {
-      //   count += bins[i];
-      // }
-      // pop_coding.emplace_back(count);
     }
     return pop_coding;
   });
@@ -933,12 +926,6 @@ void AagosWorld::SetupRepresentativeFile() {
   std::function<size_t()> coding_sites_fun = [this]() {
     org_t & org = GetOrg(most_fit_id);
     return ComputeCodingSites(org);
-    // const emp::vector<size_t> & bins = org.GetGeneOccupancyHistogram().GetHistCounts();
-    // size_t count = 0;
-    // for (size_t i = 1; i < bins.size(); ++i) {
-    //   count += bins[i];
-    // }
-    // return count;
   };
   representative_org_file->AddFun(coding_sites_fun, "coding_sites", "How many sites in this organism's genome are coding?");
 
@@ -946,7 +933,6 @@ void AagosWorld::SetupRepresentativeFile() {
   std::function<size_t()> neutral_sites_fun = [this]() {
     org_t & org = GetOrg(most_fit_id);
     return ComputeNeutralSites(org);
-    // return org.GetGeneOccupancyHistogram().GetHistCount(0);
   };
   representative_org_file->AddFun(neutral_sites_fun, "neutral_sites", "How many sites in this organim's genome are neutral?");
 

@@ -94,6 +94,7 @@ protected:
   void ReconfigureWorld();
 
   void SetupConfigInterface();
+  void SetupStatsViewInterface();
 
   UI::Input & AddConfigInput(UI::Document & div,
                              const std::string & append_to_id,
@@ -272,6 +273,7 @@ void AagosWebInterface::SetupInterface() {
   emp::JSWrap([this]() {
     ReconfigureWorld();
     run_reset_but.SetDisabled(active);
+    run_toggle_but.SetDisabled(active);
     run_step_but.SetDisabled(active);
     config_exp_but.SetDisabled(active);
   }, "do_reset_world");
@@ -389,7 +391,9 @@ void AagosWebInterface::SetupInterface() {
 
   control_div.Div("button-row")
     << UI::Div("render-frequency-col").SetAttr("class", "col-lg-auto p-2")
-    << UI::Div("render-wrapper").SetAttr("class", "input-group input-group-lg")
+    // << UI::Div("render-wrapper").SetAttr("class", "input-group input-group-lg")
+    << UI::Div("render-wrapper")
+        .SetAttr("class", "input-group input-group-md")
     << UI::Div("render-input-prepend").SetAttr("class", "input-group-prepend")
     << UI::Div("render-input-prepend-text").SetAttr("class", "input-group-text")
     << "Render every";
@@ -408,12 +412,12 @@ void AagosWebInterface::SetupInterface() {
         .Max(std::numeric_limits<size_t>::max())
         .Step(1)
         .SetAttr("class", "form-control")
-        .SetCSS("min-width", "96px");
+        .SetCSS("min-width", "64px");
 
   control_div.Div("render-wrapper")
     << UI::Div("input-group-append").SetAttr("class", "input-group-append")
     << UI::Text().SetAttr("class", "input-group-text")
-    << "th generation";
+    << "generations";
 
 
   // ---- Setup config view interface ----
@@ -451,6 +455,9 @@ void AagosWebInterface::SetupInterface() {
     << UI::Live([this]() { return generation_last_drawn; });
 
   world_div << UI::Element("hr").SetAttr("class", "mt-1");
+
+  // --- Configure stats ---
+  SetupStatsViewInterface();
 
   // Initial world configuration + pop canvas configuration.
   Setup(); // Call world setup
@@ -520,16 +527,17 @@ void AagosWebInterface::DoFrame() {
     run_reset_but.SetDisabled(false);
   }
   world_div.Redraw();
+  stats_div.Redraw();
 
-  std::cout << "Most fit ID = " << GetMostFitID() << std::endl;
-  std::cout << " - Fitness = " << GetOrg(GetMostFitID()).GetPhenotype().fitness << std::endl;
-  std::cout << " - Gene contributions = ";
-  emp::Print(GetOrg(GetMostFitID()).GetPhenotype().gene_fitness_contributions);
-  std::cout << std::endl;
-  std::cout << " - Bits = " << GetOrg(GetMostFitID()).GetGenome().bits << std::endl;
-  std::cout << " - Gene starts = ";
-  emp::Print(GetOrg(GetMostFitID()).GetGenome().gene_starts);
-  std::cout << std::endl;
+  // std::cout << "Most fit ID = " << GetMostFitID() << std::endl;
+  // std::cout << " - Fitness = " << GetOrg(GetMostFitID()).GetPhenotype().fitness << std::endl;
+  // std::cout << " - Gene contributions = ";
+  // emp::Print(GetOrg(GetMostFitID()).GetPhenotype().gene_fitness_contributions);
+  // std::cout << std::endl;
+  // std::cout << " - Bits = " << GetOrg(GetMostFitID()).GetGenome().bits << std::endl;
+  // std::cout << " - Gene starts = ";
+  // emp::Print(GetOrg(GetMostFitID()).GetGenome().gene_starts);
+  // std::cout << std::endl;
 
   // Manually do the world update + clear world cache.
   AdvanceWorld();
@@ -556,10 +564,13 @@ void AagosWebInterface::ReconfigureWorld() {
   // Setup the world again...
   Setup();
   pop_vis.Setup(*this); // Re-configure pop_vis
+  GetFitnessDataNode()->Reset();
 
-  RedrawPopulation(true, false); // Finally, go ahead and draw initial population.
-  RedrawEnvironment();
-  world_div.Redraw();
+  DoFrame();
+  // RedrawPopulation(true, false); // Finally, go ahead and draw initial population.
+  // RedrawEnvironment();
+  // world_div.Redraw();
+  // stats_div.Redraw();
   std::cout << "--- done reconfiguring world ---" << std::endl;
 }
 
@@ -980,6 +991,106 @@ void AagosWebInterface::SetupConfigInterface() {
 
     config_mode=false;
     DisableConfigInputs();
+}
+
+void AagosWebInterface::SetupStatsViewInterface() {
+
+  stats_div << UI::Div("pop-stats-header-row").SetAttr("class", "row justify-content-center");
+  stats_div.Div("pop-stats-header-row")
+    << UI::Element("h5", "pop-stats-header").SetAttr("class", "card-title m-0")
+    << "Population Statistics";
+
+  stats_div << UI::Div("pop-stats-row").SetAttr("class", "row");
+
+  stats_div.Div("pop-stats-row")
+    << UI::Table(4, 2, "pop-stats-table").SetAttr("class", "table table-sm");
+
+  stats_div.Table("pop-stats-table").GetCell(0, 0)
+    << "Mean fitness";
+  stats_div.Table("pop-stats-table").GetCell(0, 1).SetAttr("class", "text-right")
+    << UI::Live([this]() {
+        auto node = GetFitnessDataNode();
+        return node->GetMean();
+      });
+
+  stats_div.Table("pop-stats-table").GetCell(1, 0)
+    << "Mean coding sites";
+  stats_div.Table("pop-stats-table").GetCell(1, 1).SetAttr("class", "text-right")
+    << UI::Live([this]() {
+        auto & node = manager.Get("coding_sites");
+        node.PullData();
+        const double mean = node.GetMean();
+        node.Reset();
+        return mean;
+      });
+
+  stats_div.Table("pop-stats-table").GetCell(2, 0)
+    << "Mean neutral sites";
+  stats_div.Table("pop-stats-table").GetCell(2, 1).SetAttr("class", "text-right")
+    << UI::Live([this]() {
+        auto & node = manager.Get("neutral_sites");
+        node.PullData();
+        const double mean = node.GetMean();
+        node.Reset();
+        return mean;
+      });
+
+  stats_div.Table("pop-stats-table").GetCell(3, 0)
+    << "Mean genome length";
+  stats_div.Table("pop-stats-table").GetCell(3, 1).SetAttr("class", "text-right")
+    << UI::Live([this]() {
+        auto & node = manager.Get("genome_length");
+        node.PullData();
+        const double mean = node.GetMean();
+        node.Reset();
+        return mean;
+      });
+
+  stats_div << UI::Element("hr");
+
+  stats_div << UI::Div("max-fit-stats-header-row").SetAttr("class", "row justify-content-center");
+  stats_div.Div("max-fit-stats-header-row")
+    << UI::Element("h5", "max-fit-stats-header").SetAttr("class", "card-title m-0")
+    << "Max Fit Organism Statistics";
+
+  stats_div << UI::Div("max-fit-org-stats-row").SetAttr("class", "row");
+
+  stats_div.Div("max-fit-org-stats-row")
+    << UI::Table(4, 2, "max-fit-org-stats-table").SetAttr("class", "table table-sm");
+
+  stats_div.Table("max-fit-org-stats-table").GetCell(0, 0)
+    << "Fitness";
+  stats_div.Table("max-fit-org-stats-table").GetCell(0, 1).SetAttr("class", "text-right")
+    << UI::Live([this]() {
+        return CalcFitnessID(most_fit_id);
+      });
+
+  stats_div.Table("max-fit-org-stats-table").GetCell(1, 0)
+    << "Coding sites";
+  stats_div.Table("max-fit-org-stats-table").GetCell(1, 1).SetAttr("class", "text-right")
+    << UI::Live([this]() {
+        org_t & org = GetOrg(most_fit_id);
+        return ComputeCodingSites(org);
+      });
+
+  stats_div.Table("max-fit-org-stats-table").GetCell(2, 0)
+    << "Neutral sites";
+  stats_div.Table("max-fit-org-stats-table").GetCell(2, 1).SetAttr("class", "text-right")
+    << UI::Live([this]() {
+        org_t & org = GetOrg(most_fit_id);
+        return ComputeNeutralSites(org);
+      });
+
+  stats_div.Table("max-fit-org-stats-table").GetCell(3, 0)
+    << "Genome length";
+  stats_div.Table("max-fit-org-stats-table").GetCell(3, 1).SetAttr("class", "text-right")
+    << UI::Live([this]() {
+        const org_t & org = GetOrg(most_fit_id);
+        return org.GetNumBits();
+      });
+
+
+
 }
 
 #endif
