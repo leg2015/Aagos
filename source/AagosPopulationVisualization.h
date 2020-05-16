@@ -341,9 +341,9 @@ public:
         .SetCSS("overflow-x", "scroll")
         .SetCSS("max-height", emp::to_string(pop_view_max_height_px) + "px");
 
-    vis_div << UI::Div(element_id + "-tooltip")
-                .SetCSS("opacity", 0)
-                .SetAttr("class", "tooltip");
+    // vis_div << UI::Div(element_id + "-tooltip")
+    //             .SetCSS("opacity", 0)
+    //             .SetAttr("class", "tooltip");
 
     // Add SVG to #element_id
     EM_ASM({
@@ -576,7 +576,7 @@ public:
       axes.selectAll("path").style({"fill": "none", "stroke": "black", "shape-rendering": "crispEdges"});
       axes.selectAll("text").style({"font-family": "sans-serif", "font-size": "10px"});
 
-      var tooltip = d3.select("#" + elem_id + "-tooltip");
+      // var tooltip = d3.select("#" + elem_id + "-tooltip").style("position", "absolute");
 
       var pop_data_canvas = d3.select(pop_data_canvas_id);
       pop_data_canvas.selectAll("*").remove();
@@ -648,40 +648,48 @@ public:
                         });
 
                       // Draw transparent box over gene indicators to have
-                      var gene_indicator_hover_boxes = d3.select(this).selectAll("rect.gene-indicator-hover").data(org["gene_indicators"]);
-                      gene_indicator_hover_boxes.enter()
-                        .append("rect")
-                        .attr("class", "gene-indicator-hover")
-                        .attr("transform", function(indicator) {
-                          const pos = indicator['pos'];
-                          const num_occupants = org['position_occupants'].get(pos).size;
-                          const rank = indicator['indicator_rank'];
-                          const height = rect_height / num_occupants; // this should never be 0
-                          const x_trans = pop_x_scale(pos);
-                          const y_trans = height * rank;
-                          return "translate(" + x_trans + "," + y_trans + ")";
-                        })
-                        .attr("height", function(indicator) {
-                          const pos = indicator['pos'];
-                          const num_occupants = org['position_occupants'].get(pos).size;
-                          const height = rect_height / num_occupants;
-                          return height;
-                        })
-                        .attr("width", rect_width)
-                        .style("opacity", "0")
-                        .attr("label", function(indicator) {
-                          const gene_id = indicator['gene_id'];
-                          const fitness_contribution = org['gene_fitness_contributions'][gene_id];
-                          return "Gene fitness contribution = " + fitness_contribution;
-                        })
-                        .on("mouseover", function(indicator) {
-                          tooltip.style("opacity", "1");
-                          tooltip.html("Hello? " + indicator['gene_id']);
-                        })
-                        .on("mouseleave", function(indicator) {
-                          tooltip.style("opacity", "0");
-                          tooltip.html("");
-                        });
+                      // var gene_indicator_hover_boxes = d3.select(this).selectAll("rect.gene-indicator-hover").data(org["gene_indicators"]);
+                      // gene_indicator_hover_boxes.enter()
+                      //   .append("rect")
+                      //   .attr("class", "gene-indicator-hover")
+                      //   .attr("id", function(indicator, indicator_i) {
+                      //     return elem_id + "-gene-indicator-hover-" + indicator_i;
+                      //    })
+                      //   .attr("transform", function(indicator) {
+                      //     const pos = indicator['pos'];
+                      //     const num_occupants = org['position_occupants'].get(pos).size;
+                      //     const rank = indicator['indicator_rank'];
+                      //     const height = rect_height / num_occupants; // this should never be 0
+                      //     const x_trans = pop_x_scale(pos);
+                      //     const y_trans = height * rank;
+                      //     return "translate(" + x_trans + "," + y_trans + ")";
+                      //   })
+                      //   .attr("height", function(indicator) {
+                      //     const pos = indicator['pos'];
+                      //     const num_occupants = org['position_occupants'].get(pos).size;
+                      //     const height = rect_height / num_occupants;
+                      //     return height;
+                      //   })
+                      //   .attr("width", rect_width)
+                      //   .style("opacity", "0")
+                      //   .attr("label", function(indicator) {
+                      //     const gene_id = indicator['gene_id'];
+                      //     const fitness_contribution = org['gene_fitness_contributions'][gene_id];
+                      //     return "Gene fitness contribution = " + fitness_contribution;
+                      //   })
+                      //   .on("mouseover", function(indicator, indicator_i) {
+
+                      //     // tooltip.html("Hello? " + indicator['gene_id'])
+                      //     //        .style("opacity", "1")
+                      //     //        .style("top", $("#"+ elem_id + "-gene-indicator-hover-" + indicator_i).position().top + "px")
+                      //     //        .style("left", $("#"+ elem_id + "-gene-indicator-hover-" + indicator_i).position().left + "px");
+                      //   })
+                      //   .on("mouseleave", function(indicator) {
+                      //     tooltip.style("opacity", "0");
+                      //     tooltip.html("");
+                      //     tooltip.style("left", "");
+                      //     tooltip.style("top", "");
+                      //   });
                     });
 
     }, element_id.c_str(),

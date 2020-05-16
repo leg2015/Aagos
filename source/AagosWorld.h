@@ -674,7 +674,7 @@ void AagosWorld::InitFitnessEval() {
     // Configure the organism evaluation function.
     evaluate_org = [this](org_t & org) {
       const size_t num_genes = config.NUM_GENES();
-      const size_t num_bits = config.NUM_BITS();
+      // const size_t num_bits = config.NUM_BITS();
       const size_t gene_size = config.GENE_SIZE();
 
       // Grab reference to and reset organism's phenotype.
@@ -716,7 +716,7 @@ void AagosWorld::InitFitnessEval() {
     // Configure the organism evaluation function.
     evaluate_org = [this](org_t & org) {
       const size_t num_genes = config.NUM_GENES();
-      const size_t num_bits = config.NUM_BITS();
+      // const size_t num_bits = config.NUM_BITS();
       const size_t gene_size = config.GENE_SIZE();
 
       // Grab reference to and reset organism's phenotype.
