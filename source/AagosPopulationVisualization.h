@@ -109,7 +109,7 @@ protected:
       EM_ASM({
         const elem_id = UTF8ToString($0);
         const org_id = $1;
-        const bits = UTF8ToString($2).split('').map(Number);
+        const bits = UTF8ToString($2).split('').map(Number).reverse();
         const gene_starts = UTF8ToString($3).split(',').map(Number);
         const gene_size = $4;
         const num_bits = bits.length;
@@ -340,6 +340,10 @@ public:
         .SetCSS("overflow-y", "scroll")
         .SetCSS("overflow-x", "scroll")
         .SetCSS("max-height", emp::to_string(pop_view_max_height_px) + "px");
+
+    vis_div << UI::Div(element_id + "-tooltip")
+                .SetCSS("opacity", 0)
+                .SetAttr("class", "tooltip");
 
     // Add SVG to #element_id
     EM_ASM({
@@ -572,6 +576,7 @@ public:
       axes.selectAll("path").style({"fill": "none", "stroke": "black", "shape-rendering": "crispEdges"});
       axes.selectAll("text").style({"font-family": "sans-serif", "font-size": "10px"});
 
+      var tooltip = d3.select("#" + elem_id + "-tooltip");
 
       var pop_data_canvas = d3.select(pop_data_canvas_id);
       pop_data_canvas.selectAll("*").remove();
@@ -601,7 +606,8 @@ public:
                           .attr("width", rect_width)
                           .attr("fill", "white")
                           .attr("stroke", "gray");
-                      var genes = d3.select(this).selectAll("rect.gene").data(org["gene_indicators"]);
+
+                      var genes = d3.select(this).selectAll("rect.gene-indicator").data(org["gene_indicators"]);
                       genes.enter()
                            .append("rect")
                            .attr("class", "gene-indicator")
@@ -625,6 +631,7 @@ public:
                              const gene_id = indicator['gene_id'];
                              return gene_colors(gene_id);
                            });
+
                       var bit_text = d3.select(this).selectAll("text").data(org["bits"]);
                       bit_text.enter()
                         .append("text")
@@ -639,7 +646,43 @@ public:
                         .text(function(bit, bit_i) {
                           return bit;
                         });
-                      });
+
+                      // Draw transparent box over gene indicators to have
+                      var gene_indicator_hover_boxes = d3.select(this).selectAll("rect.gene-indicator-hover").data(org["gene_indicators"]);
+                      gene_indicator_hover_boxes.enter()
+                        .append("rect")
+                        .attr("class", "gene-indicator-hover")
+                        .attr("transform", function(indicator) {
+                          const pos = indicator['pos'];
+                          const num_occupants = org['position_occupants'].get(pos).size;
+                          const rank = indicator['indicator_rank'];
+                          const height = rect_height / num_occupants; // this should never be 0
+                          const x_trans = pop_x_scale(pos);
+                          const y_trans = height * rank;
+                          return "translate(" + x_trans + "," + y_trans + ")";
+                        })
+                        .attr("height", function(indicator) {
+                          const pos = indicator['pos'];
+                          const num_occupants = org['position_occupants'].get(pos).size;
+                          const height = rect_height / num_occupants;
+                          return height;
+                        })
+                        .attr("width", rect_width)
+                        .style("opacity", "0")
+                        .attr("label", function(indicator) {
+                          const gene_id = indicator['gene_id'];
+                          const fitness_contribution = org['gene_fitness_contributions'][gene_id];
+                          return "Gene fitness contribution = " + fitness_contribution;
+                        })
+                        .on("mouseover", function(indicator) {
+                          tooltip.style("opacity", "1");
+                          tooltip.html("Hello? " + indicator['gene_id']);
+                        })
+                        .on("mouseleave", function(indicator) {
+                          tooltip.style("opacity", "0");
+                          tooltip.html("");
+                        });
+                    });
 
     }, element_id.c_str(),
        draw_mode==POP_DRAW_MODE::FULL_POP ? pop_org_height : max_fit_org_height,
