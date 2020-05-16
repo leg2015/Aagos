@@ -997,7 +997,7 @@ void AagosWebInterface::SetupStatsViewInterface() {
 
   stats_div << UI::Div("pop-stats-header-row").SetAttr("class", "row justify-content-center");
   stats_div.Div("pop-stats-header-row")
-    << UI::Element("h5", "pop-stats-header").SetAttr("class", "card-title m-0")
+    << UI::Element("h5", "pop-stats-header").SetAttr("class", "card-title m-1")
     << "Population Statistics";
 
   stats_div << UI::Div("pop-stats-row").SetAttr("class", "row");
@@ -1046,11 +1046,9 @@ void AagosWebInterface::SetupStatsViewInterface() {
         return mean;
       });
 
-  stats_div << UI::Element("hr");
-
   stats_div << UI::Div("max-fit-stats-header-row").SetAttr("class", "row justify-content-center");
   stats_div.Div("max-fit-stats-header-row")
-    << UI::Element("h5", "max-fit-stats-header").SetAttr("class", "card-title m-0")
+    << UI::Element("h5", "max-fit-stats-header").SetAttr("class", "card-title m-1")
     << "Max Fit Organism Statistics";
 
   stats_div << UI::Div("max-fit-org-stats-row").SetAttr("class", "row");
