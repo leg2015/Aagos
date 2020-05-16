@@ -473,7 +473,7 @@ void AagosWebInterface::SetupInterface() {
 
 void AagosWebInterface::DoFrame() {
   // std::cout << "Frame!" << std::endl;
-  RunStep();
+  RunStep(false);
   if (   (GetUpdate() % draw_frequency == 0)
       || (GetUpdate() == config.MAX_GENS())
       || (GetUpdate() == TOTAL_GENS))
@@ -507,6 +507,19 @@ void AagosWebInterface::DoFrame() {
     run_reset_but.SetDisabled(false);
   }
   world_div.Redraw();
+
+  std::cout << "Most fit ID = " << GetMostFitID() << std::endl;
+  std::cout << " - Fitness = " << GetOrg(GetMostFitID()).GetPhenotype().fitness << std::endl;
+  std::cout << " - Gene contributions = ";
+  emp::Print(GetOrg(GetMostFitID()).GetPhenotype().gene_fitness_contributions);
+  std::cout << std::endl;
+  std::cout << " - Bits = " << GetOrg(GetMostFitID()).GetGenome().bits << std::endl;
+  std::cout << " - Gene starts = ";
+  emp::Print(GetOrg(GetMostFitID()).GetGenome().gene_starts);
+  std::cout << std::endl;
+
+  // Manually do the world update + clear world cache.
+  AdvanceWorld();
 }
 
 void AagosWebInterface::RedrawPopulation(bool update_data) {

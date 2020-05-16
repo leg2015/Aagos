@@ -426,7 +426,10 @@ public:
   }
 
   /// Advance world by a single time step (generation).
-  void RunStep();
+  void RunStep(bool auto_advance=true);
+
+  ///
+  void AdvanceWorld();
 
   /// Run world for configured number of generations.
   void Run();
@@ -442,7 +445,8 @@ public:
 
 };
 
-void AagosWorld::RunStep() {
+// auto update is a concession to the web interface...
+void AagosWorld::RunStep(bool auto_advance/*=true*/) {
   emp_assert(setup);
   // (1) evaluate population, (2) select parents, (3) update the world
   // == Do evaluation ==
@@ -492,16 +496,21 @@ void AagosWorld::RunStep() {
     }
   }
 
+  if (auto_advance) {
+    AdvanceWorld();   // Web interface needs to manage when world update gets called...
+  }
+
+}
+
+void AagosWorld::AdvanceWorld() {
   // Should the environment change?
   if (CUR_CHANGE_FREQUENCY) {
-    if (!(u % CUR_CHANGE_FREQUENCY)) {
+    if (!(GetUpdate() % CUR_CHANGE_FREQUENCY)) {
       change_environment();
     }
   }
-
   Update();
   ClearCache();
-
 }
 
 void AagosWorld::Run() {
@@ -679,7 +688,9 @@ void AagosWorld::InitFitnessEval() {
         emp_assert(gene_id < gene_starts.size());
         const size_t gene_start = gene_starts[gene_id];
         uint32_t gene_val = org.GetBits().GetUIntAtBit(gene_start) & gene_mask;
-        const size_t tail_bits = num_bits - gene_start;
+        // const size_t tail_bits = num_bits - gene_start; // original?
+        const size_t tail_bits = org.GetBits().GetSize() - gene_start; // fix?
+
         // If a gene runs off the end of the bitstring, loop around to the beginning.
         if (tail_bits < gene_size) {
           gene_val |= (org.GetBits().GetUIntAtBit(0) << tail_bits) & gene_mask;
@@ -719,7 +730,9 @@ void AagosWorld::InitFitnessEval() {
         emp_assert(gene_id < gene_starts.size());
         const size_t gene_start = gene_starts[gene_id];
         uint32_t gene_val = org.GetBits().GetUIntAtBit(gene_start) & gene_mask;
-        const size_t tail_bits = num_bits - gene_start;
+        // const size_t tail_bits = num_bits - gene_start; // original?
+        const size_t tail_bits = org.GetBits().GetSize() - gene_start; // fix?
+
         // If a gene runs off the end of the bitstring, loop around to the beginning.
         if (tail_bits < gene_size) {
           gene_val |= (org.GetBits().GetUIntAtBit(0) << tail_bits) & gene_mask;

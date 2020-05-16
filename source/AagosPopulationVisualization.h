@@ -137,13 +137,30 @@ protected:
                                               'gene_starts': gene_starts,
                                               'position_occupants': position_occupants,
                                               'gene_occupancy': gene_occupancy,
-                                              'gene_indicators': gene_indicators});
+                                              'gene_indicators': gene_indicators,
+                                              'gene_fitness_contributions': new Array(gene_starts.length)});
       }, element_id.c_str(),       // 0
          org_id,                   // 1
          bits.c_str(),             // 2
          gene_starts_str.c_str(),  // 3
          gene_size);               // 4
+
+      // Update gene fitness contributions
+      for (size_t gene_id = 0; gene_id < gene_starts.size(); ++gene_id) {
+        const double gene_fitness = org.GetPhenotype().gene_fitness_contributions[gene_id];
+        EM_ASM({
+          const elem_id = UTF8ToString($0);
+          const org_id = $1;
+          const gene_id = $2;
+          const gene_fitness = $3;
+          emp.AagosPopVis[elem_id]['pop'][org_id]['gene_fitness_contributions'][gene_id] = gene_fitness;
+        }, element_id.c_str(),
+           org_id,
+           gene_id,
+           gene_fitness);
+      }
     }
+
 
     EM_ASM({
       var elem_id = UTF8ToString($0);
@@ -174,6 +191,7 @@ protected:
     auto & gene_starts = org.GetGeneStarts();
     for (size_t gene_id = 0; gene_id < gene_starts.size(); ++gene_id) {
       if (gene_id) stream << ",";
+      // const size_t lr_gene_start = (genome_size - gene_starts[gene_id]);
       stream << gene_starts[gene_id];
     }
     const std::string gene_starts_str(stream.str());
@@ -184,7 +202,7 @@ protected:
       const most_fit_id = $1;
       const genome_size = $2;
       const gene_starts = UTF8ToString($3).split(',').map(Number);
-      const bits = UTF8ToString($4).split('').map(Number);
+      const bits = UTF8ToString($4).split('').map(Number).reverse(); // Reverse because representation r=>l, want to draw l=>r
       const gene_size = $5;
       emp.AagosPopVis[elem_id]['most_fit_id'] = most_fit_id;
       emp.AagosPopVis[elem_id]['max_genome_size'] = genome_size;
@@ -216,13 +234,28 @@ protected:
                                             'gene_starts': gene_starts,
                                             'position_occupants': position_occupants,
                                             'gene_occupancy': gene_occupancy,
-                                            'gene_indicators': gene_indicators});
+                                            'gene_indicators': gene_indicators,
+                                            'gene_fitness_contributions': new Array(gene_starts.length)});
     }, element_id.c_str(),      // 0
        most_fit_id,             // 1
        genome_size,             // 2
        gene_starts_str.c_str(), // 3
        bits.c_str(),            // 4
        gene_size);              // 5
+
+    // Update gene fitness contributions
+    for (size_t gene_id = 0; gene_id < gene_starts.size(); ++gene_id) {
+      const double gene_fitness = org.GetPhenotype().gene_fitness_contributions[gene_id];
+      EM_ASM({
+        const elem_id = UTF8ToString($0);
+        const gene_id = $1;
+        const gene_fitness = $2;
+        emp.AagosPopVis[elem_id]['pop'][0]['gene_fitness_contributions'][gene_id] = gene_fitness;
+      }, element_id.c_str(),
+          gene_id,
+          gene_fitness);
+    }
+
   }
 
   void UpdateGradientEnvData(world_t & world) {
@@ -250,7 +283,7 @@ protected:
       const std::string gene_bits(stream.str());
       EM_ASM({
         const elem_id = UTF8ToString($0);
-        const gene_bits = UTF8ToString($1).split('').map(Number);
+        const gene_bits = UTF8ToString($1).split('').map(Number).reverse();
         const gene_id = $2;
         emp.AagosPopVis[elem_id]["gradient_env"].push(({"bits":gene_bits,"id":gene_id}));
       }, element_id.c_str(),
