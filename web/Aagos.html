@@ -8,6 +8,15 @@
   <!-- font awesome icons! -->
   <script src="https://kit.fontawesome.com/bc4a49fbdb.js" crossorigin="anonymous"></script>
 
+  <!-- TODO - move all custom styling into its own sass file? -->
+  <style>
+    .d3-tip {
+      line-height: 1;
+      padding: 6px;
+      font-size: 12px;
+    }
+  </style>
+
   <title>A.A.G.O.S. (Auto-Adaptive Genetic Organization System)</title>
 </head>
 
@@ -86,6 +95,7 @@
                     <div id="emp_pop_vis_view"></div>
                   </div>
                 </div>
+                <div id="emp_world_stats_view"></div>
               </div> <!-- End card-body -->
             </div> <!-- End card -->
           </div>
@@ -241,6 +251,7 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
   <script src="https://d3js.org/d3.v5.min.js"></script>
   <script src="//d3js.org/d3-scale-chromatic.v0.3.min.js"></script>
+  <script src="d3-tip.js"></script>
   <script type="text/javascript" src="Aagos.js"></script>
 
   <style>

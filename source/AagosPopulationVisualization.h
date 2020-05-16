@@ -9,6 +9,7 @@
 
 namespace UI = emp::web;
 
+// NOTE - tooltip functionality is currently **really** gross because of the way the world updates
 // NOTE - at the moment, this will explode if multiple instances of this object exist at once
 class AagosPopulationVisualization  {
 public:
@@ -29,6 +30,8 @@ protected:
   size_t pop_org_height=30;     // height of organism in population view mode
   size_t max_fit_org_height=60; // Height of organism in max fit view mode
   size_t pop_view_max_height_px=500;
+
+  bool prev_tooltops=false;
 
   POP_DRAW_MODE draw_mode=POP_DRAW_MODE::MAX_FIT;
   // POP_DRAW_MODE draw_mode=POP_DRAW_MODE::FULL_POP;
@@ -125,7 +128,10 @@ protected:
             if (!(position_occupants.has(position))) {
               position_occupants.set(position, new Set());
             }
-            gene_indicators.push({'gene_id': gene_id, 'pos': position, 'indicator_rank': position_occupants.get(position).size});
+            gene_indicators.push({'gene_id': gene_id,
+                                  'pos': position,
+                                  'indicator_rank': position_occupants.get(position).size,
+                                  'gene_fitness_contribution': 0});
             position_occupants.get(position).add(gene_id);
           }
         }
@@ -153,11 +159,19 @@ protected:
           const org_id = $1;
           const gene_id = $2;
           const gene_fitness = $3;
+          const gene_size = $4;
+          const num_genes = emp.AagosPopVis[elem_id]['pop'][org_id].gene_starts.length;
           emp.AagosPopVis[elem_id]['pop'][org_id]['gene_fitness_contributions'][gene_id] = gene_fitness;
+          const indicator_start = gene_id * gene_size;
+          const indicator_stop = (indicator_start) + gene_size;
+          for (let i = indicator_start; i < indicator_stop; ++i) {
+            emp.AagosPopVis[elem_id]['pop'][org_id]['gene_indicators'][i]['gene_fitness_contribution'] = gene_fitness;
+          }
         }, element_id.c_str(),
            org_id,
            gene_id,
-           gene_fitness);
+           gene_fitness,
+           gene_size);
       }
     }
 
@@ -174,6 +188,7 @@ protected:
   }
 
   // Do this separately instead of relying on D3 filters to save time!
+  // - todo merge update pop data max fit & full pop where possible?
   void UpdatePopDataMaxFit(world_t & world) {
     if (!init || !world.IsSetup()) return;
 
@@ -222,7 +237,10 @@ protected:
           if (!(position_occupants.has(position))) {
             position_occupants.set(position, new Set());
           }
-          gene_indicators.push({'gene_id': gene_id, 'pos': position, 'indicator_rank': position_occupants.get(position).size});
+          gene_indicators.push({'gene_id': gene_id,
+                                'pos': position,
+                                'indicator_rank': position_occupants.get(position).size,
+                                'gene_fitness_contribution': 0});
           position_occupants.get(position).add(gene_id);
         }
       }
@@ -244,16 +262,26 @@ protected:
        gene_size);              // 5
 
     // Update gene fitness contributions
+    // todo - make this less tacked on... wrap an accessor?
     for (size_t gene_id = 0; gene_id < gene_starts.size(); ++gene_id) {
       const double gene_fitness = org.GetPhenotype().gene_fitness_contributions[gene_id];
       EM_ASM({
         const elem_id = UTF8ToString($0);
         const gene_id = $1;
         const gene_fitness = $2;
+        const gene_size = $3;
+        const num_genes = emp.AagosPopVis[elem_id]['pop'][0].gene_starts.length;
         emp.AagosPopVis[elem_id]['pop'][0]['gene_fitness_contributions'][gene_id] = gene_fitness;
+        const indicator_start = gene_id * gene_size;
+        const indicator_stop = (indicator_start) + gene_size;
+        for (let i = indicator_start; i < indicator_stop; ++i) {
+          emp.AagosPopVis[elem_id]['pop'][0]['gene_indicators'][i]['gene_fitness_contribution'] = gene_fitness;
+        }
+        // emp.AagosPopVis[elem_id]['pop'][0]['gene_indicators'][gene_id]['gene_fitness_contribution'] = gene_fitness;
       }, element_id.c_str(),
           gene_id,
-          gene_fitness);
+          gene_fitness,
+          gene_size);
     }
 
   }
@@ -343,6 +371,7 @@ public:
 
     // vis_div << UI::Div(element_id + "-tooltip")
     //             .SetCSS("opacity", 0)
+    //             .SetCSS("position", "absolute")
     //             .SetAttr("class", "tooltip");
 
     // Add SVG to #element_id
@@ -490,7 +519,7 @@ public:
        pop_org_height);
   }
 
-  void DrawPop(world_t & world, bool update_data=true) {
+  void DrawPop(world_t & world, bool update_data=true, bool enable_tooltips=false) {
     std::cout << "====== DRAWING POPULATION =========" << std::endl;
     if (update_data && draw_mode == POP_DRAW_MODE::FULL_POP) {
       UpdatePopDataFull(world);
@@ -503,6 +532,7 @@ public:
       const elem_id = UTF8ToString($0);
       const org_height = $1;
       const pop_view_max_height_px = $2;
+      const enable_tooltips = $3;
 
       var vis_info = emp.AagosPopVis[elem_id];
       const pop_size = vis_info["pop"].length;
@@ -531,7 +561,6 @@ public:
       // If page is super small, allow left-right scrolling (don't shrink genomes too small)
       if (canvas_width < min_canvas_width) {
         canvas_width = min_canvas_width;
-        // d3.select(pop_div_id).attr()
       }
 
       // Configure x/y range/domains (with a little bit of wiggle room)
@@ -576,7 +605,20 @@ public:
       axes.selectAll("path").style({"fill": "none", "stroke": "black", "shape-rendering": "crispEdges"});
       axes.selectAll("text").style({"font-family": "sans-serif", "font-size": "10px"});
 
-      // var tooltip = d3.select("#" + elem_id + "-tooltip").style("position", "absolute");
+      d3.selectAll(".d3-tip").remove(); // todo - move this out of the draw function...
+      if (enable_tooltips) {
+        var tool_tip = d3.tip()
+          .attr("class", "d3-tip")
+          .html(function(indicator) {
+            content =
+              "<table class='table  table-sm table-dark'>" +
+                "<tr><th>Gene ID: </th><td>" + indicator["gene_id"] + "</td></tr>" +
+                "<tr><th>Fitness contribution: </th><td>" + indicator["gene_fitness_contribution"] + "</td></tr>" +
+              "</table>";
+            return content;
+          });
+        svg.call(tool_tip);
+      }
 
       var pop_data_canvas = d3.select(pop_data_canvas_id);
       pop_data_canvas.selectAll("*").remove();
@@ -648,55 +690,48 @@ public:
                         });
 
                       // Draw transparent box over gene indicators to have
-                      // var gene_indicator_hover_boxes = d3.select(this).selectAll("rect.gene-indicator-hover").data(org["gene_indicators"]);
-                      // gene_indicator_hover_boxes.enter()
-                      //   .append("rect")
-                      //   .attr("class", "gene-indicator-hover")
-                      //   .attr("id", function(indicator, indicator_i) {
-                      //     return elem_id + "-gene-indicator-hover-" + indicator_i;
-                      //    })
-                      //   .attr("transform", function(indicator) {
-                      //     const pos = indicator['pos'];
-                      //     const num_occupants = org['position_occupants'].get(pos).size;
-                      //     const rank = indicator['indicator_rank'];
-                      //     const height = rect_height / num_occupants; // this should never be 0
-                      //     const x_trans = pop_x_scale(pos);
-                      //     const y_trans = height * rank;
-                      //     return "translate(" + x_trans + "," + y_trans + ")";
-                      //   })
-                      //   .attr("height", function(indicator) {
-                      //     const pos = indicator['pos'];
-                      //     const num_occupants = org['position_occupants'].get(pos).size;
-                      //     const height = rect_height / num_occupants;
-                      //     return height;
-                      //   })
-                      //   .attr("width", rect_width)
-                      //   .style("opacity", "0")
-                      //   .attr("label", function(indicator) {
-                      //     const gene_id = indicator['gene_id'];
-                      //     const fitness_contribution = org['gene_fitness_contributions'][gene_id];
-                      //     return "Gene fitness contribution = " + fitness_contribution;
-                      //   })
-                      //   .on("mouseover", function(indicator, indicator_i) {
-
-                      //     // tooltip.html("Hello? " + indicator['gene_id'])
-                      //     //        .style("opacity", "1")
-                      //     //        .style("top", $("#"+ elem_id + "-gene-indicator-hover-" + indicator_i).position().top + "px")
-                      //     //        .style("left", $("#"+ elem_id + "-gene-indicator-hover-" + indicator_i).position().left + "px");
-                      //   })
-                      //   .on("mouseleave", function(indicator) {
-                      //     tooltip.style("opacity", "0");
-                      //     tooltip.html("");
-                      //     tooltip.style("left", "");
-                      //     tooltip.style("top", "");
-                      //   });
+                      if (enable_tooltips) {
+                        var gene_indicator_hover_boxes = d3.select(this).selectAll("rect.gene-indicator-hover").data(org["gene_indicators"]);
+                        gene_indicator_hover_boxes.enter()
+                          .append("rect")
+                          .attr("class", "gene-indicator-hover")
+                          .attr("id", function(indicator, indicator_i) {
+                            return elem_id + "-gene-indicator-hover-" + indicator_i;
+                          })
+                          .attr("transform", function(indicator) {
+                            const pos = indicator['pos'];
+                            const num_occupants = org['position_occupants'].get(pos).size;
+                            const rank = indicator['indicator_rank'];
+                            const height = rect_height / num_occupants; // this should never be 0
+                            const x_trans = pop_x_scale(pos);
+                            const y_trans = height * rank;
+                            return "translate(" + x_trans + "," + y_trans + ")";
+                          })
+                          .attr("height", function(indicator) {
+                            const pos = indicator['pos'];
+                            const num_occupants = org['position_occupants'].get(pos).size;
+                            const height = rect_height / num_occupants;
+                            return height;
+                          })
+                          .attr("width", rect_width)
+                          .style("opacity", "0")
+                          .attr("label", function(indicator) {
+                            const gene_id = indicator['gene_id'];
+                            const fitness_contribution = org['gene_fitness_contributions'][gene_id];
+                            return "Gene fitness contribution = " + fitness_contribution;
+                          })
+                          .on('mouseover', tool_tip.show)
+                          .on('mouseout', tool_tip.hide);
+                      }
                     });
 
     }, element_id.c_str(),
        draw_mode==POP_DRAW_MODE::FULL_POP ? pop_org_height : max_fit_org_height,
-       pop_view_max_height_px);
+       pop_view_max_height_px,
+       enable_tooltips);
 
     data_drawn=true;
+    prev_tooltops=enable_tooltips;
   }
 
   void Clear() {
@@ -723,6 +758,7 @@ public:
   }
   bool IsDrawModeFullPop() const { return draw_mode == POP_DRAW_MODE::FULL_POP; }
   bool IsDrawModeMaxFit() const { return draw_mode == POP_DRAW_MODE::MAX_FIT; }
+  bool IsPrevTooltips() const { return prev_tooltops; } // ew this is bad
 
 };
 

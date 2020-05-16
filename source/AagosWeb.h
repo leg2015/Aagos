@@ -3,7 +3,7 @@
 
 /**
  * TODOs
- * - [ ] Allow world to be configured by web user
+ * - [ ] add 'phenotype evaluated flag' => use for tooltips instead of current horrible implementation
 */
 
 
@@ -64,6 +64,7 @@ public:
 protected:
 
   UI::Document world_div;
+  UI::Document stats_div;
   UI::Document pop_vis_div;
   UI::Document control_div;
   UI::Document config_general_div;
@@ -83,11 +84,12 @@ protected:
   std::unordered_map<std::string, UI::Input> config_input_elements;
 
   size_t draw_frequency=64;
+  size_t generation_last_drawn=0;
   bool config_mode=false;
 
   AagosPopulationVisualization pop_vis;
 
-  void RedrawPopulation(bool update_data=true);
+  void RedrawPopulation(bool update_data=true, bool enable_tooltips=false);
   void RedrawEnvironment();
   void ReconfigureWorld();
 
@@ -227,6 +229,7 @@ public:
   AagosWebInterface(config_t & cfg)
     : AagosWorld(cfg),
       world_div("emp_world_view"),
+      stats_div("emp_world_stats_view"),
       pop_vis_div("emp_pop_vis_view"),
       control_div("emp_controls_view"),
       config_general_div("emp_view_config_general"),
@@ -353,7 +356,7 @@ void AagosWebInterface::SetupInterface() {
       draw_mode_toggle_but.SetLabel("Draw Max Fitness Organism");
     }
     if (!config_mode) {
-      RedrawPopulation();
+      RedrawPopulation(true, false); // update data, disable tooltips
       RedrawEnvironment();
     }
   }, "Draw Full Population", "population-draw-mode-toggle-button");
@@ -424,7 +427,7 @@ void AagosWebInterface::SetupInterface() {
   // - environment -
   world_div << UI::Div("hud-row").SetAttr("class", "row justify-content-center");
   world_div.Div("hud-row")
-    << UI::Div("generation-counter-col").SetAttr("class", "col-sm-auto pr-1")
+    << UI::Div("generation-counter-col").SetAttr("class", "col-sm-auto p-1")
     << UI::Element("h4", "")
     << UI::Element("span", "generation-counter-badge").SetAttr("class", "badge badge-secondary")
     << "Generation: ";
@@ -432,12 +435,20 @@ void AagosWebInterface::SetupInterface() {
     << UI::Live([this]() { return GetUpdate(); });
 
   world_div.Div("hud-row")
-    << UI::Div("phase-counter-col").SetAttr("class", "col-sm-auto pl-1")
+    << UI::Div("phase-counter-col").SetAttr("class", "col-sm-auto p-1")
     << UI::Element("h4", "")
     << UI::Element("span", "phase-counter-badge").SetAttr("class", "badge badge-secondary")
     << "Experiment phase: ";
   world_div.Div("phase-counter-badge")
     << UI::Live([this]() { return cur_phase; });
+
+  world_div.Div("hud-row")
+    << UI::Div("last-rendered-col").SetAttr("class", "col-sm-auto p-1")
+    << UI::Element("h4", "")
+    << UI::Element("span", "generation-last-rendered-counter-badge").SetAttr("class", "badge badge-secondary")
+    << "Generation last drawn: ";
+  world_div.Div("generation-last-rendered-counter-badge")
+    << UI::Live([this]() { return generation_last_drawn; });
 
   world_div << UI::Element("hr").SetAttr("class", "mt-1");
 
@@ -453,12 +464,14 @@ void AagosWebInterface::SetupInterface() {
 
     emp::OnResize([this]() {
       std::cout << "Resize?" << std::endl;
-      RedrawPopulation(false);
+      RedrawPopulation(false, pop_vis.IsPrevTooltips());
       RedrawEnvironment();
     });
 
-    RedrawPopulation(); // Finally, go ahead and draw initial population.
-    RedrawEnvironment();
+    // RedrawPopulation(true, false); // Finally, go ahead and draw initial population.
+    // RedrawEnvironment();
+    DoFrame();
+
     // Enable tooltips!
     EM_ASM({
       $(function () {
@@ -478,7 +491,7 @@ void AagosWebInterface::DoFrame() {
       || (GetUpdate() == config.MAX_GENS())
       || (GetUpdate() == TOTAL_GENS))
   {
-    RedrawPopulation();
+    RedrawPopulation(true, true);
     RedrawEnvironment();
   }
 
@@ -522,8 +535,11 @@ void AagosWebInterface::DoFrame() {
   AdvanceWorld();
 }
 
-void AagosWebInterface::RedrawPopulation(bool update_data) {
-  pop_vis.DrawPop(*this, update_data);
+void AagosWebInterface::RedrawPopulation(bool update_data/*=true*/, bool enable_tooltips/*=false*/) {
+  if (update_data) {
+    generation_last_drawn = GetUpdate();
+  }
+  pop_vis.DrawPop(*this, update_data, enable_tooltips);
 }
 
 void AagosWebInterface::RedrawEnvironment() {
@@ -541,7 +557,7 @@ void AagosWebInterface::ReconfigureWorld() {
   Setup();
   pop_vis.Setup(*this); // Re-configure pop_vis
 
-  RedrawPopulation(); // Finally, go ahead and draw initial population.
+  RedrawPopulation(true, false); // Finally, go ahead and draw initial population.
   RedrawEnvironment();
   world_div.Redraw();
   std::cout << "--- done reconfiguring world ---" << std::endl;
