@@ -1,5 +1,10 @@
 # 2020-04-16 Experiments
 
+NOTES
+
+- These runs happened prior to systematics tracking and prior to capacity to change tournament size
+  during phase two of evolution.
+
 Goal: reproduce qualitative results from our 2018/2019 experiments with refactored code.
 
 - Re-do full sweep of change rates and mutation rates for NK fitness model
@@ -14,8 +19,15 @@ script sequentially runs 50 replicates (each with unique random number seed) of 
 - [run.py](run.py) - python script to manage running multiple replicates of each condition
 - [Aagos.cfg](Aagos.cfg) - base configuration file for these runs
 
+Random seeds used = [1001:10800]
 
-## NK Fitness Model Conditions
+## Outcome
+
+Gradient model produced qualitatively similar results to original NK model. See associated analyses.
+
+## Plan
+
+### NK Fitness Model Conditions
 
 - Change magnitudes (14): 0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096
 - Change frequency: 1
@@ -27,7 +39,7 @@ script sequentially runs 50 replicates (each with unique random number seed) of 
 - Phase 2 Generations = 10,000, locked down architecture
   - -GENE_MOVE_PROB 0 -BIT_INS_PROB 0 -BIT_DEL_PROB 0
 
-## Gradient Fitness Model Conditions
+### Gradient Fitness Model Conditions
 
 - Change:
   - (nk chg mag = 0) magnitude = 0; frequency = 0
