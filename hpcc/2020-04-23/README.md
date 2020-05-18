@@ -8,6 +8,19 @@
   - + turn selection on after 50k generations of drift! TODO
 - Large replicate count: 100
 
+## Outcome
+
+Development of the web visualization revealed a bug in how we computed the fitness contribution of genes
+that overlap the edge of a genome. Specifically, when genomes are any size other than the starting genome
+size, any part of a gene that wraps around to the beginning of the gene was mis-read, resulting in
+an inaccurate fitness contribution calculation.
+
+As a result, we need to re-run our experiments, and we are using this as an opportunity to reduce the
+number of total runs we need to do. The plans described below was taking upward of a month to finish,
+which is significantly longer than previous experiments because of the addition of phylogeny tracking.
+
+## Plans
+
 - Runs:
   - **Vary mutation rate, static environment (14 conditions)**
     - BIT_FLIP_PROB = [0.0001,0.0003,0.001,0.003,0.01,0.03,0.1]
