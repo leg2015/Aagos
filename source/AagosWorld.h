@@ -491,7 +491,7 @@ void AagosWorld::RunStep(bool auto_advance/*=true*/) {
   if (config.SNAPSHOT_INTERVAL()) {
     if ( !(u % config.SNAPSHOT_INTERVAL()) || (u == config.MAX_GENS()) ||  (u == TOTAL_GENS) ) {
       DoPopulationSnapshot();
-      if (u) sys_ptr->Snapshot(output_path + "phylo_" + emp::to_string(u) + ".csv"); // Don't snapshot phylo at update 0
+      if (u && config.PHYLOGENY_TRACKING()) sys_ptr->Snapshot(output_path + "phylo_" + emp::to_string(u) + ".csv"); // Don't snapshot phylo at update 0
       env_file->Update();
     }
   }
@@ -561,6 +561,7 @@ void AagosWorld::Setup() {
                                       CUR_GENE_MOVE_PROB, CUR_BIT_FLIP_PROB,
                                       CUR_BIT_INS_PROB, CUR_BIT_DEL_PROB);
   std::cout << "  ...done constructing mutator." << std::endl;
+  // TODO - should we cut the mutation tracking information if not tracking phylogenies?
   SetMutFun([this](org_t & org, emp::Random & rnd) {
     // NOTE - here's where we would intercept mutation-type distributions (with some extra infrastructure
     //        built into the mutator)!
@@ -795,7 +796,9 @@ void AagosWorld::InitDataTracking() {
   SetupStatsFile();
   SetupRepresentativeFile();
   SetupEnvironmentFile();
-  SetupSystematics();
+  if (config.PHYLOGENY_TRACKING()) {
+    SetupSystematics();
+  }
 }
 
 /// Setup data tracking nodes for general statistics about the population.

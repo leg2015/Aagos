@@ -43,6 +43,7 @@ EMP_BUILD_CONFIG(AagosConfig,
     VALUE(PRINT_INTERVAL, size_t, 1000, "How many updates between prints?"),
     VALUE(SUMMARY_INTERVAL, size_t, 1000, "How many updates between statistic gathering?"),
     VALUE(SNAPSHOT_INTERVAL, size_t, 10000, "How many updates between snapshots?"),
+    VALUE(PHYLOGENY_TRACKING, bool, true, "Should we collect phylogeny data?"),
     VALUE(DATA_FILEPATH, std::string, "./output/", "what directory should all data files be written to?")
 )
 
