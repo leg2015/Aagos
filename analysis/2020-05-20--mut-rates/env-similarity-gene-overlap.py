@@ -92,7 +92,7 @@ def main():
         run_settings = extract_settings(run_config_path)
 
         # Only aggregate from static environment, gradient model runs
-        if run_settings["GRADIENT_MODEL"] != "1" and run_settings["CHANGE_MAGNITUDE"] != "0" and run_settings["CHANGE_FREQUENCY"] != "0": continue
+        if run_settings["GRADIENT_MODEL"] != "1" or run_settings["CHANGE_MAGNITUDE"] != "0" or run_settings["CHANGE_FREQUENCY"] != "0": continue
 
         # Extract gene stats content
         content = None
