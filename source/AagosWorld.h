@@ -384,6 +384,8 @@ protected:
   void InitFitnessEval();
   void InitEnvironment(); // todo - test environment change
   void InitPop();
+  void InitPopRandom();
+  void InitPopLoad();
   void InitDataTracking();
 
   void InitLocalConfigs();     ///< Localize paramters that may change for phase two.
@@ -649,12 +651,82 @@ void AagosWorld::ActivateEvoPhaseTwo() {
 
 void AagosWorld::InitPop() {
   // Initialize population randomly (for now).
+  if (config.LOAD_ANCESTOR()) {
+    InitPopLoad();
+  } else {
+    InitPopRandom();
+  }
+  emp_assert(this->GetSize() == config.POP_SIZE());
+}
+
+void AagosWorld::InitPopRandom() {
   for (size_t i = 0; i < config.POP_SIZE(); ++i) {
     genome_t genome(config.NUM_BITS(), config.NUM_GENES(), config.GENE_SIZE());
     genome.Randomize(*random_ptr);
     Inject(genome);
   }
-  emp_assert(this->GetSize() == config.POP_SIZE());
+}
+
+void AagosWorld::InitPopLoad() {
+  // Load genome from file.
+  emp::vector<size_t> gene_starts(config.NUM_GENES(), 0);
+  emp::BitVector bits;
+  std::ifstream ancestor_fstream(config.LOAD_ANCESTOR_FILE());
+  if (!ancestor_fstream.is_open()) {
+    std::cout << "Failed to open ancestor file (" << config.LOAD_ANCESTOR_FILE() << "). Exiting..." << std::endl;
+    exit(-1);
+  }
+  std::string cur_line;
+  emp::vector<std::string> line_components;
+  bool success = false;
+  while (!ancestor_fstream.eof()) {
+    std::getline(ancestor_fstream, cur_line);
+    emp::left_justify(cur_line); // Remove any leading whitespace.
+    if (cur_line == emp::empty_string()) continue;
+    else if (cur_line[0] == '#') continue;
+    else {
+      // Attempt to read genome
+      line_components.clear();
+      emp::slice(cur_line, line_components, ',');
+      if (line_components.size() != (config.NUM_GENES() + 1)) {
+        std::cout << "Unexpected list size ("<<line_components.size()<<")." << std::endl;
+        break;
+      }
+      // First NUM_GENES components should be gene start positions.
+      for (size_t g = 0; g < config.NUM_GENES(); ++g) {
+        std::string & value_str = line_components[g];
+        gene_starts[g] = emp::from_string<size_t>(value_str);
+      }
+      // Next, attempt to load bits.
+      std::string & bits_str = line_components[config.NUM_GENES()];
+      bits.Resize(bits_str.size());
+      for (size_t bit = 0; bit < bits_str.size(); ++bit) {
+        emp_assert(bit < bits.GetSize());
+        bits.Set(bits.GetSize() - bit - 1, bits_str[bit] == '1');
+      }
+      success = true;
+      break;
+    }
+  }
+
+  if (!success) {
+    std::cout << "Failed to load ancestor from file. Exiting..." << std::endl;
+    exit(-1);
+  }
+
+  emp_assert(bits.GetSize() >= config.MIN_SIZE());
+  emp_assert(bits.GetSize() <= config.MAX_SIZE());
+
+  // Initialize population w/loaded ancestor
+  genome_t genome(bits.GetSize(), config.NUM_GENES(), config.GENE_SIZE());
+  genome.bits = bits;
+  genome.gene_starts = gene_starts;
+  for (size_t i = 0; i < config.POP_SIZE(); ++i) {
+    if (config.RANDOMIZE_LOAD_ANCESTOR_BITS()) {
+      emp::RandomizeBitVector(genome.bits, *random_ptr);
+    }
+    Inject(genome);
+  }
 }
 
 void AagosWorld::InitFitnessEval() {
