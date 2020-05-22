@@ -1,6 +1,17 @@
 
-import itertools
+import itertools, argparse, os, sys, errno, csv
 import networkx as nx
+
+'''
+This is functionally equivalent to the mkdir -p [fname] bash command
+'''
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
 
 '''
 Compact gene starting positions
@@ -48,21 +59,47 @@ def is_isomorphic(g1, g2):
     return nx.is_isomorphic(g1, g2, edge_match=nx.algorithms.isomorphism.numerical_edge_match('weight', 1))
 
 def main():
-    gene_bits = 4
-    num_genes = 4
-    genome_length = 16
+    parser = argparse.ArgumentParser(description="Generate all genetic architectures")
+    parser.add_argument("--num_genes", type=int, help="# of genes")
+    parser.add_argument("--gene_size", type=int, help="# of bits in each genes")
+    parser.add_argument("--genome_size", type=int, help="# of bits in genome")
+    parser.add_argument("--output_as_genomes", action="store_true", help="Should we output results as genome?")
+    parser.add_argument("--output_as_gradient_targets", action="store_true", help="Should we output results as gradient gene targets?")
+    parser.add_argument("--single_file", action="store_true", help="Should we output results as a single file?")
+    parser.add_argument("--dump", type=str, help="Where to dump this?", default=".")
+
+    args = parser.parse_args()
+    num_genes = args.num_genes
+    gene_bits = args.gene_size
+    genome_length = args.genome_size
+
+    output_as_genomes = args.output_as_genomes
+    output_as_gradient_targets = args.output_as_gradient_targets
+    single_file = args.single_file
+
+
+    dump_dir = args.dump
+
+    # gene_bits = 4
+    # num_genes = 8
+    # genome_length = 32
     # max_size = gene_bits * num_genes
 
     # Compute all starting positions for a non-circular genome.
-    all_starts = { tuple(compact_positions(gene_bits, num_genes, positions)) for positions in itertools.combinations_with_replacement(range(genome_length), num_genes) }
-    # all_starts = { positions for positions in itertools.combinations_with_replacement(range(genome_length), num_genes) }
+    all_starts = { positions for positions in itertools.combinations_with_replacement(range(genome_length), num_genes) }
     all_starts = sorted(list(all_starts))
-    print(f"All starts: {all_starts}")
-    print(f"All starts: {len(all_starts)}")
+
+    # don't print all starts if there are a ton...
+    if len(all_starts) < 100000:
+        print(f"All gene starts: {all_starts}")
+    print(f"Number of possible gene starts: {len(all_starts)}")
 
     # For each gene layout, compute the associated graph.
     architectures = {}
+    counter = 0
+    total = len(all_starts)
     for layout in all_starts:
+        print(f"{counter}/{total}")
         # Is this layout isomorphic with any of the architectures saved so far?
         layout_graph = positions_to_graph(layout, gene_bits, genome_length)
         # Actually, we want to bail as soon as we can
@@ -72,6 +109,7 @@ def main():
             if is_iso: break
         if not is_iso:
             architectures[layout] = layout_graph
+        counter += 1
 
     # diff_arches = [layout for layout in architectures]
     print("===== Different architectures ====")
@@ -80,6 +118,27 @@ def main():
         print(f"Graph adj: {architectures[arch].edges}")
         print("-----")
     print(f"Number of different architectures: {len(architectures)}")
+
+    # Output architectures
+    arch_bits = ''.join(['0' for i in range(genome_length)])
+    lines = []
+    for arch in architectures:
+        gene_starts_str = ",".join(map(str, arch))
+        lines.append(gene_starts_str + "," + arch_bits)
+
+    mkdir_p(dump_dir)
+    if output_as_genomes and single_file:
+        out_path = os.path.join(dump_dir, "architectures.csv")
+        with open(out_path, "w") as fp:
+            fp.write("\n".join(lines))
+    elif output_as_genomes and not single_file:
+        for arch_i in range(len(lines)):
+            out_path = os.path.join(dump_dir, f"architecture-{arch_i}.csv")
+            with open(out_path, "w") as fp:
+                fp.write(lines[arch_i])
+
+
+
 
 
     # print("===G1===")
