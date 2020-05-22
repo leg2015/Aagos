@@ -27,9 +27,8 @@ gradient_config = {
 shared_config = {
     "BIT_FLIP_PROB": [
         "-BIT_FLIP_PROB 0.003 -PHASE_2_BIT_FLIP_PROB 0.003",
-        "-BIT_FLIP_PROB 0.01 -PHASE_2_BIT_FLIP_PROB 0.01",
         "-BIT_FLIP_PROB 0.03 -PHASE_2_BIT_FLIP_PROB 0.03",
-        "-BIT_FLIP_PROB 0.1 -PHASE_2_BIT_FLIP_PROB 0.1",
+        "-BIT_FLIP_PROB 0.3 -PHASE_2_BIT_FLIP_PROB 0.3",
     ]
 }
 
