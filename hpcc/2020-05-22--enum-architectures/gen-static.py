@@ -151,7 +151,7 @@ def main():
     nk_combos = [f"{chg} {mut} -GRADIENT_MODEL 0" for chg in nk_config["environment_change"] for mut in shared_config["BIT_FLIP_PROB"]]
     gradient_combos = [f"{chg} {mut} -GRADIENT_MODEL 1" for chg in gradient_config["environment_change"] for mut in shared_config["BIT_FLIP_PROB"]]
 
-    arch_arguments = [f"-LOAD_ANCESTOR 1 -RANDOMIZE_LOAD_ANCESTOR 1 -LOAD_ANCESTOR_FILE {arch}" for arch in architectures]
+    arch_arguments = [f"-LOAD_ANCESTOR 1 -RANDOMIZE_LOAD_ANCESTOR_BITS 1 -LOAD_ANCESTOR_FILE {arch}" for arch in architectures]
     nk_combos = [f"{nk} {arch}" for arch in arch_arguments for nk in nk_combos]
     gradient_combos = [f"{gradient} {arch}" for arch in arch_arguments for gradient in gradient_combos]
 
