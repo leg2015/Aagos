@@ -10,3 +10,8 @@ Experiment
 PHASE 1
 
 - Evolve 200 static environment for 60K generations.
+
+OUTCOME
+
+- Organisms evolved in a static environment are generally maximally fit (for 16, 32, and 64 genes) or
+  close to maximally fit => There's not room for improvement by more modular architectures.
