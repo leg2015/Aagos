@@ -44,6 +44,49 @@ def extract_settings(run_config_path):
     configs = [l for l in csv.reader(content, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True)]
     return {param[header_lu["parameter"]]:param[header_lu["value"]] for param in configs}
 
+'''
+Find the max (hamming) similarity between a and b for all possible shifted alignments
+
+E.g.,
+
+a = 0123
+b = 4567
+
+   0123
+4567
+ 4567
+  4567
+   4567
+    4567
+     4567
+      4567
+'''
+def max_aligned_similarity(a, b):
+    if len(a) != len(b):
+        print("Must be equal length!")
+        exit(-1)
+    # perfectly aligned
+    num_bits = len(a)
+    max_similarity = -1
+
+    for shift in range(0, num_bits):
+        right_alignment_similarity = 0
+        left_alignment_similarity = 0
+
+        for i in range(0, len(a)-shift):
+            right_alignment_similarity += int(a[i+shift] == b[i])
+
+        if shift == 0:
+            max_similarity = right_alignment_similarity
+            continue
+
+        for i in range(0, len(b)-shift):
+            left_alignment_similarity += int(a[i] == b[i+shift])
+
+        max_similarity = max(max_similarity, right_alignment_similarity, left_alignment_similarity)
+
+    return max_similarity
+
 def main():
     # Setup the command line argument parser
     parser = argparse.ArgumentParser(description="Data aggregation script")
@@ -75,7 +118,7 @@ def main():
     print(f"Found {len(run_dirs)} run directories.")
 
     rep_org_header_set = set() # We'll use this as a sanity check for guaranteeing that all file headers match.
-    gene_stats_header_set = set()
+    # gene_stats_header_set = set()
     combined_header_set = set()
     # aggregate_header = []
     aggregate_info = []
@@ -83,7 +126,7 @@ def main():
         print(f"Extracting information from {run}")
         run_config_path = os.path.join(run, "output", "run_config.csv")
         rep_org_path = os.path.join(run, "output", "representative_org.csv")
-        gene_stats_path = os.path.join(run, "output", "gene_stats.csv")
+        # gene_stats_path = os.path.join(run, "output", "gene_stats.csv")
         env_path = os.path.join(run, "output", "environment.csv")
         # Extract the run settings
         if not os.path.exists(run_config_path):
@@ -92,24 +135,24 @@ def main():
         run_settings = extract_settings(run_config_path)
 
         # Only aggregate from static environment, gradient model runs
-        if run_settings["GRADIENT_MODEL"] != "1" or run_settings["CHANGE_MAGNITUDE"] != "0" or run_settings["CHANGE_FREQUENCY"] != "0": continue
+        if run_settings["GRADIENT_MODEL"] != "1": continue
 
         # Extract gene stats content
-        content = None
-        with open(gene_stats_path, "r") as fp:
-            content = fp.read().strip().split("\n")
-        gene_stats_header = content[0].split(",")
-        gene_stats_header_lu = {gene_stats_header[i].strip():i for i in range(0, len(gene_stats_header))}
-        content = content[1:]
+        # content = None
+        # with open(gene_stats_path, "r") as fp:
+        #     content = fp.read().strip().split("\n")
+        # gene_stats_header = content[0].split(",")
+        # gene_stats_header_lu = {gene_stats_header[i].strip():i for i in range(0, len(gene_stats_header))}
+        # content = content[1:]
 
         # Collect the gene stats that matter
-        gene_stats = {int(l[gene_stats_header_lu["update"]]):{gene_stats_header[i]: l[i] for i in range(0, len(l))} for l in csv.reader(content, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True) if int(l[gene_stats_header_lu["update"]]) in updates}
+        # gene_stats = {int(l[gene_stats_header_lu["update"]]):{gene_stats_header[i]: l[i] for i in range(0, len(l))} for l in csv.reader(content, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True) if int(l[gene_stats_header_lu["update"]]) in updates}
 
         # Check that this gene stats header matches previous.
-        gene_stats_header_set.add(",".join(gene_stats_header))
-        if len(gene_stats_header_set) > 1:
-            print(f"Header mismatch! ({gene_stats_path})")
-            exit(-1)
+        # gene_stats_header_set.add(",".join(gene_stats_header))
+        # if len(gene_stats_header_set) > 1:
+        #     print(f"Header mismatch! ({gene_stats_path})")
+        #     exit(-1)
 
         # Extract representative organism content
         content = None
@@ -152,7 +195,7 @@ def main():
         field_set.union(set(rep_org_fields))
         # - run configuration fields
         config_fields = [field for field in run_settings if (field not in config_exclude) and (field not in field_set)]
-        fields = rep_org_fields + config_fields + ["gene_pair", "gene_a", "gene_b", "gene_pair_overlap", "gene_pair_target_similarity"]
+        fields = rep_org_fields + config_fields + ["gene_pair", "gene_a", "gene_b", "gene_pair_overlap", "gene_pair_target_similarity", "gene_pair_target_max_alignment_similarity"]
         # Combine all fields into single header (double check that this matches all previous computed headers)
         combined_header_set.add(",".join(fields))
         if len(combined_header_set) > 1:
@@ -166,6 +209,7 @@ def main():
             env_targets = env["env_state"].strip("[]").strip().split(" ")
             # Calculate pairwise environment similarity
             env_similarity = {pair:sum( [int(a == b) for a,b in zip(env_targets[pair[0]], env_targets[pair[1]]) ]) for pair in all_pairs}
+            env_max_alignment_similarity = {pair: max_aligned_similarity( env_targets[pair[0]], env_targets[pair[1]] ) for pair in all_pairs }
             # env_similarity_normalized = {pair: env_similarity[pair] / float(run_settings["GENE_SIZE"]) for pair in all_pairs}
 
             # for pair in all_pairs:
@@ -183,13 +227,12 @@ def main():
             gene_size = int(run_settings["GENE_SIZE"])
             gene_sites = [set([(gene_starts[gene_id] + i) % genome_len for i in range(0, gene_size)]) for gene_id in range(len(gene_starts))]
             gene_overlap = {pair: len(gene_sites[pair[0]] & gene_sites[pair[1]]) for pair in all_pairs}
-            # gene_overlap_normalized = {pair: gene_overlap[pair] / float(gene_size) for pair in all_pairs}
             # print(gene_starts)
             # print(gene_sites)
             # print(gene_overlap)
             for pair in all_pairs:
                 # ["gene_pair", "gene_a", "gene_b", "gene_pair_overlap", "gene_pair_target_similarity"]
-                line = [rep_org[update][field] for field in rep_org_fields] + run_config_line_comp + [f"\"({pair[0]} {pair[1]})\"", str(pair[0]), str(pair[1]), str(gene_overlap[pair]), str(env_similarity[pair])]
+                line = [rep_org[update][field] for field in rep_org_fields] + run_config_line_comp + [f"\"({pair[0]} {pair[1]})\"", str(pair[0]), str(pair[1]), str(gene_overlap[pair]), str(env_similarity[pair]), str(env_max_alignment_similarity[pair])]
                 aggregate_info.append(line)
 
 
@@ -198,6 +241,7 @@ def main():
 
 
     # Output aggregate information.
+    print(combined_header_set)
     out_content = list(combined_header_set)[0] + "\n"
     out_content += "\n".join([",".join(map(str, line)) for line in aggregate_info])
     out_path = os.path.join(dump_dir, "env_sim_gene_overlap.csv")
