@@ -155,6 +155,7 @@ def main():
                                  "accum_bit_del_muts":0
                                 }
         lineage_summary_stats["length"] = len(lineage)
+        lineage.reverse()
         for ancestor_id in lineage:
             # Collect mutation information
             gene_move_muts = int(phylogeny[ancestor_id]["gene_move_muts"])
@@ -183,7 +184,7 @@ def main():
             phylogeny[ancestor_id]["coding_sites"] = coding_sites
             phylogeny[ancestor_id]["neutral_sites"] = ancestor_genome_length - coding_sites
 
-        lineage.reverse()
+
         final_gen = update
         expanded_lineage = []
         for i in range(len(lineage)):
@@ -233,7 +234,7 @@ def main():
 
         full_out_content = "\n".join(full_lineage_info)
         with open(full_output_path, "a") as fp:
-            fp.write(full_out_content)
+            fp.write(full_out_content + "\n")
 
 
     summary_out_content = list(lineage_summary_head_set)[0] + "\n"
