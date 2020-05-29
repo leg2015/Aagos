@@ -80,10 +80,13 @@ def main():
     run_dirs.sort(key=lambda x : int(x.split("_")[-1]))
     print(f"Found {len(run_dirs)} run directories.")
 
+    full_output_path = os.path.join(dump_dir, "lineages_full.csv")
+
     lineage_summary_head_set = set()
     lineage_summary_info = []
     full_lineage_head_set = set()
     full_lineage_info = [] # WARNING - this will get HUGE
+    full_lineage_wrote_header = False
     for run in run_dirs:
         print(f"Extracting information from {run}")
         run_config_path = os.path.join(run, "output", "run_config.csv")
@@ -214,12 +217,24 @@ def main():
         misc_fields = ["generation"]
         full_lineage_head_set.add(",".join(misc_fields + phylo_fields + config_fields))
 
+        if not full_lineage_wrote_header:
+            full_out_content = list(full_lineage_head_set)[0] + "\n"
+            with open(full_output_path, "w") as fp:
+                fp.write(full_out_content)
+            full_lineage_wrote_header = True
+
+        full_lineage_info = []
         for gen in range(0, len(expanded_lineage)):
             phylo_id = expanded_lineage[gen]
             config_info = [run_settings[field].strip() for field in config_fields]
             phylo_info = [str(phylogeny[phylo_id][field]) for field in phylo_fields]
             misc_info = [str(gen)]
             full_lineage_info.append(",".join(misc_info + phylo_info + config_info))
+
+        full_out_content = "\n".join(full_lineage_info)
+        with open(full_output_path, "a") as fp:
+            fp.write(full_out_content)
+
 
     summary_out_content = list(lineage_summary_head_set)[0] + "\n"
     summary_out_content += "\n".join(lineage_summary_info)
@@ -228,12 +243,12 @@ def main():
         fp.write(summary_out_content)
     print(f"Summary output written to {summary_output_path}")
 
-    full_out_content = list(full_lineage_head_set)[0] + "\n"
-    full_out_content += "\n".join(full_lineage_info)
-    full_output_path = os.path.join(dump_dir, "lineages_full.csv")
-    with open(full_output_path, "w") as fp:
-        fp.write(full_out_content)
-    print(f"Full lineage data written to {full_output_path}")
+    # full_out_content = list(full_lineage_head_set)[0] + "\n"
+    # full_out_content += "\n".join(full_lineage_info)
+    # full_output_path = os.path.join(dump_dir, "lineages_full.csv")
+    # with open(full_output_path, "w") as fp:
+    #     fp.write(full_out_content)
+    # print(f"Full lineage data written to {full_output_path}")
 
 if __name__ == "__main__":
     main()
