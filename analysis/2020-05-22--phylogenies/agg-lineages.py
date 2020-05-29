@@ -129,7 +129,7 @@ def main():
             if current_id == "NONE":
                 phylogeny[lineage[-1]]["origin_time"] = -1
 
-        print(lineage)
+        # print(lineage)
 
         # Collect summary statistics
         lineage_summary_stats = {"mrca":None,
