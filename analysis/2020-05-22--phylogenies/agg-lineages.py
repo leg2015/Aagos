@@ -46,17 +46,26 @@ def extract_settings(run_config_path):
     configs = [l for l in csv.reader(content, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True)]
     return {param[header_lu["parameter"]]:param[header_lu["value"]] for param in configs}
 
+def calc_coding_sites(gene_starts, gene_size, genome_size):
+    coding_sites = set()
+    for gene_start in gene_starts:
+        gene_sites = {i % genome_size for i in range(gene_start, gene_start+gene_size)}
+        coding_sites |= gene_sites
+    return len(coding_sites)
+
 def main():
     # Setup the command line argument parser
     parser = argparse.ArgumentParser(description="Data aggregation script")
     parser.add_argument("--data", type=str, nargs="+", help="Where should we pull data (one or more locations)?")
     parser.add_argument("--dump", type=str, help="Where to dump this?", default=".")
     parser.add_argument("--update", type=int, help="Which update should we pull?")
+    parser.add_argument("--exclude_genomes", action="store_true", help="Should we include genomes when outputing full lineages?")
     # Parse command line arguments
     args = parser.parse_args()
     data_dirs = args.data
     dump_dir = args.dump
     update = args.update
+    exclude_genomes = args.exclude_genomes
 
     # Are all data directories for real?
     if any([not os.path.exists(loc) for loc in data_dirs]):
@@ -73,6 +82,7 @@ def main():
 
     lineage_summary_head_set = set()
     lineage_summary_info = []
+    full_lineage_head_set = set()
     full_lineage_info = [] # WARNING - this will get HUGE
     for run in run_dirs:
         print(f"Extracting information from {run}")
@@ -98,6 +108,7 @@ def main():
         rep_org = {int(l[rep_org_header_lu["update"]]):{rep_org_header[i]: l[i] for i in range(0, len(l))} for l in csv.reader(content, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True) if int(l[rep_org_header_lu["update"]]) == update}
         rep_org = rep_org[update]
 
+        gene_size = int(run_settings["GENE_SIZE"])
 
         # Pull out the lineage
         content = None
@@ -160,6 +171,14 @@ def main():
             phylogeny[ancestor_id]["accum_bit_flip_muts"] = lineage_summary_stats["accum_bit_flip_muts"]
             phylogeny[ancestor_id]["accum_bit_ins_muts"] = lineage_summary_stats["accum_bit_ins_muts"]
             phylogeny[ancestor_id]["accum_bit_del_muts"] = lineage_summary_stats["accum_bit_del_muts"]
+            # Compute number of coding and neutral sites in genome
+            ancestor_gene_starts = list(map(int, phylogeny[ancestor_id]["gene_starts"].strip("[]").split(",")))
+            ancestor_genome_length = int(phylogeny[ancestor_id]["genome_length"])
+            coding_sites = calc_coding_sites(gene_starts=ancestor_gene_starts,
+                                             gene_size=gene_size,
+                                             genome_size=ancestor_genome_length)
+            phylogeny[ancestor_id]["coding_sites"] = coding_sites
+            phylogeny[ancestor_id]["neutral_sites"] = ancestor_genome_length - coding_sites
 
         lineage.reverse()
         final_gen = update
@@ -168,14 +187,8 @@ def main():
             ancestor_id = lineage[i]
             # origin_time = int(phylogeny[ancestor_id]["origin_time"]) + 1 # Shift everything by 1 generation to account for root starting at -1
             next_gen = int(phylogeny[lineage[i+1]]["origin_time"]) + 1 if i+1 < len(lineage) else final_gen
-            while len(expanded_lineage) < next_gen:
+            while len(expanded_lineage) <= next_gen:
                 expanded_lineage.append(ancestor_id)
-
-        # print("===========")
-        # print(expanded_lineage)
-        # print(len(expanded_lineage))
-        # print("===========")
-
 
         # Fix gene starts for output format
         if "gene_starts" in rep_org:
@@ -191,38 +204,36 @@ def main():
         lineage_summary_info.append(",".join(summary_info))
 
         # Collect sequence fields
-        # TODO!
+        # Phylogeny fields:
+        #   id,ancestor_list,origin_time,destruction_time,num_orgs,tot_orgs,num_offspring,total_offspring,depth,mean_fitness,gene_move_muts,bit_flip_muts,bit_ins_muts,bit_del_muts,genome_length,gene_starts,genome_bitstring
+        # Extra fields
+        #   generation, coding_sites, neutral_sites, accum_muts, accum_gene_move_muts, accum_bit_flip_muts, accum_bit_ins_muts, accum_bit_del_muts
+        phylo_fields = "id,ancestor_list,origin_time,destruction_time,num_orgs,tot_orgs,num_offspring,total_offspring,depth,mean_fitness,gene_move_muts,bit_flip_muts,bit_ins_muts,bit_del_muts,genome_length,gene_starts,genome_bitstring".split(",")
+        if exclude_genomes: phylo_fields = phylo_fields[:-2]
+        phylo_fields += ["coding_sites", "neutral_sites", "accum_muts", "accum_gene_move_muts", "accum_bit_flip_muts", "accum_bit_ins_muts", "accum_bit_del_muts"]
+        misc_fields = ["generation"]
+        full_lineage_head_set.add(",".join(misc_fields + phylo_fields + config_fields))
 
-        # Build a joint header.
-        # # - gene stats fields
-        # gene_stats_fields = [field for field in gene_stats_header if field not in gene_stats_exclude]
-        # field_set = set(gene_stats_fields)
-        # # - rep org fields
-        # rep_org_fields = [field for field in rep_org_header if (field not in rep_org_exclude) and (field not in field_set)]
-        # field_set.union(set(rep_org_fields))
-        # # - run configuration fields
-        # config_fields = [field for field in run_settings if (field not in config_exclude) and (field not in field_set)]
-        # fields = gene_stats_fields + rep_org_fields + config_fields
-        # # Combine all fields into single header (double check that this matches all previous computed headers)
-        # combined_header_set.add(",".join(fields))
-        # if len(combined_header_set) > 1:
-        #     print("Header mismatch!")
-        #     exit(-1)
-
-    # Output aggregate information.
-    # out_content = list(combined_header_set)[0] + "\n"
-    # out_content += "\n".join([",".join(map(str, line)) for line in aggregate_info])
-    # out_path = os.path.join(dump_dir, "agg_data.csv")
-    # with open(out_path, "w") as fp:
-    #     fp.write(out_content)
-    # print(f"Done! Output written to {out_path}")
+        for gen in range(0, len(expanded_lineage)):
+            phylo_id = expanded_lineage[gen]
+            config_info = [run_settings[field].strip() for field in config_fields]
+            phylo_info = [str(phylogeny[phylo_id][field]) for field in phylo_fields]
+            misc_info = [str(gen)]
+            full_lineage_info.append(",".join(misc_info + phylo_info + config_info))
 
     summary_out_content = list(lineage_summary_head_set)[0] + "\n"
     summary_out_content += "\n".join(lineage_summary_info)
     summary_output_path = os.path.join(dump_dir, "lineages_summary.csv")
     with open(summary_output_path, "w") as fp:
         fp.write(summary_out_content)
-    print(f"Done! Output written to {summary_output_path}")
+    print(f"Summary output written to {summary_output_path}")
+
+    full_out_content = list(full_lineage_head_set)[0] + "\n"
+    full_out_content += "\n".join(full_lineage_info)
+    full_output_path = os.path.join(dump_dir, "lineages_full.csv")
+    with open(full_output_path, "w") as fp:
+        fp.write(full_out_content)
+    print(f"Full lineage data written to {full_output_path}")
 
 if __name__ == "__main__":
     main()
