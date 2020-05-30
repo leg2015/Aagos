@@ -75,8 +75,8 @@ def main():
     run_dirs.sort(key=lambda x : int(x.split("_")[-1]))
     print(f"Found {len(run_dirs)} run directories.")
 
-    rep_org_header_set = set() # We'll use this as a sanity check for guaranteeing that all file headers match.
-    gene_stats_header_set = set()
+    # rep_org_header_set = set() # We'll use this as a sanity check for guaranteeing that all file headers match.
+    # gene_stats_header_set = set()
     combined_header_set = set()
     # aggregate_header = []
     aggregate_info = []
