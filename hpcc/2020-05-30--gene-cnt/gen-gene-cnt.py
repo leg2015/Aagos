@@ -8,14 +8,16 @@ import argparse, os, sys, errno, subprocess, csv
 
 seed_offset = 500000
 default_num_replicates = 50
-job_time_request = "2:00:00"
+job_time_request = "4:00:00"
 job_memory_request = "8G"
 job_name = "gene-cnt"
 
 nk_config = {
     "environment_change": [
         "-CHANGE_MAGNITUDE 0 -CHANGE_FREQUENCY 0",
-        "-CHANGE_MAGNITUDE 64 -CHANGE_FREQUENCY 1"
+        "-CHANGE_MAGNITUDE 64 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 128 -CHANGE_FREQUENCY 1",
+        "-CHANGE_MAGNITUDE 256 -CHANGE_FREQUENCY 1"
     ]
 }
 
@@ -23,6 +25,8 @@ gradient_config = {
     "environment_change": [
         "-CHANGE_MAGNITUDE 0 -CHANGE_FREQUENCY 0",   # 0
         "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 4",   # 7
+        "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 2",
+        "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 1"
     ]
 }
 
@@ -33,9 +37,8 @@ shared_config = {
     ],
 
     "GENOME_SIZE": [
-        "-NUM_BITS 128 -NUM_GENES 8 -MAX_SIZE 1024"
-        "-NUM_BITS 128 -NUM_GENES 16 -MAX_SIZE 1024"
-        "-NUM_BITS 128 -NUM_GENES 32 -MAX_SIZE 1024"
+        "-NUM_BITS 128 -NUM_GENES 8 -MAX_SIZE 1024",
+        "-NUM_BITS 128 -NUM_GENES 32 -MAX_SIZE 1024",
         "-NUM_BITS 128 -NUM_GENES 64 -MAX_SIZE 1024"
     ]
 }
