@@ -18,7 +18,8 @@ run_dir_identifier = "__SEED_" # All legit run directories will have this substr
 
 config_exclude = {"LOAD_ANCESTOR_FILE", "PHASE_2_ENV_FILE", "DATA_FILEPATH", "SNAPSHOT_INTERVAL", "PRINT_INTERVAL", "SUMMARY_INTERVAL"}
 gene_stats_exclude = {}
-rep_org_exclude = {"gene_neighbors"}
+rep_org_exclude = {f"site_cnt_{i}_gene_occupancy" for i in range(0, 128)}
+rep_org_exclude.add("gene_neighbors")
 
 '''
 This is functionally equivalent to the mkdir -p [fname] bash command
@@ -98,7 +99,6 @@ def main():
         content = content[1:]
         # Collect the gene stats that matter
         gene_stats = {int(l[gene_stats_header_lu["update"]]):{gene_stats_header[i]: l[i] for i in range(0, len(l))} for l in csv.reader(content, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True) if int(l[gene_stats_header_lu["update"]]) in updates}
-        # print(gene_stats)
 
         # Check that this gene stats header matches previous.
         gene_stats_header_set.add(",".join(gene_stats_header))
@@ -127,7 +127,7 @@ def main():
 
         # Build a joint header.
         # - gene stats fields
-        gene_stats_fields = [field for field in gene_stats_header if field not in gene_stats_exclude]
+        gene_stats_fields = [field for field in gene_stats_header if (field not in gene_stats_exclude)]
         field_set = set(gene_stats_fields)
         # - rep org fields
         rep_org_fields = [field for field in rep_org_header if (field not in rep_org_exclude) and (field not in field_set)]
