@@ -206,7 +206,7 @@ def main():
     script = script.replace("<<CONFIG_DIR>>", config_dir)
     script = script.replace("<<RESUBMISSION_LOGIC>>", resub_logic)
 
-    with open("mut_rates_resub.sb", "w") as fp:
+    with open("phylo_resub.sb", "w") as fp:
         fp.write(script)
 
 if __name__ == "__main__":
