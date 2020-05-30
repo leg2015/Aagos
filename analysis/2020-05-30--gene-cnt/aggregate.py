@@ -101,10 +101,10 @@ def main():
         gene_stats = {int(l[gene_stats_header_lu["update"]]):{gene_stats_header[i]: l[i] for i in range(0, len(l))} for l in csv.reader(content, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True) if int(l[gene_stats_header_lu["update"]]) in updates}
 
         # Check that this gene stats header matches previous.
-        gene_stats_header_set.add(",".join(gene_stats_header))
-        if len(gene_stats_header_set) > 1:
-            print(f"Header mismatch! ({gene_stats_path})")
-            exit(-1)
+        # gene_stats_header_set.add(",".join(gene_stats_header))
+        # if len(gene_stats_header_set) > 1:
+        #     print(f"Header mismatch! ({gene_stats_path})")
+        #     exit(-1)
 
         # Extract representative organism content
         content = None
@@ -120,10 +120,10 @@ def main():
         # print(rep_org)
 
         # Check that this representative org header matches previous.
-        rep_org_header_set.add(",".join(rep_org_header))
-        if len(rep_org_header_set) > 1:
-            print(f"Header mismatch! ({rep_org_header})")
-            exit(-1)
+        # rep_org_header_set.add(",".join(rep_org_header))
+        # if len(rep_org_header_set) > 1:
+        #     print(f"Header mismatch! ({rep_org_header})")
+        #     exit(-1)
 
         # Build a joint header.
         # - gene stats fields
