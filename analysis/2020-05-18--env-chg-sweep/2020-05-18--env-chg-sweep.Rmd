@@ -34,17 +34,14 @@ print(version)
 ## Setup
 
 ```{r}
+theme_set(theme_cowplot())
+alpha <- 0.05
+
 data_path <- "./data/agg_data.csv"
 agg_data <- read.csv(data_path, na.strings="NONE")
 
 agg_data$BIT_FLIP_PROB <- as.factor(agg_data$BIT_FLIP_PROB)
 agg_data$DRIFT <- agg_data$TOURNAMENT_SIZE==1
-
-# Compute expected changes per generation
-exp_change <- function(mag, interval) {
-  if (interval == 0) { return(0) }
-  else { return(mag / interval) }
-}
 
 # Label
 chg_rate_label <- function(mag, interval, drift) {
@@ -53,10 +50,6 @@ chg_rate_label <- function(mag, interval, drift) {
   else { return(paste(mag, interval, sep="/")) }
 }
 
-agg_data$EXP_CHANGE_PER_GEN <- as.factor(mapply(exp_change, 
-                                                agg_data$CHANGE_MAGNITUDE,
-                                                agg_data$CHANGE_FREQUENCY
-                                                ))
 agg_data$chg_rate_label <- factor(mapply(chg_rate_label, 
                                             agg_data$CHANGE_MAGNITUDE,
                                             agg_data$CHANGE_FREQUENCY,
@@ -68,211 +61,281 @@ agg_data$chg_rate_label <- factor(mapply(chg_rate_label,
                                               "64/1", "128/1", "256/1", 
                                               "512/1", "1024/1", "2048/1",
                                               "4096/1"))
-theme_set(theme_cowplot())
+
+# Divide up the data into convenient partitions
+data_gradient_phase0 <- 
+  filter(agg_data,
+         GRADIENT_MODEL==1 & evo_phase == 0 & update == 50000)
+data_gradient_phase1 <-
+  filter(agg_data,
+         GRADIENT_MODEL==1 & evo_phase == 1 & update == 60000)
+data_nk_phase0 <-
+  filter(agg_data,
+         GRADIENT_MODEL==0 & evo_phase == 0 & update == 50000)
+data_nk_phase1 <-
+  filter(agg_data,
+         GRADIENT_MODEL==0 & evo_phase == 1 & update == 60000)
 ```
 
-## Analysis
+## Experiment Phase 0 Analyses
 
-## Genetic architecture by change rate
+### Fitnesses
 
-### Genetic architecture by change rate - Gradient fitness model
+Note issue with fitnesses for changing environments
+
+#### Gradient Fitness Model
 
 ```{r}
-gradient_model <- 1
-phase <- 0
-gen <- 50000
-data_gradient <- filter(agg_data, GRADIENT_MODEL == gradient_model & 
-                         evo_phase == phase & 
-                         update == gen)
-ggplot(data_gradient,
-       aes(x=chg_rate_label, y=coding_sites, color=chg_rate_label)) +
+ggplot(data_gradient_phase0,
+       aes(x=chg_rate_label, y=fitness, color=chg_rate_label)) +
   geom_boxplot() +
-  xlab("Env. bits flipped per generation") +
-  scale_y_continuous(name="# coding sites in best organism",
-                     limits=c(0, 130),
-                     breaks=seq(0, 130, 10)) +
+  xlab("Environmental Change") +
+  scale_y_continuous(name="Fitness (of best organism)") +
   ggtitle("Gradient Fitness Model") +
-  theme(legend.position="none") +
-  ggsave(paste("./imgs/coding-sites_x_chg-rate_gradient", 
-               "_phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=10, height=5)
-
+  theme(legend.position="none")
 ```
 
-```{r}
-kruskal.test(formula = coding_sites ~ chg_rate_label, data=data_gradient)
-pairwise.wilcox.test(x=data_gradient$coding_sites,
-                     g=data_gradient$chg_rate_label,
-                     exact=FALSE,
-                     p.adjust.method = "holm")
-```
-
-Genome length
+#### NK Fitness Model
 
 ```{r}
-ggplot(data_gradient,
-       aes(x=chg_rate_label, y=genome_length, color=chg_rate_label)) +
-  geom_boxplot() +
-  xlab("Env. bits flipped per generation") +
-  ylab("genome length") +
-  ylim(0, 1024) +
-  ggtitle("Gradient Fitness Model") +
-  theme(legend.position="none") +
-  ggsave(paste("./imgs/genome-length_x_chg-rate_gradient", 
-               "_phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=10, height=5)
-
-```
-
-### Coding sites by change rate - NK fitness model
-
-```{r}
-gradient_model <- 0
-phase <- 0
-gen <- 50000
-data_nk <- filter(agg_data, GRADIENT_MODEL == gradient_model & 
-                         evo_phase == phase & 
-                         update == gen)
-ggplot(data_nk,
-       aes(x=chg_rate_label, y=coding_sites, color=chg_rate_label)) +
-  geom_boxplot() +
-  xlab("Env. bits flipped per generation") +
-  scale_y_continuous(name="# coding sites in best organism",
-                     limits=c(0, 130),
-                     breaks=seq(0, 130, 10)) +
-  ggtitle("NK Fitness Model") +
-  theme(legend.position="none") +
-  ggsave(paste("./imgs/coding-sites_x_chg-rate_nk", 
-               "_phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=10, height=5)
-```
-
-```{r}
-kruskal.test(formula = coding_sites ~ chg_rate_label, data=data_nk)
-pairwise.wilcox.test(x=data_nk$coding_sites,
-                     g=data_nk$chg_rate_label,
-                     exact=FALSE,
-                     p.adjust.method = "holm")
-```
-
-```{r}
-ggplot(data_nk,
-       aes(x=chg_rate_label, y=genome_length, color=chg_rate_label)) +
-  geom_boxplot() +
-  xlab("Env. bits flipped per generation") +
-  ylab("genome length") +
-  ylim(0, 1024) +
-  ggtitle("NK Fitness Model") +
-  theme(legend.position="none") +
-  ggsave(paste("./imgs/genome-length_x_chg-rate_nk", 
-               "_phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=10, height=5)
-
-```
-
-## Lock-down fitnesses by change rate
-
-### Gradient model
-
-
-```{r}
-gradient_model <- 1
-phase <- 1
-gen <- 60000
-data_gradient <- filter(agg_data, GRADIENT_MODEL == gradient_model & 
-                         evo_phase == phase & 
-                         update == gen)
-ggplot(data_gradient,
+ggplot(data_nk_phase0,
        aes(x=chg_rate_label, y=fitness, color=chg_rate_label)) +
   geom_boxplot() +
   xlab("Env. bits flipped per generation") +
-  scale_y_continuous(name="phase 2 fitness") +
-  ggtitle("Gradient Fitness Model") +
-  theme(legend.position="none") +
-  ggsave(paste("./imgs/fitness_x_chg-rate_gradient", 
-               "_phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=10, height=5)
+  scale_y_continuous(name="Fitness  (of best organism)") +
+  ggtitle("NK Fitness Model") +
+  theme(legend.position="none")
 ```
 
-### NK model
+### Coding Sites
+
+#### Gradient Fitness Model
 
 ```{r}
-gradient_model <- 0
-phase <- 1
-gen <- 60000
-data_nk <- filter(agg_data, GRADIENT_MODEL == gradient_model & 
-                         evo_phase == phase & 
-                         update == gen)
-ggplot(data_nk,
+ggplot(data_gradient_phase0,
+       aes(x=chg_rate_label, y=coding_sites, fill=chg_rate_label)) +
+  # geom_jitter(aes(color=chg_rate_label)) +
+  geom_boxplot() +
+  xlab("Environmental Change") +
+  scale_y_continuous(name="Coding Sites (in best genotype)",
+                     limits=c(0, 130),
+                     breaks=seq(0, 130, 20)) +
+  ggtitle("Gradient Fitness Model") +
+  theme(legend.position="none")
+  # ggsave(paste("./imgs/coding-sites_x_chg-rate_gradient", 
+  #              "_phase-", phase, "_gen-", gen, 
+  #              ".pdf", sep=""), width=10, height=5)
+```
+
+```{r}
+kt <- kruskal.test(formula = coding_sites ~ chg_rate_label, data=data_gradient_phase0)
+kt
+if (kt$p.value <= alpha) {
+  wt <- pairwise.wilcox.test(x=data_gradient_phase0$coding_sites,
+                             g=data_gradient_phase0$chg_rate_label,
+                             exact=FALSE,
+                             p.adjust.method = "bonferroni")
+  wt
+}
+```
+
+#### NK Fitness Model
+
+```{r}
+ggplot(data_nk_phase0,
+       aes(x=chg_rate_label, y=coding_sites, color=chg_rate_label)) +
+  geom_boxplot() +
+  xlab("Environmental Change") +
+  scale_y_continuous(name="# coding sites in best organism",
+                     limits=c(0, 130),
+                     breaks=seq(0, 130, 20)) +
+  ggtitle("NK Fitness Model") +
+  theme(legend.position="none")
+  # ggsave(paste("./imgs/coding-sites_x_chg-rate_gradient", 
+  #              "_phase-", phase, "_gen-", gen, 
+  #              ".pdf", sep=""), width=10, height=5)
+```
+
+```{r}
+kt <- kruskal.test(formula = coding_sites ~ chg_rate_label, data=data_nk_phase0)
+kt
+if (kt$p.value <= alpha) {
+  wt <- pairwise.wilcox.test(x=data_nk_phase0$coding_sites,
+                             g=data_nk_phase0$chg_rate_label,
+                             exact=FALSE,
+                             p.adjust.method = "bonferroni")
+  wt
+}
+```
+
+### Genome Length
+
+#### Gradient Fitness Model
+
+```{r}
+ggplot(data_gradient_phase0,
+       aes(x=chg_rate_label, y=genome_length, color=chg_rate_label)) +
+  geom_boxplot() +
+  xlab("Environmental Change") +
+  ylab("Genome Length") +
+  ylim(0, 1024) +
+  ggtitle("Gradient Fitness Model") +
+  theme(legend.position="none")
+```
+
+#### NK Fitness Model
+
+```{r}
+ggplot(data_nk_phase0,
+       aes(x=chg_rate_label, y=genome_length, color=chg_rate_label)) +
+  geom_boxplot() +
+  xlab("Environmental Change") +
+  ylab("Genome Length") +
+  ylim(0, 1024) +
+  ggtitle("NK Fitness Model") +
+  theme(legend.position="none")
+```
+
+### Neutral Sites
+
+#### Gradient Fitness Model
+
+```{r}
+ggplot(data_gradient_phase0,
+       aes(x=chg_rate_label, y=neutral_sites, color=chg_rate_label)) +
+  geom_boxplot() +
+  xlab("Environmental Change") +
+  ylab("Neutral Sites") +
+  ylim(0, 1024) +
+  ggtitle("Gradient Fitness Model") +
+  theme(legend.position="none")
+```
+
+#### NK Fitness Model
+
+```{r}
+ggplot(data_nk_phase0,
+       aes(x=chg_rate_label, y=neutral_sites, color=chg_rate_label)) +
+  geom_boxplot() +
+  xlab("Environmental Change") +
+  ylab("Neutral Sites") +
+  ylim(0, 1024) +
+  ggtitle("NK Fitness Model") +
+  theme(legend.position="none")
+```
+
+## Experiment Phase 1 Analyses
+
+We lock-down genetic architectures and evolve for 10,000 generations in a random static environment.
+
+### Fitnesses
+
+#### Gradient Fitness Model
+
+```{r}
+ggplot(data_gradient_phase1,
        aes(x=chg_rate_label, y=fitness, color=chg_rate_label)) +
   geom_boxplot() +
-  xlab("Env. bits flipped per generation") +
-  scale_y_continuous(name="phase 2 fitness") +
-  ggtitle("NK Fitness Model") +
+  xlab("Environmental Change") +
+  scale_y_continuous(name="Fitness") +
+  ggtitle("Gradient Fitness Model (phase 2)") +
+  theme(legend.position="none")
+```
+
+```{r}
+kt <- kruskal.test(formula = fitness ~ chg_rate_label, data=data_gradient_phase1)
+kt
+if (kt$p.value <= alpha) {
+  wt <- pairwise.wilcox.test(x=data_gradient_phase1$coding_sites,
+                             g=data_gradient_phase1$chg_rate_label,
+                             exact=FALSE,
+                             p.adjust.method = "bonferroni")
+  wt
+}
+```
+
+#### NK Fitness Model
+
+```{r}
+ggplot(data_nk_phase1,
+       aes(x=chg_rate_label, y=fitness, color=chg_rate_label)) +
+  geom_boxplot() +
+  xlab("Environmental Change") +
+  scale_y_continuous(name="Fitness") +
+  ggtitle("NK Fitness Model (phase 2)") +
+  theme(legend.position="none")
+```
+
+```{r}
+kt <- kruskal.test(formula = fitness ~ chg_rate_label, data=data_nk_phase1)
+kt
+if (kt$p.value <= alpha) {
+  wt <- pairwise.wilcox.test(x=data_nk_phase1$coding_sites,
+                             g=data_nk_phase1$chg_rate_label,
+                             exact=FALSE,
+                             p.adjust.method = "bonferroni")
+  wt
+}
+```
+
+### Fitness vs Number of Coding Sites
+
+#### Gradient Fitness Model
+
+```{r}
+ggplot(data_gradient_phase1,
+       aes(x=coding_sites, y=fitness)) +
+  geom_point(aes(color=chg_rate_label)) +
+  xlab("Coding Sites") +
+  ylab("Fitness") +
+  theme(legend.position="top") +
+  ggtitle("Gradient Fitness Model")
+```
+
+```{r}
+cor.test(x=data_gradient_phase1$coding_sites, 
+         y=data_gradient_phase1$fitness,
+         method="spearman",
+         exact=FALSE)
+```
+
+#### NK Fitness Model
+
+```{r}
+ggplot(data_nk_phase1,
+       aes(x=coding_sites, y=fitness)) +
+  geom_point(aes(color=chg_rate_label)) +
+  xlab("Coding Sites") +
+  ylab("Fitness") +
+  theme(legend.position="top") +
+  ggtitle("NK Fitness Model")
+```
+
+```{r}
+cor.test(x=data_nk_phase1$coding_sites, 
+         y=data_nk_phase1$fitness,
+         method="spearman",
+         exact=FALSE)
+```
+
+## Publication Figures 
+
+### Changing Environments Promote Modularity
+```{r}
+ggplot(data_gradient_phase0,
+       aes(x=chg_rate_label, y=coding_sites, fill=chg_rate_label)) +
+  geom_boxplot() +
+  xlab("Environmental Change") +
+  scale_y_continuous(name="Coding Sites\n(best genotype)",
+                     limits=c(0, 130),
+                     breaks=seq(0, 130, 20)) +
   theme(legend.position="none") +
-  ggsave(paste("./imgs/fitness_x_chg-rate_nk", 
-               "_phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=10, height=5)
+  ggsave("./imgs/coding-sites_v_chg-rate_gradient_phase0.pdf", width=10, height=8)
+  # ggsave(paste("./imgs/coding-sites_x_chg-rate_gradient", 
+  #              "_phase-", phase, "_gen-", gen, 
+  #              ".pdf", sep=""), width=10, height=5)
 ```
 
-## Genetic architecture lock-down fitnesses by change rate
-
-## Lock-down fitness vs coding sites
-
-### Gradient model
-
-```{r}
-# Look at phase 1 representative organism coding sites
-gradient_model <- 1
-phase <- 1
-gen <- 60000
-data_gradient <- filter(agg_data, GRADIENT_MODEL == gradient_model & 
-                         evo_phase == phase & 
-                         update == gen)
-ggplot(data_gradient,
-       aes(x=coding_sites, y=fitness, color=chg_rate_label)) +
-  geom_point() +
-  xlab("coding sites") +
-  ylab("fitness") +
-  theme(legend.position="top") +
-  ggsave(paste("./imgs/fitness_x_coding_gradient", 
-               "_phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=10, height=10)
-```
-
-```{r}
-cor.test(x=data_gradient$coding_sites, 
-         y=data_gradient$fitness,
-         method="spearman",
-         conf.level=0.95)
-```
-
-### NK model
-
-```{r}
-# Look at phase 1 representative organism coding sites
-gradient_model <- 0
-phase <- 1
-gen <- 60000
-data_nk <- filter(agg_data, GRADIENT_MODEL == gradient_model & 
-                         evo_phase == phase & 
-                         update == gen)
-ggplot(data_nk,
-       aes(x=coding_sites, y=fitness, color=chg_rate_label)) +
-  geom_point() +
-  xlab("coding sites") +
-  ylab("fitness") +
-  theme(legend.position="top") +
-  ggsave(paste("./imgs/fitness_x_coding_nk", 
-               "_phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=10, height=10)
-```
-
-```{r}
-cor.test(x=data_nk$coding_sites, 
-         y=data_nk$fitness,
-         method="spearman",
-         conf.level=0.95)
-```
+### Modularity Promotes Evolvability
 
 
