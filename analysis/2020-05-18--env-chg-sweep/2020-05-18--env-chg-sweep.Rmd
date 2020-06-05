@@ -330,7 +330,7 @@ ggplot(data_gradient_phase0,
                      limits=c(0, 130),
                      breaks=seq(0, 130, 20)) +
   theme(legend.position="none") +
-  ggsave("./imgs/coding-sites_v_chg-rate_gradient_phase0.pdf", width=10, height=8)
+  ggsave("./imgs/coding-sites-v-chg-rate-gradient-phase0.pdf", width=10, height=7)
   # ggsave(paste("./imgs/coding-sites_x_chg-rate_gradient", 
   #              "_phase-", phase, "_gen-", gen, 
   #              ".pdf", sep=""), width=10, height=5)
@@ -338,4 +338,24 @@ ggplot(data_gradient_phase0,
 
 ### Modularity Promotes Evolvability
 
+```{r}
+ggplot(data_gradient_phase1,
+       aes(x=chg_rate_label, y=fitness, fill=chg_rate_label)) +
+  geom_boxplot() +
+  xlab("Environmental Change") +
+  scale_y_continuous(name="Fitness") +
+  # ggtitle("Gradient Fitness Model (phase 2)") +
+  theme(legend.position="none") + 
+  ggsave("./imgs/fitness-v-chg-rate-gradient-phase1.pdf", width=10, height=7)
+```
 
+```{r}
+ggplot(data_gradient_phase1,
+       aes(x=coding_sites, y=fitness)) +
+  geom_point(alpha=0.95) +
+  scale_x_continuous(name="Coding Sites",
+                     limits=c(0, 130),
+                     breaks=seq(0, 130, 20)) +
+  ylab("Fitness") + 
+  ggsave("./imgs/coding-sites-v-fitness-gradient-phase1-point.pdf", width=10, height=7)
+```
