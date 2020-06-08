@@ -17,11 +17,14 @@ output:
 ## Analysis Dependencies
 
 ```{r, message=FALSE}
-library(ggplot2)  # (Wickham, 2016)
-library(tidyr)    # (Wickham and Henry, 2020)
-library(dplyr)    # (Wickham et al., 2020)
-library(reshape2) # (Wickham, 2007)
-library(cowplot)  # (Wilke, 2019)
+library(ggplot2)   # (Wickham, 2016)
+library(tidyr)     # (Wickham and Henry, 2020)
+library(dplyr)     # (Wickham et al., 2020)
+library(reshape2)  # (Wickham, 2007)
+library(cowplot)   # (Wilke, 2019)
+library(patchwork) # (Pederson, 2020)
+library(viridis)   # (Garnier, 2018)
+library(hexbin)
 ```
 
 We conducted these analyses using the following computing environment:
@@ -39,23 +42,12 @@ agg_data <- read.csv(data_path, na.strings="NONE")
 agg_data$BIT_FLIP_PROB <- as.factor(agg_data$BIT_FLIP_PROB)
 agg_data$DRIFT <- agg_data$TOURNAMENT_SIZE==1
 
-# Compute expected changes per generation
-exp_change <- function(mag, interval) {
-  if (interval == 0) { return(0) }
-  else { return(mag / interval) }
-}
-
-# Label
 chg_rate_label <- function(mag, interval, drift) {
   if (drift) { return("drift") }
   else if (interval == 0) { return("0") }
   else { return(paste(mag, interval, sep="/")) }
 }
 
-agg_data$EXP_CHANGE_PER_GEN <- as.factor(mapply(exp_change, 
-                                                agg_data$CHANGE_MAGNITUDE,
-                                                agg_data$CHANGE_FREQUENCY
-                                                ))
 agg_data$chg_rate_label <- factor(mapply(chg_rate_label, 
                                             agg_data$CHANGE_MAGNITUDE,
                                             agg_data$CHANGE_FREQUENCY,
@@ -69,221 +61,236 @@ agg_data$chg_rate_label <- factor(mapply(chg_rate_label,
                                               "4096/1"))
 theme_set(theme_cowplot())
 
-data_nk_phase0 <- filter(agg_data, GRADIENT_MODEL==0 & evo_phase == 0 & update==50000)
-data_nk_phase1 <- filter(agg_data, GRADIENT_MODEL==0 & evo_phase == 1 & update==60000)
-data_gradient_phase0 <- filter(agg_data, GRADIENT_MODEL==1 & evo_phase == 0 & update==50000)
-data_gradient_phase1 <- filter(agg_data, GRADIENT_MODEL==1 & evo_phase == 1 & update==60000)
+data_nk_phase0 <- 
+  filter(agg_data, GRADIENT_MODEL==0 & evo_phase == 0 & update==50000)
+data_nk_phase1 <- 
+  filter(agg_data, GRADIENT_MODEL==0 & evo_phase == 1 & update==60000)
+data_gradient_phase0 <- 
+  filter(agg_data, GRADIENT_MODEL==1 & evo_phase == 0 & update==50000)
+data_gradient_phase1 <- 
+  filter(agg_data, GRADIENT_MODEL==1 & evo_phase == 1 & update==60000)
 ```
 
-## Gradient model - Experiment phase 1
+## Experiment Phase 0 Analyses
+
+### Fitness
+
+#### Gradient Fitness Model
 
 ```{r}
 ggplot(data_gradient_phase0, 
-       aes(x=BIT_FLIP_PROB, 
-           y=coding_sites, 
-           color=BIT_FLIP_PROB)) +
+       aes(x=BIT_FLIP_PROB, y=fitness, color=BIT_FLIP_PROB)) +
   geom_boxplot() +
   xlab("Bit Flip Rate") +
-  scale_y_continuous(name="# coding sites in best organism",
-                     limits=c(0, 130),
-                     breaks=seq(0, 130, 10)) +
-  facet_wrap(~ chg_rate_label) +
-  ggtitle("Gradient Fitness Model") +
-  theme(legend.position="none",
-        axis.text.x=element_text(angle=90))
-
-ggplot(data_gradient_phase0, 
-       aes(x=chg_rate_label, 
-           y=coding_sites, 
-           color=chg_rate_label)) +
-  geom_boxplot() +
-  xlab("Change rate") +
-  scale_y_continuous(name="# coding sites in best organism",
-                     limits=c(0, 130),
-                     breaks=seq(0, 130, 10)) +
-  facet_wrap(~ BIT_FLIP_PROB) +
-  ggtitle("Gradient Fitness Model") +
-  theme(legend.position="none",
-        axis.text.x=element_text(angle=90))
-
-#######
-ggplot(data_gradient_phase0, 
-       aes(x=BIT_FLIP_PROB, 
-           y=neutral_sites, 
-           color=BIT_FLIP_PROB)) +
-  geom_boxplot() +
-  xlab("Bit Flip Rate") +
-  scale_y_continuous(name="# neutral sites in best organism") +
-  facet_wrap(~ chg_rate_label) +
-  ggtitle("Gradient Fitness Model") +
-  theme(legend.position="none",
-        axis.text.x=element_text(angle=90))+ 
-  ggsave("neutral-gradient.pdf")
-
-ggplot(data_gradient_phase0, 
-       aes(x=chg_rate_label, 
-           y=neutral_sites, 
-           color=chg_rate_label)) +
-  geom_boxplot() +
-  xlab("Change rate") +
-  scale_y_continuous(name="# neutral sites in best organism") +
-  facet_wrap(~ BIT_FLIP_PROB) +
-  ggtitle("Gradient Fitness Model") +
-  theme(legend.position="none",
-        axis.text.x=element_text(angle=90)) + 
-  ggsave("neutral-gradient-2.pdf")
-######
-
-ggplot(data_gradient_phase0, 
-       aes(x=BIT_FLIP_PROB, 
-           y=genome_length, 
-           color=BIT_FLIP_PROB)) +
-  geom_boxplot() +
-  xlab("Bit Flip Rate") +
-  scale_y_continuous(name="genome length",
-                     limits=c(0, 1024)) +
-  facet_wrap(~ chg_rate_label) +
-  ggtitle("Gradient Fitness Model") +
-  theme(legend.position="none",
-        axis.text.x=element_text(angle=90))
-
-ggplot(data_gradient_phase0, 
-       aes(x=BIT_FLIP_PROB, 
-           y=fitness, 
-           color=BIT_FLIP_PROB)) +
-  geom_boxplot() +
-  xlab("Bit Flip Rate") +
-  scale_y_continuous(name="fitness") +
+  scale_y_continuous(name="Fitness") +
   facet_wrap(~ chg_rate_label) +
   ggtitle("Gradient Fitness Model") +
   theme(legend.position="none",
         axis.text.x=element_text(angle=90))
 ```
 
-## Gradient model - experiment phase 2
+#### NK Fitness Model
+
+```{r}
+ggplot(data_nk_phase0, 
+       aes(x=BIT_FLIP_PROB, y=fitness, color=BIT_FLIP_PROB)) +
+  geom_boxplot() +
+  xlab("Bit Flip Rate") +
+  scale_y_continuous(name="Fitness") +
+  facet_wrap(~ chg_rate_label) +
+  ggtitle("Gradient Fitness Model") +
+  theme(legend.position="none",
+        axis.text.x=element_text(angle=90))
+```
+
+### Coding Sites
+
+#### Gradient Fitness Model
+
+```{r}
+ggplot(data_gradient_phase0, 
+       aes(x=BIT_FLIP_PROB, y=coding_sites, color=BIT_FLIP_PROB)) +
+  geom_boxplot() +
+  xlab("Bit Flip Rate") +
+  scale_y_continuous(name="Coding Sites (in best organism)",
+                     limits=c(0, 130),
+                     breaks=seq(0, 130, 20)) +
+  facet_wrap(~ chg_rate_label) +
+  ggtitle("Gradient Fitness Model") +
+  theme(legend.position="none",
+        axis.text.x=element_text(angle=90))
+```
+
+#### NK Fitness Model
+
+```{r}
+ggplot(data_nk_phase0, 
+       aes(x=BIT_FLIP_PROB, y=coding_sites, color=BIT_FLIP_PROB)) +
+  geom_boxplot() +
+  xlab("Bit Flip Rate") +
+  scale_y_continuous(name="Coding Sites (in best organism)",
+                     limits=c(0, 130),
+                     breaks=seq(0, 130, 20)) +
+  facet_wrap(~ chg_rate_label) +
+  ggtitle("NK Fitness Model") +
+  theme(legend.position="none",
+        axis.text.x=element_text(angle=90))
+```
+
+### Genome Length
+
+#### Gradient Fitness Model
+
+```{r}
+ggplot(data_gradient_phase0, 
+       aes(x=BIT_FLIP_PROB, y=genome_length, color=BIT_FLIP_PROB)) +
+  geom_boxplot() +
+  xlab("Bit Flip Rate") +
+  scale_y_continuous(name="Genome Length (in best organism)",
+                     limits=c(0, 1025)) +
+  facet_wrap(~ chg_rate_label) +
+  ggtitle("Gradient Fitness Model") +
+  theme(legend.position="none",
+        axis.text.x=element_text(angle=90))
+```
+
+#### NK Fitness Model
+
+```{r}
+ggplot(data_nk_phase0, 
+       aes(x=BIT_FLIP_PROB, y=genome_length, color=BIT_FLIP_PROB)) +
+  geom_boxplot() +
+  xlab("Bit Flip Rate") +
+  scale_y_continuous(name="Genome Length (in best organism)",
+                     limits=c(0, 1025)) +
+  facet_wrap(~ chg_rate_label) +
+  ggtitle("NK Fitness Model") +
+  theme(legend.position="none",
+        axis.text.x=element_text(angle=90))
+```
+
+### Neutral Sites
+
+#### Gradient Fitness Model
+
+```{r}
+ggplot(data_gradient_phase0, 
+       aes(x=BIT_FLIP_PROB, y=neutral_sites, color=BIT_FLIP_PROB)) +
+  geom_boxplot() +
+  xlab("Bit Flip Rate") +
+  scale_y_continuous(name="Neutral Sites (in best organism)") +
+  facet_wrap(~ chg_rate_label) +
+  ggtitle("Gradient Fitness Model") +
+  theme(legend.position="none",
+        axis.text.x=element_text(angle=90))
+```
+
+#### NK Fitness Model
+
+```{r}
+ggplot(data_nk_phase0, 
+       aes(x=BIT_FLIP_PROB, y=neutral_sites, color=BIT_FLIP_PROB)) +
+  geom_boxplot() +
+  xlab("Bit Flip Rate") +
+  scale_y_continuous(name="Neutral Sites (in best organism)") +
+  facet_wrap(~ chg_rate_label) +
+  ggtitle("NK Fitness Model") +
+  theme(legend.position="none",
+        axis.text.x=element_text(angle=90))
+```
+
+## Experiment Phase 1 Analyses
+
+### Fitness
+
+#### Gradient Fitness Model
 
 ```{r}
 ggplot(data_gradient_phase1, 
-       aes(x=BIT_FLIP_PROB, 
-           y=fitness, 
-           color=BIT_FLIP_PROB)) +
+       aes(x=BIT_FLIP_PROB, y=fitness, color=BIT_FLIP_PROB)) +
   geom_boxplot() +
   xlab("Bit Flip Rate") +
-  scale_y_continuous(name="fitness") +
+  scale_y_continuous(name="Fitness") +
   facet_wrap(~ chg_rate_label) +
-  ggtitle("Gradient Fitness Model - Phase 2") +
+  ggtitle("Gradient Fitness Model") +
   theme(legend.position="none",
         axis.text.x=element_text(angle=90))
+```
 
+#### NK Fitness Model
+
+```{r}
+ggplot(data_nk_phase1, 
+       aes(x=BIT_FLIP_PROB, y=fitness, color=BIT_FLIP_PROB)) +
+  geom_boxplot() +
+  xlab("Bit Flip Rate") +
+  scale_y_continuous(name="Fitness") +
+  facet_wrap(~ chg_rate_label) +
+  ggtitle("NK Fitness Model") +
+  theme(legend.position="none",
+        axis.text.x=element_text(angle=90))
+```
+
+### Fitness vs Coding Sites
+
+#### Gradient Fitness Model
+
+```{r}
 ggplot(data_gradient_phase1, 
-       aes(x=coding_sites, 
-           y=fitness, 
-           color=BIT_FLIP_PROB)) +
-  geom_point() +
-  xlab("Coding sites") +
-  scale_y_continuous(name="fitness") +
-  facet_wrap(~ chg_rate_label) +
-  ggtitle("Gradient Fitness Model - Phase 2") +
-  theme(legend.position="top")
-```
-
-## NK fitness model - experiment phase 1
-
-```{r}
-ggplot(data_nk_phase0, 
-       aes(x=BIT_FLIP_PROB, 
-           y=coding_sites, 
-           color=BIT_FLIP_PROB)) +
-  geom_boxplot() +
-  xlab("Bit Flip Rate") +
-  scale_y_continuous(name="# coding sites in best organism",
-                     limits=c(0, 130),
-                     breaks=seq(0, 130, 10)) +
-  facet_wrap(~ chg_rate_label) +
-  ggtitle("NK Fitness Model") +
-  theme(legend.position="none",
-        axis.text.x=element_text(angle=90))
-
-ggplot(data_nk_phase0, 
-       aes(x=chg_rate_label, 
-           y=coding_sites, 
-           color=chg_rate_label)) +
-  geom_boxplot() +
-  xlab("Change rate") +
-  scale_y_continuous(name="# coding sites in best organism",
-                     limits=c(0, 130),
-                     breaks=seq(0, 130, 10)) +
+       aes(x=coding_sites, y=fitness, color=chg_rate_label)) +
+  geom_jitter() +
+  xlab("Coding Sites") +
+  scale_y_continuous(name="Fitness") +
   facet_wrap(~ BIT_FLIP_PROB) +
-  ggtitle("NK Fitness Model") +
-  theme(legend.position="none",
-        axis.text.x=element_text(angle=90))
-
-ggplot(data_nk_phase0, 
-       aes(x=BIT_FLIP_PROB, 
-           y=genome_length, 
-           color=BIT_FLIP_PROB)) +
-  geom_boxplot() +
-  xlab("Bit Flip Rate") +
-  scale_y_continuous(name="genome length",
-                     limits=c(0, 1024)) +
-  facet_wrap(~ chg_rate_label) +
-  ggtitle("NK Fitness Model") +
-  theme(legend.position="none",
-        axis.text.x=element_text(angle=90))
-
-ggplot(data_nk_phase0, 
-       aes(x=BIT_FLIP_PROB, 
-           y=fitness, 
-           color=BIT_FLIP_PROB)) +
-  geom_boxplot() +
-  xlab("Bit Flip Rate") +
-  scale_y_continuous(name="fitness") +
-  facet_wrap(~ chg_rate_label) +
-  ggtitle("NK Fitness Model") +
-  theme(legend.position="none",
-        axis.text.x=element_text(angle=90))
+  ggtitle("Gradient Fitness Model") 
 ```
 
-## NK model - experiment phase 2
+#### Gradient Fitness Model
 
 ```{r}
 ggplot(data_nk_phase1, 
-       aes(x=BIT_FLIP_PROB, 
-           y=fitness, 
-           color=BIT_FLIP_PROB)) +
-  geom_boxplot() +
-  xlab("Bit Flip Rate") +
-  scale_y_continuous(name="fitness") +
-  facet_wrap(~ chg_rate_label) +
-  ggtitle("NK Fitness Model - Phase 2") +
-  theme(legend.position="none")
-
-ggplot(data_nk_phase1, 
-       aes(x=coding_sites, 
-           y=fitness, 
-           color=BIT_FLIP_PROB)) +
-  geom_point() +
-  xlab("Coding sites") +
-  scale_y_continuous(name="fitness") +
-  facet_wrap(~ chg_rate_label) +
-  ggtitle("NK Fitness Model - Phase 2") +
-  theme(legend.position="top")
+       aes(x=coding_sites, y=fitness, color=chg_rate_label)) +
+  geom_jitter() +
+  xlab("Coding Sites") +
+  scale_y_continuous(name="Fitness") +
+  facet_wrap(~ BIT_FLIP_PROB) +
+  ggtitle("NK Fitness Model") 
 ```
 
-## Gradient model - gene overlap by environment similarity
+## Publication Figures
+
+### High mutation rate promotes gene overlap
 
 ```{r}
-env_sim_data_path <- "./data/env_sim_gene_overlap_static.csv"
+rates = c("drift", "0", "1/4")
+labels <- c(
+  "drift"="Drift",
+  "0"="Static",
+  "1/4"="Changing Env. (1/4)"
+)
+ggplot(filter(data_gradient_phase0, chg_rate_label %in% rates), 
+       aes(x=BIT_FLIP_PROB, y=coding_sites, fill=BIT_FLIP_PROB)) +
+  geom_boxplot() +
+  xlab("Bit Flip Mutation Rate") +
+  scale_y_continuous(name="Coding Sites\n(in best organism)",
+                     limits=c(0, 130),
+                     breaks=seq(0, 130, 20)) +
+  facet_wrap(~ chg_rate_label, labeller = labeller(chg_rate_label=labels)) +
+  theme(legend.position="none",
+        axis.text.x=element_text(angle=90)) +
+  ggsave("./imgs/coding-sites-v-mutation-gradient-phase0.pdf", width=10, height=7)
+```
+
+## Does gene target similarity (gradient fitness model) predict overlap between two genes?
+
+```{r}
+env_sim_data_path <- "./data/env_sim_gene_overlap.csv"
 env_sim_data <- read.csv(env_sim_data_path, na.strings="NONE")
 
+env_sim_data <- filter(env_sim_data, GRADIENT_MODEL==1)
 env_sim_data$BIT_FLIP_PROB <- as.factor(env_sim_data$BIT_FLIP_PROB)
 env_sim_data$DRIFT <- env_sim_data$TOURNAMENT_SIZE==1
 
-
-env_sim_data$EXP_CHANGE_PER_GEN <- as.factor(mapply(exp_change, 
-                                                env_sim_data$CHANGE_MAGNITUDE,
-                                                env_sim_data$CHANGE_FREQUENCY
-                                                ))
 env_sim_data$chg_rate_label <- factor(mapply(chg_rate_label, 
                                             env_sim_data$CHANGE_MAGNITUDE,
                                             env_sim_data$CHANGE_FREQUENCY,
@@ -295,24 +302,38 @@ env_sim_data$chg_rate_label <- factor(mapply(chg_rate_label,
                                               "64/1", "128/1", "256/1", 
                                               "512/1", "1024/1", "2048/1",
                                               "4096/1"))
-theme_set(theme_cowplot())
 
-env_sim_data$gene_pair_target_similarity_factor <- as.factor(env_sim_data$gene_pair_target_similarity)
-env_sim_data$gene_pair_overlap_factor <- as.factor(env_sim_data$gene_pair_overlap)
+env_sim_data$gene_pair_target_similarity_factor <-
+  as.factor(env_sim_data$gene_pair_target_similarity)
+env_sim_data$gene_pair_overlap_factor <- 
+  as.factor(env_sim_data$gene_pair_overlap)
+env_sim_data$gene_pair_target_max_alignment_similarity_factor <-
+  as.factor(env_sim_data$gene_pair_target_max_alignment_similarity)
 
 env_sim_data_selection <- filter(env_sim_data, TOURNAMENT_SIZE==8)
 env_sim_data_drift <- filter(env_sim_data, TOURNAMENT_SIZE==1)
+
+env_sim_data_selection_static <- filter(env_sim_data_selection, chg_rate_label=="0")
 ```
 
-## Taking a closer look at genetic architecture distributions
+### Gene Target Similarity Frequencies
+
+We'll look at just the static environment.
+
+#### Naive Hamming Similarity
+
+For each replicate, we measure the pairwise gene target similarity (1 - Hamming Distance). I.e., we measure the number of bits that match between each pair of gene targets (within a run). 
+
+These measures are for naively aligned gene targets.
 
 ```{r}
-# Occurences of environment similarity
-library(patchwork)
+# Occurences of environment similarity (static environment)
 a <- 
-ggplot(env_sim_data_selection, aes(x=gene_pair_target_similarity_factor)) +
+ggplot(env_sim_data_selection_static,
+       aes(x=gene_pair_target_similarity_factor)) +
   geom_histogram(stat="count") +
   ylab("Occurences") +
+  ylim(0, 6000) +
   xlab("Pairwise gene target similarity") + 
   facet_wrap(~BIT_FLIP_PROB) +
   ggtitle("Selection")
@@ -321,170 +342,374 @@ b <-
 ggplot(env_sim_data_drift, aes(x=gene_pair_target_similarity_factor)) +
   geom_histogram(stat="count") +
   ylab("Occurences") +
+  ylim(0, 6000) +
   xlab("Pairwise gene target similarity") +
   facet_wrap(~BIT_FLIP_PROB) + 
   ggtitle("Drift")
 
-(a | b) + ggsave("pairwise-gene-target.pdf", width=15, height=10)
+(a | b)
 ```
 
-```{r}
+As expected, no differences between drift and selection conditions (no reason to expect there to be a difference).
 
+#### Best-alignment Hamming Similarity
+
+Here, for each pair of gene targets (within a run), we measure the best hamming similarity across all possible alignments of two gene targets. 
+
+```{r}
+# Occurences of environment similarities (given max alignment)
 a <- 
-ggplot(env_sim_data_selection, aes(x=gene_pair_overlap_factor)) +
+ggplot(env_sim_data_selection_static,
+       aes(x=gene_pair_target_max_alignment_similarity_factor)) +
   geom_histogram(stat="count") +
   ylab("Occurences") +
-  xlab("Pairwise gene overlap") +
-  facet_wrap(~BIT_FLIP_PROB) + 
+  ylim(0, 6000) +
+  xlab("Pairwise gene target similarity\n(best alignment)") + 
+  facet_wrap(~BIT_FLIP_PROB) +
   ggtitle("Selection")
 
-b <- 
-ggplot(env_sim_data_drift, aes(x=gene_pair_overlap_factor)) +
+b <-
+ggplot(env_sim_data_drift, 
+       aes(x=gene_pair_target_max_alignment_similarity_factor)) +
+  geom_histogram(stat="count") +
+  ylab("Occurences") +
+  xlab("Pairwise gene target similarity\n(best_alignment)") +
+  ylim(0, 6000) +
+  facet_wrap(~BIT_FLIP_PROB) + 
+  ggtitle("Drift")
+
+(a | b)
+
+
+```
+
+Using the best-alignment, shifts the distribution of observed gene target similarities to the right.
+
+### Gene Overlap Frequencies
+
+For each evolved genetic architecture, we measure the pairwise gene overlap among each of the 16 genes.
+
+#### Drift
+
+```{r}
+ggplot(filter(env_sim_data_drift), 
+       aes(x=gene_pair_overlap_factor)) +
   geom_histogram(stat="count") +
   ylab("Occurences") +
   xlab("Pairwise gene overlap") +
   facet_wrap(~BIT_FLIP_PROB) + 
   ggtitle("Drift")
 
-(a | b) + ggsave("pairwise-gene-overlap-with0.pdf", width=15, height=10)
-
-a <- 
-ggplot(filter(env_sim_data_selection, gene_pair_overlap>0), aes(x=gene_pair_overlap_factor)) +
+ggplot(filter(env_sim_data_drift, gene_pair_overlap>0), 
+       aes(x=gene_pair_overlap_factor)) +
   geom_histogram(stat="count") +
   ylab("Occurences") +
-  xlab("Pairwise gene overlap") +
-  facet_wrap(~BIT_FLIP_PROB) + 
-  ggtitle("Selection")
-
-b <- 
-ggplot(filter(env_sim_data_drift, gene_pair_overlap>0), aes(x=gene_pair_overlap_factor)) +
-  geom_histogram(stat="count") +
-  ylab("Occurences") +
-  xlab("Pairwise gene overlap") +
+  xlab("Pairwise gene overlap (excluding 0)") +
   facet_wrap(~BIT_FLIP_PROB) + 
   ggtitle("Drift")
+```
 
-(a | b) + ggsave("pairwise-gene-overlap-no0.pdf", width=15, height=10)
+#### Static Environment
+
+```{r}
+ggplot(env_sim_data_selection_static, 
+       aes(x=gene_pair_overlap_factor)) +
+  geom_histogram(stat="count") +
+  ylab("Occurences") +
+  xlab("Pairwise gene overlap") +
+  facet_wrap(~BIT_FLIP_PROB) + 
+  ggtitle("Static Environment")
+
+ggplot(filter(env_sim_data_selection_static, gene_pair_overlap>0), 
+       aes(x=gene_pair_overlap_factor)) +
+  geom_histogram(stat="count") +
+  ylab("Occurences") +
+  xlab("Pairwise gene overlap (excluding 0)") +
+  facet_wrap(~BIT_FLIP_PROB) + 
+  ggtitle("Static Environment")
 
 ```
 
-```{r}
+#### Changing Environment
 
-p <- function(bf_rate, inc_zero) {
-  d_sel <- env_sim_data_selection
-  d_drift <- env_sim_data_drift
-  if (!inc_zero) {
-    d_sel <- filter(d_sel, gene_pair_overlap>0)
-    d_drift <- filter(d_drift, gene_pair_overlap>0)
+##### 1/128
+
+```{r}
+ggplot(filter(env_sim_data_selection, chg_rate_label=="1/128"), 
+       aes(x=gene_pair_overlap_factor)) +
+  geom_histogram(stat="count") +
+  ylab("Occurences") +
+  xlab("Pairwise gene overlap") +
+  facet_wrap(~BIT_FLIP_PROB) + 
+  ggtitle("Changing Environment (1/128)")
+
+ggplot(filter(env_sim_data_selection, chg_rate_label=="1/128" & gene_pair_overlap > 0), 
+       aes(x=gene_pair_overlap_factor)) +
+  geom_histogram(stat="count") +
+  ylab("Occurences") +
+  xlab("Pairwise gene overlap (excluding 0)") +
+  facet_wrap(~BIT_FLIP_PROB) + 
+  ggtitle("Changing Environment (1/128)")
+```
+
+##### 1/4
+
+```{r}
+ggplot(filter(env_sim_data_selection, chg_rate_label=="1/4"), 
+       aes(x=gene_pair_overlap_factor)) +
+  geom_histogram(stat="count") +
+  ylab("Occurences") +
+  xlab("Pairwise gene overlap") +
+  facet_wrap(~BIT_FLIP_PROB) + 
+  ggtitle("Changing Environment (1/4)")
+
+ggplot(filter(env_sim_data_selection, chg_rate_label=="1/4" & gene_pair_overlap > 0), 
+       aes(x=gene_pair_overlap_factor)) +
+  geom_histogram(stat="count") +
+  ylab("Occurences") +
+  xlab("Pairwise gene overlap (excluding 0)") +
+  facet_wrap(~BIT_FLIP_PROB) + 
+  ggtitle("Changing Environment (1/4)")
+```
+
+##### 4/1
+
+```{r}
+ggplot(filter(env_sim_data_selection, chg_rate_label=="4/1"), 
+       aes(x=gene_pair_overlap_factor)) +
+  geom_histogram(stat="count") +
+  ylab("Occurences") +
+  xlab("Pairwise gene overlap") +
+  facet_wrap(~BIT_FLIP_PROB) + 
+  ggtitle("Changing Environment (4/1)")
+
+ggplot(filter(env_sim_data_selection, chg_rate_label=="4/1" & gene_pair_overlap > 0), 
+       aes(x=gene_pair_overlap_factor)) +
+  geom_histogram(stat="count") +
+  ylab("Occurences") +
+  xlab("Pairwise gene overlap (excluding 0)") +
+  facet_wrap(~BIT_FLIP_PROB) + 
+  ggtitle("Changing Environment (4/1)")
+```
+
+#### All Together
+
+```{r}
+ggplot(env_sim_data, 
+       aes(x=gene_pair_overlap_factor)) +
+  geom_histogram(stat="count") +
+  ylab("Occurences") +
+  xlab("Pairwise gene overlap") +
+  facet_grid(BIT_FLIP_PROB~chg_rate_label)
+
+ggplot(filter(env_sim_data, gene_pair_overlap>0), 
+       aes(x=gene_pair_overlap_factor)) +
+  geom_histogram(stat="count") +
+  ylab("Occurences") +
+  xlab("Pairwise gene overlap (excluding 0)") +
+  facet_grid(BIT_FLIP_PROB~chg_rate_label)
+```
+
+### Pairwise Gene Target Similarity (best-alignment) Vs. Pairwise Gene Overlap (un-normalized)
+
+Does best-alignment gene target similarity predict gene overlap amount? 
+
+#### Drift
+
+```{r}
+ggplot(env_sim_data_drift,
+       aes(x=gene_pair_target_max_alignment_similarity, 
+           y=gene_pair_overlap)) +
+  geom_bin2d(binwidth=1) +
+  scale_fill_continuous(type ="viridis", 
+                        trans="log",
+                        name="Count",
+                        breaks=c(1, 10, 100, 1000)) +
+  scale_y_continuous(name="Gene Pair Overlap",
+                     breaks=seq(0, 9)) +
+  scale_x_continuous(name="target similarity (best alignment)",
+                     breaks=seq(0, 9)) +
+  facet_wrap(~BIT_FLIP_PROB)
+```
+
+Exclude 0 overlap
+
+```{r}
+ggplot(filter(env_sim_data_drift, gene_pair_overlap > 0),
+       aes(x=gene_pair_target_max_alignment_similarity, 
+           y=gene_pair_overlap)) +
+  geom_bin2d(binwidth=1) +
+  scale_fill_continuous(type ="viridis", 
+                        trans="log",
+                        name="Count",
+                        breaks=c(1, 10, 100, 1000)) +
+  scale_y_continuous(name="Gene Pair Overlap",
+                     breaks=seq(0, 9)) +
+  scale_x_continuous(name="target similarity (best alignment)",
+                     breaks=seq(0, 9)) +
+  facet_wrap(~BIT_FLIP_PROB)
+```
+
+#### Static Environment
+
+```{r}
+ggplot(env_sim_data_selection_static,
+       aes(x=gene_pair_target_max_alignment_similarity, 
+           y=gene_pair_overlap)) +
+  geom_bin2d(binwidth=1) +
+  scale_fill_continuous(type ="viridis", 
+                        trans="log",
+                        name="Count",
+                        breaks=c(1, 10, 100, 1000, 10000)) +
+  scale_y_continuous(name="Gene Pair Overlap",
+                     breaks=seq(0, 9)) +
+  scale_x_continuous(name="target similarity (best alignment)",
+                     breaks=seq(0, 9)) +
+  facet_wrap(~BIT_FLIP_PROB)
+```
+
+```{r}
+ggplot(filter(env_sim_data_selection_static, gene_pair_overlap > 0),
+       aes(x=gene_pair_target_max_alignment_similarity, 
+           y=gene_pair_overlap)) +
+  geom_bin2d(binwidth=1) +
+  scale_fill_continuous(type ="viridis", 
+                        trans="log",
+                        name="Count",
+                        breaks=c(1, 10, 100, 1000, 10000)) +
+  scale_y_continuous(name="Gene Pair Overlap",
+                     breaks=seq(0, 9)) +
+  scale_x_continuous(name="target similarity (best alignment)",
+                     breaks=seq(0, 9)) +
+  facet_wrap(~BIT_FLIP_PROB)
+```
+
+
+### Overlap level proportions for each gene target similarity
+
+Compute proportions
+
+```{r}
+mut_rates <- levels(env_sim_data$BIT_FLIP_PROB)
+# chg_rates <- levels(env_sim_data$chg_rate_label)
+chg_rates <- c("drift", "0")
+gene_overlap_levels <-
+  levels(env_sim_data$gene_pair_overlap_factor)
+gene_target_best_alignment_sim_levels <- 
+  levels(env_sim_data$gene_pair_target_max_alignment_similarity_factor)
+
+overlap_proportions <- 
+  read.csv(text="mutation_rate,chg_rate_label,gene_target_sim_level,gene_overlap_level,gene_overlap_prop,gene_overlap_cnt")
+for (mut_rate in mut_rates) {
+  for (chg_rate in chg_rates) {
+    for (sim in gene_target_best_alignment_sim_levels) {
+      # For each similarity level, compute proportion for each level of gene overlap
+      d <- filter(env_sim_data, 
+                  BIT_FLIP_PROB==mut_rate &
+                    chg_rate_label==chg_rate &
+                    gene_pair_target_max_alignment_similarity_factor==sim)
+      total <- length(d$update) # How many total observations at this similarity level?
+      for (overlap in gene_overlap_levels) {
+        overlap_proportion <- 0
+        # How many are at this overlap level?
+        overlap_cnt <- length(filter(d, gene_pair_overlap_factor==overlap)$update)
+        if (total > 0) {
+          overlap_proportion <- overlap_cnt / total
+        } else {
+          overlap_proportion <- 0
+        }
+        new_row <- data.frame(mutation_rate=c(mut_rate),
+                              chg_rate_label=c(chg_rate),
+                              gene_target_sim_level=c(sim),
+                              gene_overlap_level=c(overlap),
+                              gene_overlap_prop=c(overlap_proportion),
+                              gene_overlap_cnt=c(overlap_cnt))
+        overlap_proportions <- rbind(overlap_proportions, new_row)
+      }
+    }
   }
-  a <- 
-  ggplot(filter(d_sel, BIT_FLIP_PROB==bf_rate),
-         aes(x=gene_pair_overlap_factor)) +
-    geom_histogram(stat="count") +
-    ylab("Occurences") + 
-    xlab("Pairwise gene overlap") +
-    facet_wrap(~gene_pair_target_similarity_factor) +
-    ggtitle(paste("Sel (pairwise gene target sim facets)\nBit flip rate=", bf_rate, sep=""))
-  
-  b <- 
-  ggplot(filter(d_drift, BIT_FLIP_PROB==bf_rate),
-         aes(x=gene_pair_overlap_factor)) +
-    geom_histogram(stat="count") +
-    ylab("Occurences") + 
-    xlab("Pairwise gene overlap") +
-    facet_wrap(~gene_pair_target_similarity_factor) +
-    ggtitle(paste("Drift (pairwise gene target sim facets)\nBit flip rate=", bf_rate, sep=""))
-
-  return (a | b)
 }
-p(0.003, TRUE) + ggsave("overlap_x_similarity_0.003.pdf", width=15, height=10)
-p(0.003, FALSE) + ggsave("overlap_x_similarity_0.003-no0.pdf", width=15, height=10)
-
-p(0.03, TRUE) + ggsave("overlap_x_similarity_0.03.pdf", width=15, height=10)
-p(0.03, FALSE) + ggsave("overlap_x_similarity_0.03-no0.pdf", width=15, height=10)
-
-p(0.1, TRUE) + ggsave("overlap_x_similarity_0.1.pdf", width=15, height=10)
-p(0.1, FALSE) + ggsave("overlap_x_similarity_0.1-no0.pdf", width=15, height=10)
-
-```
-
-All
-
-```{r}
-
-env_sim_data_path <- "./data/env_sim_gene_overlap.csv"
-env_sim_data <- read.csv(env_sim_data_path, na.strings="NONE")
-
-env_sim_data$BIT_FLIP_PROB <- as.factor(env_sim_data$BIT_FLIP_PROB)
-env_sim_data$DRIFT <- env_sim_data$TOURNAMENT_SIZE==1
-
-
-env_sim_data$EXP_CHANGE_PER_GEN <- as.factor(mapply(exp_change, 
-                                                env_sim_data$CHANGE_MAGNITUDE,
-                                                env_sim_data$CHANGE_FREQUENCY
-                                                ))
-env_sim_data$chg_rate_label <- factor(mapply(chg_rate_label, 
-                                            env_sim_data$CHANGE_MAGNITUDE,
-                                            env_sim_data$CHANGE_FREQUENCY,
-                                            env_sim_data$DRIFT),
-                                     levels=c("drift", "0", "1/256", "1/128",
-                                              "1/64", "1/32", "1/16", "1/8",
-                                              "1/4", "1/2", "1/1", "2/1", 
-                                              "4/1", "8/1", "16/1", "32/1",
-                                              "64/1", "128/1", "256/1", 
-                                              "512/1", "1024/1", "2048/1",
-                                              "4096/1"))
-theme_set(theme_cowplot())
-
-env_sim_data$gene_pair_target_similarity_factor <- as.factor(env_sim_data$gene_pair_target_similarity)
-env_sim_data$gene_pair_overlap_factor <- as.factor(env_sim_data$gene_pair_overlap)
-
-env_sim_data <- filter(env_sim_data, GRADIENT_MODEL==1)
-
-env_sim_data_selection <- filter(env_sim_data, TOURNAMENT_SIZE==8)
-env_sim_data_drift <- filter(env_sim_data, TOURNAMENT_SIZE==1)
 ```
 
 ```{r}
-
-# Overlap occurences changing environment
-a <- 
-ggplot(filter(env_sim_data_selection, chg_rate_label=="1/4"), aes(x=gene_pair_overlap_factor)) +
-  geom_histogram(stat="count") +
-  ylab("Occurences") +
-  xlab("Pairwise gene overlap") +
-  facet_wrap(~BIT_FLIP_PROB) + 
-  ggtitle("Selection")
-
-b <- 
-ggplot(filter(env_sim_data_drift), aes(x=gene_pair_overlap_factor)) +
-  geom_histogram(stat="count") +
-  ylab("Occurences") +
-  xlab("Pairwise gene overlap") +
-  facet_wrap(~BIT_FLIP_PROB) + 
-  ggtitle("Drift")
-
-(a | b) + ggsave("pairwise-gene-overlap-chg-1-4-with0.pdf", width=15, height=10)
+ggplot(overlap_proportions, 
+       aes(x=gene_target_sim_level, y=gene_overlap_level, fill=gene_overlap_prop)) +
+  geom_tile() +
+  xlab("Gene Target Similarity (best alignment)") +
+  scale_fill_continuous(type ="viridis") +
+  facet_grid(mutation_rate~chg_rate_label) + 
+  ggsave("gene_overlap_proportions.pdf", width=10, height=20)
 
 
-a <- 
-ggplot(filter(env_sim_data_selection, chg_rate_label=="1/4", gene_pair_overlap>0), aes(x=gene_pair_overlap_factor)) +
-  geom_histogram(stat="count") +
-  ylab("Occurences") +
-  xlab("Pairwise gene overlap") +
-  facet_wrap(~BIT_FLIP_PROB) + 
-  ggtitle("Selection")
-
-b <- 
-ggplot(filter(env_sim_data_drift, gene_pair_overlap>0), aes(x=gene_pair_overlap_factor)) +
-  geom_histogram(stat="count") +
-  ylab("Occurences") +
-  xlab("Pairwise gene overlap") +
-  facet_wrap(~BIT_FLIP_PROB) + 
-  ggtitle("Drift")
-
-(a | b) + ggsave("pairwise-gene-overlap-chg-1-4-no0.pdf", width=15, height=10)
-
-
+ggplot(overlap_proportions, 
+       aes(x=gene_target_sim_level, y=gene_overlap_prop, fill=gene_overlap_level)) +
+  geom_bar(position="fill", stat="identity") +
+  xlab("Gene Target Similarity (best alignment)") +
+  ylab("Proportion of Pairs") +
+  scale_fill_discrete(name="Gene Overlap Amount") +
+  facet_grid(mutation_rate~chg_rate_label) + 
+  theme(legend.position = "top") +
+  ggsave("gene_overlap_proportions_stackedbar.pdf", width=10, height=20)
 ```
 
+#### Proportion of non-zero overlap
+
+```{r}
+### Collect proportion non-zero
+
+overlap_proportions_non0 <- 
+  read.csv(text="mutation_rate,chg_rate_label,gene_target_sim_level,gene_overlap_level,gene_overlap_prop,gene_overlap_cnt")
+for (mut_rate in mut_rates) {
+  for (chg_rate in chg_rates) {
+    for (sim in gene_target_best_alignment_sim_levels) {
+      # For each similarity level, compute proportion for each level of gene overlap
+      d <- filter(env_sim_data, 
+                  BIT_FLIP_PROB==mut_rate &
+                    chg_rate_label==chg_rate &
+                    gene_pair_target_max_alignment_similarity_factor==sim &
+                    gene_pair_overlap!=0)
+      total <- length(d$update) # How many total observations at this similarity level?
+      for (overlap in gene_overlap_levels) {
+        if (overlap=="0") { next() }
+        overlap_proportion <- 0
+        # How many are at this overlap level?
+        overlap_cnt <- length(filter(d, gene_pair_overlap_factor==overlap)$update)
+        if (total > 0) {
+          overlap_proportion <- overlap_cnt / total
+        } else {
+          overlap_proportion <- 0
+        }
+        new_row <- data.frame(mutation_rate=c(mut_rate),
+                              chg_rate_label=c(chg_rate),
+                              gene_target_sim_level=c(sim),
+                              gene_overlap_level=c(overlap),
+                              gene_overlap_prop=c(overlap_proportion),
+                              gene_overlap_cnt=c(overlap_cnt))
+        overlap_proportions_non0 <- rbind(overlap_proportions_non0, new_row)
+      }
+    }
+  }
+}
+```
+
+```{r}
+
+ggplot(overlap_proportions_non0, 
+       aes(x=gene_target_sim_level, y=gene_overlap_level, fill=gene_overlap_prop)) +
+  geom_tile() +
+  xlab("Gene Target Similarity (best alignment)") +
+  scale_fill_continuous(type ="viridis") +
+  facet_grid(mutation_rate~chg_rate_label) + 
+  ggsave("gene_overlap_proportions_non0.pdf", width=10, height=20)
+
+ggplot(overlap_proportions_non0, 
+       aes(x=gene_target_sim_level, y=gene_overlap_prop, fill=gene_overlap_level)) +
+  geom_bar(position="fill", stat="identity") +
+  xlab("Gene Target Similarity (best alignment)") +
+  scale_fill_viridis(discrete = TRUE) +
+  facet_grid(mutation_rate~chg_rate_label) +
+  ggsave("gene_overlap_proportions_stackedbar_non0.pdf", width=10, height=20)
+
+  
+
+```
