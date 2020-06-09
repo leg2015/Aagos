@@ -3,6 +3,7 @@ import argparse, os, sys, errno, csv
 
 include_fields = ["generation",
                   "coding_sites",
+                  "genome_length",
                   "BIT_FLIP_PROB",
                   "TOURNAMENT_SIZE",
                   "CHANGE_MAGNITUDE",
@@ -39,9 +40,6 @@ def main():
     with open(filtered_out_path, "w") as fp:
         fp.write(filtered_header)
 
-    # Read data
-    content = None
-
     print("Filtering data...")
     header = []
     filtered_line_buffer = []
@@ -61,30 +59,6 @@ def main():
         out_fp.write("\n".join(filtered_line_buffer) + "\n")
     filtered_line_buffer = []
 
-
-
-
-    # print("...finished filtering data")
-
-    # header = content[0].split(",")
-    # # header_lu = {header[i].strip():i for i in range(0, len(header))}
-    # content = content[1:]
-
-    # include_fields_set = set(include_fields)
-    # content = [ {header[i]: l[i] for i in range(0, len(l)) if header[i] in include_fields_set} for l in csv.reader(content, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True) ]
-
-
-    # print("building output file...")
-
-    # filtered_lines = []
-    # for line in content:
-    #     filtered_lines.append(",".join([line[field] for field in include_fields]))
-    # content = None
-    # filtered_content = filtered_header + "\n"
-    # filtered_content += "\n".join(filtered_lines)
-    # print("writing output file...")
-    # with open(os.path.join(dump_dir, "filtered_lineage.csv"), "w") as fp:
-    #     fp.write(filtered_content)
     print("Done!")
 
 
