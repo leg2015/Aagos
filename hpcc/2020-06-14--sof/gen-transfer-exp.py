@@ -14,18 +14,18 @@ job_name = "transfer"
 
 nk_config = {
     "environment_change": [
-       "-CHANGE_MAGNITUDE 0 -CHANGE_FREQUENCY 0 -PHASE_2_BIT_FLIP_PROB 0.1"
-       "-CHANGE_MAGNITUDE 0 -CHANGE_FREQUENCY 0 -PHASE_2_BIT_FLIP_PROB 0.003"
-       "-CHANGE_MAGNITUDE 64 -CHANGE_FREQUENCY 1 -PHASE_2_BIT_FLIP_PROB 0.1"
+       "-CHANGE_MAGNITUDE 0 -CHANGE_FREQUENCY 0 -PHASE_2_BIT_FLIP_PROB 0.1",
+       "-CHANGE_MAGNITUDE 0 -CHANGE_FREQUENCY 0 -PHASE_2_BIT_FLIP_PROB 0.003",
+       "-CHANGE_MAGNITUDE 64 -CHANGE_FREQUENCY 1 -PHASE_2_BIT_FLIP_PROB 0.1",
        "-CHANGE_MAGNITUDE 64 -CHANGE_FREQUENCY 1 -PHASE_2_BIT_FLIP_PROB 0.003"
     ]
 }
 
 gradient_config = {
     "environment_change": [
-       "-CHANGE_MAGNITUDE 0 -CHANGE_FREQUENCY 0 -PHASE_2_BIT_FLIP_PROB 0.1"
-       "-CHANGE_MAGNITUDE 0 -CHANGE_FREQUENCY 0 -PHASE_2_BIT_FLIP_PROB 0.003"
-       "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 4 -PHASE_2_BIT_FLIP_PROB 0.1"
+       "-CHANGE_MAGNITUDE 0 -CHANGE_FREQUENCY 0 -PHASE_2_BIT_FLIP_PROB 0.1",
+       "-CHANGE_MAGNITUDE 0 -CHANGE_FREQUENCY 0 -PHASE_2_BIT_FLIP_PROB 0.003",
+       "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 4 -PHASE_2_BIT_FLIP_PROB 0.1",
        "-CHANGE_MAGNITUDE 1 -CHANGE_FREQUENCY 4 -PHASE_2_BIT_FLIP_PROB 0.003"
     ]
 }
@@ -147,7 +147,7 @@ def main():
     num_replicates = args.replicates
 
     # Compute all combinations of NK fitness model settings and gradient fitness settings
-    nk_combos = [f"{chg} {mut} -GRADIENT_MODEL 0" for chg in nk_config["environment_change"] for mut in shared_config["BIT_FLIP_PROB"] ]
+    nk_combos =       [f"{chg} {mut} -GRADIENT_MODEL 0" for chg in nk_config["environment_change"] for mut in shared_config["BIT_FLIP_PROB"] ]
     gradient_combos = [f"{chg} {mut} -GRADIENT_MODEL 1" for chg in gradient_config["environment_change"] for mut in shared_config["BIT_FLIP_PROB"] ]
 
     # Combine
