@@ -669,8 +669,9 @@ void AagosWorld::InitPopRandom() {
 
 void AagosWorld::InitPopLoad() {
   // Load genome from file.
-  emp::vector<size_t> gene_starts(config.NUM_GENES(), 0);
-  emp::BitVector bits;
+  emp::vector<genome_t> ancestor_genomes;
+
+
   std::ifstream ancestor_fstream(config.LOAD_ANCESTOR_FILE());
   if (!ancestor_fstream.is_open()) {
     std::cout << "Failed to open ancestor file (" << config.LOAD_ANCESTOR_FILE() << "). Exiting..." << std::endl;
@@ -678,7 +679,7 @@ void AagosWorld::InitPopLoad() {
   }
   std::string cur_line;
   emp::vector<std::string> line_components;
-  bool success = false;
+  // bool success = false;
   while (!ancestor_fstream.eof()) {
     std::getline(ancestor_fstream, cur_line);
     emp::left_justify(cur_line); // Remove any leading whitespace.
@@ -692,6 +693,9 @@ void AagosWorld::InitPopLoad() {
         std::cout << "Unexpected list size ("<<line_components.size()<<")." << std::endl;
         break;
       }
+      // Create new gene starts & bits
+      emp::vector<size_t> gene_starts(config.NUM_GENES(), 0);
+      emp::BitVector bits;
       // First NUM_GENES components should be gene start positions.
       for (size_t g = 0; g < config.NUM_GENES(); ++g) {
         std::string & value_str = line_components[g];
@@ -704,24 +708,32 @@ void AagosWorld::InitPopLoad() {
         emp_assert(bit < bits.GetSize());
         bits.Set(bits.GetSize() - bit - 1, bits_str[bit] == '1');
       }
-      success = true;
-      break;
+
+      emp_assert(bits.GetSize() >= config.MIN_SIZE());
+      emp_assert(bits.GetSize() <= config.MAX_SIZE());
+
+      genome_t genome(bits.GetSize(), config.NUM_GENES(), config.GENE_SIZE());
+      genome.bits = bits;
+      genome.gene_starts = gene_starts;
+      ancestor_genomes.emplace_back(genome);
+
     }
   }
 
-  if (!success) {
-    std::cout << "Failed to load ancestor from file. Exiting..." << std::endl;
+  if (!ancestor_genomes.size()) {
+    std::cout << "Failed to load ancestors from file. Exiting..." << std::endl;
     exit(-1);
   }
 
-  emp_assert(bits.GetSize() >= config.MIN_SIZE());
-  emp_assert(bits.GetSize() <= config.MAX_SIZE());
+  std::cout << "Loaded " << ancestor_genomes.size() << " from file." << std::endl;
 
   // Initialize population w/loaded ancestor
-  genome_t genome(bits.GetSize(), config.NUM_GENES(), config.GENE_SIZE());
-  genome.bits = bits;
-  genome.gene_starts = gene_starts;
+  // genome_t genome(bits.GetSize(), config.NUM_GENES(), config.GENE_SIZE());
+  // genome.bits = bits;
+  // genome.gene_starts = gene_starts;
   for (size_t i = 0; i < config.POP_SIZE(); ++i) {
+    const size_t genome_id = i % ancestor_genomes.size();
+    genome_t genome(ancestor_genomes[genome_id]);
     if (config.RANDOMIZE_LOAD_ANCESTOR_BITS()) {
       emp::RandomizeBitVector(genome.bits, *random_ptr);
     }
