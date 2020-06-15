@@ -130,7 +130,7 @@ def main():
         if len(combined_header_set) > 1:
             print("Header mismatch!")
             exit(-1)
-        line = [extra_fields[f] for f in extra_fields] + [run_settings[s] for s in run_settings]
+        line = [extra_fields[f] for f in extra_fields] + [run_settings[s] for s in config_fields]
         aggregate_info.append(line)
 
     # Output aggregate information.
