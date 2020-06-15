@@ -219,7 +219,7 @@ def main():
             arch_content = cat_a_org["gene_starts"].strip("[]") + "," + cat_a_org["genome_bitstring"] + "\n"
             arch_content += cat_b_org["gene_starts"].strip("[]") + "," + cat_b_org["genome_bitstring"]
             # Write architectures to a file
-            arch_fname = "_".join(pairing_type) + "_" + str(cat_a_run_id) + "-" + str(cat_b_run_id)
+            arch_fname = "_".join(pairing_type) + "_" + str(cat_a_run_id) + "-" + str(cat_b_run_id) + ".csv"
             arch_fpath = os.path.join(pairing_dump, arch_fname)
             with open(arch_fpath, "w") as fp:
                 fp.write(arch_content)
@@ -243,7 +243,7 @@ def main():
             cnt += 2
             # Low mutation rate competition
             low_mut_stub = " ".join([f"-{cfg} {params[cfg]}" for cfg in params] + [low_mut])
-            run_name = "_".join(pairing_type) + "__LOW_MUT__" + "__SEED_" + str(params["SEED"])
+            run_name = "_".join(pairing_type) + "__LOW_MUT__" + "SEED_" + str(params["SEED"])
             run_subs.append({
                 "run_params": low_mut_stub,
                 "run_dir": os.path.join(hpcc_run_dir, run_name)
@@ -251,7 +251,7 @@ def main():
             # High mutation rate competition
             params["SEED"] += 1
             high_mut_stub = " ".join([f"-{cfg} {params[cfg]}" for cfg in params] + [high_mut])
-            run_name = "_".join(pairing_type) + "__HIGH_MUT__" + "__SEED_" + str(params["SEED"])
+            run_name = "_".join(pairing_type) + "__HIGH_MUT__" + "SEED_" + str(params["SEED"])
             run_subs.append({
                 "run_params": high_mut_stub,
                 "run_dir": os.path.join(hpcc_run_dir, run_name)
