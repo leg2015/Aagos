@@ -118,12 +118,14 @@ def main():
     # Setup the command line argument parser
     parser = argparse.ArgumentParser(description="Data aggregation script")
     parser.add_argument("--data_dir", type=str, help="Where should we pull data (one or more locations)?")
+    parser.add_argument("--run_dir", type=str, help="Where should we run the experiment?")
     parser.add_argument("--config_dir", type=str, help="Where should we pull data (one or more locations)?")
 
     # Parse command line arguments
     args = parser.parse_args()
     data_dir = args.data_dir
     config_dir = args.config_dir
+    hpcc_run_dir = args.run_dir
     dump_dir = "ancestor_pairings"
 
     # Make place to dump aggregated data.
@@ -170,7 +172,7 @@ def main():
 
         # Store organism info for this run
         run_orgs[run_index] = copy.deepcopy(rep_org)
-        run_configurations[run_index] - copy.deepcopy(run_settings)
+        run_configurations[run_index] = copy.deepcopy(run_settings)
 
         # Figure out which category this run falls into
         run_category = None
@@ -241,16 +243,18 @@ def main():
             cnt += 2
             # Low mutation rate competition
             low_mut_stub = " ".join([f"-{cfg} {params[cfg]}" for cfg in params] + [low_mut])
+            run_name = "_".join(pairing_type) + "__LOW_MUT__" + "__SEED_" + params["SEED"]
             run_subs.append({
                 "run_params": low_mut_stub,
-                "run_dir": "_".join(pairing_type) + "__LOW_MUT__" + "__SEED_" + params["SEED"]
+                "run_dir": os.path.join(hpcc_run_dir, run_name)
             })
             # High mutation rate competition
             params["SEED"] += 1
             high_mut_stub = " ".join([f"-{cfg} {params[cfg]}" for cfg in params] + [high_mut])
+            run_name = "_".join(pairing_type) + "__HIGH_MUT__" + "__SEED_" + params["SEED"]
             run_subs.append({
                 "run_params": high_mut_stub,
-                "run_dir": "_".join(pairing_type) + "__HIGH_MUT__" + "__SEED_" + params["SEED"]
+                "run_dir": os.path.join(hpcc_run_dir, run_name)
             })
 
     # (3) Generate submission script from run subs
