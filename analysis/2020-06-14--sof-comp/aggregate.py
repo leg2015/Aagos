@@ -109,8 +109,11 @@ def main():
         pop = [{snapshot_header[i]: l[i] for i in range(0, len(l))} for l in csv.reader(snapshot_content, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True)]
         high_mut_arch_cnt = 0
         low_mut_arch_cnt = 0
+        print(ancestral_low_mut_arch)
+        print(ancestral_high_mut_arch)
         for org in pop:
             org_arch = org["gene_starts"].strip("[]")
+            print("org arch:", org_arch)
             high_mut_arch_cnt += int(org_arch == ancestral_high_mut_arch)
             low_mut_arch_cnt += int(org_arch == ancestral_low_mut_arch)
         print(f"High mut arch cnt: {high_mut_arch_cnt}")
