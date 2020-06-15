@@ -216,8 +216,8 @@ def main():
             if (cat_a_settings["GRADIENT_MODEL"] != cat_b_settings["GRADIENT_MODEL"]):
                 print("Fitness model mismatch!")
                 exit(-1)
-            arch_content = cat_a_org["gene_starts"].strip("[]") + cat_a_org["genome_bitstring"] + "\n"
-            arch_content += cat_b_org["gene_starts"].strip("[]") + cat_b_org["genome_bitstring"]
+            arch_content = cat_a_org["gene_starts"].strip("[]") + "," + cat_a_org["genome_bitstring"] + "\n"
+            arch_content += cat_b_org["gene_starts"].strip("[]") + "," + cat_b_org["genome_bitstring"]
             # Write architectures to a file
             arch_fname = "_".join(pairing_type) + "_" + str(cat_a_run_id) + "-" + str(cat_b_run_id)
             arch_fpath = os.path.join(pairing_dump, arch_fname)
