@@ -243,7 +243,7 @@ def main():
             cnt += 2
             # Low mutation rate competition
             low_mut_stub = " ".join([f"-{cfg} {params[cfg]}" for cfg in params] + [low_mut])
-            run_name = "_".join(pairing_type) + "__LOW_MUT__" + "__SEED_" + params["SEED"]
+            run_name = "_".join(pairing_type) + "__LOW_MUT__" + "__SEED_" + str(params["SEED"])
             run_subs.append({
                 "run_params": low_mut_stub,
                 "run_dir": os.path.join(hpcc_run_dir, run_name)
@@ -251,7 +251,7 @@ def main():
             # High mutation rate competition
             params["SEED"] += 1
             high_mut_stub = " ".join([f"-{cfg} {params[cfg]}" for cfg in params] + [high_mut])
-            run_name = "_".join(pairing_type) + "__HIGH_MUT__" + "__SEED_" + params["SEED"]
+            run_name = "_".join(pairing_type) + "__HIGH_MUT__" + "__SEED_" + str(params["SEED"])
             run_subs.append({
                 "run_params": high_mut_stub,
                 "run_dir": os.path.join(hpcc_run_dir, run_name)
