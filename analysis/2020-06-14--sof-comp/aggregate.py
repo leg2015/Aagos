@@ -91,8 +91,8 @@ def main():
         with open(ancestor_arch_path, "r") as fp:
             ancestor_content = fp.read().strip().split("\n")
         # REMINDER: LOW MUT arch is always first in these files
-        ancestral_low_mut_arch = ancestor_content[0].split(",")[:-1]
-        ancestral_high_mut_arch = ancestor_content[1].split(",")[:-1]
+        ancestral_low_mut_arch = ",".join(ancestor_content[0].split(",")[:-1])
+        ancestral_high_mut_arch = ",".join(ancestor_content[1].split(",")[:-1])
         if (ancestral_high_mut_arch == ancestral_low_mut_arch):
             print("Cannot differentiate architectures because they are identical.")
             print(ancestral_low_mut_arch)
@@ -113,7 +113,7 @@ def main():
         print(ancestral_high_mut_arch)
         for org in pop:
             org_arch = org["gene_starts"].strip("[]")
-            print("org arch:", org_arch)
+            # print("org arch:", org_arch)
             high_mut_arch_cnt += int(org_arch == ancestral_high_mut_arch)
             low_mut_arch_cnt += int(org_arch == ancestral_low_mut_arch)
         print(f"High mut arch cnt: {high_mut_arch_cnt}")
