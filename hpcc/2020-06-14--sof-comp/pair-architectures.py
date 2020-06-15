@@ -35,6 +35,7 @@ categories = {
   "HMCH-NK":{"GRADIENT_MODEL":"0", "BIT_FLIP_PROB":"0.1", "CHANGE_MAGNITUDE":"64", "CHANGE_FREQUENCY":"1"}
 }
 
+# NOTE: First architecture in file always from low mutation rate environment
 pairings = [
     ["LMST-GRD", "HMST-GRD"],
     ["LMCH-GRD", "HMCH-GRD"],
@@ -216,8 +217,10 @@ def main():
             if (cat_a_settings["GRADIENT_MODEL"] != cat_b_settings["GRADIENT_MODEL"]):
                 print("Fitness model mismatch!")
                 exit(-1)
-            arch_content = cat_a_org["gene_starts"].strip("[]") + "," + cat_a_org["genome_bitstring"] + "\n"
-            arch_content += cat_b_org["gene_starts"].strip("[]") + "," + cat_b_org["genome_bitstring"]
+            cat_a_bits = cat_a_org["genome_bitstring"].replace("1", "0")
+            cat_b_bits = cat_b_org["genome_bitstring"].replace("1", "0")
+            arch_content = cat_a_org["gene_starts"].strip("[]") + "," + cat_a_bits + "\n"
+            arch_content += cat_b_org["gene_starts"].strip("[]") + "," + cat_b_bits
             # Write architectures to a file
             arch_fname = "_".join(pairing_type) + "_" + str(cat_a_run_id) + "-" + str(cat_b_run_id) + ".csv"
             arch_fpath = os.path.join(pairing_dump, arch_fname)
