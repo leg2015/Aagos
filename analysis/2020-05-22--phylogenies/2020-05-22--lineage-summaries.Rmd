@@ -35,7 +35,7 @@ print(version)
 
 ```{r}
 theme_set(theme_cowplot())
-data_path <- "./data/lineages_summary.csv"
+data_path <- "./data-summary/lineages_summary.csv"
 agg_data <- read.csv(data_path, na.strings="NONE")
 
 agg_data$BIT_FLIP_PROB <- as.factor(agg_data$BIT_FLIP_PROB)
