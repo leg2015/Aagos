@@ -9,6 +9,9 @@ Aagos
 # Ignore launch files for hpcc created for testing purposes
 *.qsub
 
+# Ignore R files
+.Rhistory
+
 
 Mut_Rate_2/BadRuns
 misc/
