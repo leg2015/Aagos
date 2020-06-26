@@ -22,6 +22,7 @@ library(tidyr)    # (Wickham and Henry, 2020)
 library(dplyr)    # (Wickham et al., 2020)
 library(reshape2) # (Wickham, 2007)
 library(cowplot)  # (Wilke, 2019)
+library(hexbin)   # (Carr, Lewin-Kog, Maechler, and Sarkar, 2020)
 ```
 
 
@@ -77,11 +78,13 @@ data_nk_phase1 <-
          GRADIENT_MODEL==0 & evo_phase == 1 & update == 60000)
 ```
 
-## Experiment Phase 0 Analyses
+## Evolution Experiment
+
+We evolved populations for 50,000 generations under a range of environmental change rates.
 
 ### Fitnesses
 
-Note issue with fitnesses for changing environments
+Note issue with fitnesses for changing environments.
 
 #### Gradient Fitness Model
 
@@ -113,18 +116,15 @@ ggplot(data_nk_phase0,
 
 ```{r}
 ggplot(data_gradient_phase0,
-       aes(x=chg_rate_label, y=coding_sites, fill=chg_rate_label)) +
-  # geom_jitter(aes(color=chg_rate_label)) +
+       aes(x=chg_rate_label, y=coding_sites, color=chg_rate_label)) +
   geom_boxplot() +
+  geom_jitter(aes(color=chg_rate_label), alpha=0.1) +
   xlab("Environmental Change") +
   scale_y_continuous(name="Coding Sites (in best genotype)",
                      limits=c(0, 130),
                      breaks=seq(0, 130, 20)) +
   ggtitle("Gradient Fitness Model") +
   theme(legend.position="none")
-  # ggsave(paste("./imgs/coding-sites_x_chg-rate_gradient", 
-  #              "_phase-", phase, "_gen-", gen, 
-  #              ".pdf", sep=""), width=10, height=5)
 ```
 
 ```{r}
@@ -145,15 +145,13 @@ if (kt$p.value <= alpha) {
 ggplot(data_nk_phase0,
        aes(x=chg_rate_label, y=coding_sites, color=chg_rate_label)) +
   geom_boxplot() +
+  geom_jitter(alpha=0.1) +
   xlab("Environmental Change") +
   scale_y_continuous(name="# coding sites in best organism",
                      limits=c(0, 130),
                      breaks=seq(0, 130, 20)) +
   ggtitle("NK Fitness Model") +
   theme(legend.position="none")
-  # ggsave(paste("./imgs/coding-sites_x_chg-rate_gradient", 
-  #              "_phase-", phase, "_gen-", gen, 
-  #              ".pdf", sep=""), width=10, height=5)
 ```
 
 ```{r}
@@ -176,9 +174,10 @@ if (kt$p.value <= alpha) {
 ggplot(data_gradient_phase0,
        aes(x=chg_rate_label, y=genome_length, color=chg_rate_label)) +
   geom_boxplot() +
+  geom_jitter(alpha=0.1) +
   xlab("Environmental Change") +
   ylab("Genome Length") +
-  ylim(0, 1024) +
+  ylim(0, 1025) +
   ggtitle("Gradient Fitness Model") +
   theme(legend.position="none")
 ```
@@ -189,6 +188,7 @@ ggplot(data_gradient_phase0,
 ggplot(data_nk_phase0,
        aes(x=chg_rate_label, y=genome_length, color=chg_rate_label)) +
   geom_boxplot() +
+  geom_jitter(alpha=0.1) +
   xlab("Environmental Change") +
   ylab("Genome Length") +
   ylim(0, 1024) +
@@ -204,9 +204,10 @@ ggplot(data_nk_phase0,
 ggplot(data_gradient_phase0,
        aes(x=chg_rate_label, y=neutral_sites, color=chg_rate_label)) +
   geom_boxplot() +
+  geom_jitter(alpha=0.1) +
   xlab("Environmental Change") +
   ylab("Neutral Sites") +
-  ylim(0, 1024) +
+  ylim(-1, 1025) +
   ggtitle("Gradient Fitness Model") +
   theme(legend.position="none")
 ```
@@ -217,14 +218,15 @@ ggplot(data_gradient_phase0,
 ggplot(data_nk_phase0,
        aes(x=chg_rate_label, y=neutral_sites, color=chg_rate_label)) +
   geom_boxplot() +
+  geom_jitter(alpha=0.1) +
   xlab("Environmental Change") +
   ylab("Neutral Sites") +
-  ylim(0, 1024) +
+  ylim(-1, 1025) + # jitter can jitter below 0
   ggtitle("NK Fitness Model") +
   theme(legend.position="none")
 ```
 
-## Experiment Phase 1 Analyses
+## Transfer experiment
 
 We lock-down genetic architectures and evolve for 10,000 generations in a random static environment.
 
@@ -236,9 +238,10 @@ We lock-down genetic architectures and evolve for 10,000 generations in a random
 ggplot(data_gradient_phase1,
        aes(x=chg_rate_label, y=fitness, color=chg_rate_label)) +
   geom_boxplot() +
+  geom_jitter(alpha=0.1) +
   xlab("Environmental Change") +
   scale_y_continuous(name="Fitness") +
-  ggtitle("Gradient Fitness Model (phase 2)") +
+  ggtitle("Gradient Fitness Model (transfer)") +
   theme(legend.position="none")
 ```
 
@@ -246,7 +249,7 @@ ggplot(data_gradient_phase1,
 kt <- kruskal.test(formula = fitness ~ chg_rate_label, data=data_gradient_phase1)
 kt
 if (kt$p.value <= alpha) {
-  wt <- pairwise.wilcox.test(x=data_gradient_phase1$coding_sites,
+  wt <- pairwise.wilcox.test(x=data_gradient_phase1$fitness,
                              g=data_gradient_phase1$chg_rate_label,
                              exact=FALSE,
                              p.adjust.method = "bonferroni")
@@ -260,9 +263,10 @@ if (kt$p.value <= alpha) {
 ggplot(data_nk_phase1,
        aes(x=chg_rate_label, y=fitness, color=chg_rate_label)) +
   geom_boxplot() +
+  geom_jitter(alpha=0.1) +
   xlab("Environmental Change") +
   scale_y_continuous(name="Fitness") +
-  ggtitle("NK Fitness Model (phase 2)") +
+  ggtitle("NK Fitness Model (transfer)") +
   theme(legend.position="none")
 ```
 
@@ -270,7 +274,7 @@ ggplot(data_nk_phase1,
 kt <- kruskal.test(formula = fitness ~ chg_rate_label, data=data_nk_phase1)
 kt
 if (kt$p.value <= alpha) {
-  wt <- pairwise.wilcox.test(x=data_nk_phase1$coding_sites,
+  wt <- pairwise.wilcox.test(x=data_nk_phase1$fitness,
                              g=data_nk_phase1$chg_rate_label,
                              exact=FALSE,
                              p.adjust.method = "bonferroni")
@@ -323,24 +327,22 @@ cor.test(x=data_nk_phase1$coding_sites,
 ### Changing Environments Promote Modularity
 ```{r}
 ggplot(data_gradient_phase0,
-       aes(x=chg_rate_label, y=coding_sites, fill=chg_rate_label)) +
+       aes(x=chg_rate_label, y=coding_sites)) +
   geom_boxplot() +
+  geom_jitter(alpha=0.1) +
   xlab("Environmental Change") +
   scale_y_continuous(name="Coding Sites\n(best genotype)",
                      limits=c(0, 130),
                      breaks=seq(0, 130, 20)) +
   theme(legend.position="none") +
   ggsave("./imgs/coding-sites-v-chg-rate-gradient-phase0.pdf", width=10, height=7)
-  # ggsave(paste("./imgs/coding-sites_x_chg-rate_gradient", 
-  #              "_phase-", phase, "_gen-", gen, 
-  #              ".pdf", sep=""), width=10, height=5)
 ```
 
 ### Modularity Promotes Evolvability
 
 ```{r}
 ggplot(data_gradient_phase1,
-       aes(x=chg_rate_label, y=fitness, fill=chg_rate_label)) +
+       aes(x=chg_rate_label, y=fitness)) +
   geom_boxplot() +
   xlab("Environmental Change") +
   scale_y_continuous(name="Fitness") +
@@ -352,10 +354,39 @@ ggplot(data_gradient_phase1,
 ```{r}
 ggplot(data_gradient_phase1,
        aes(x=coding_sites, y=fitness)) +
-  geom_point(alpha=0.95) +
+  geom_hex(alpha=0.95) +
+  scale_fill_continuous(type = "viridis", 
+                        trans="log",
+                        name="Count",
+                        breaks=c(1, 10, 100)) +
   scale_x_continuous(name="Coding Sites",
                      limits=c(0, 130),
                      breaks=seq(0, 130, 20)) +
   ylab("Fitness") + 
-  ggsave("./imgs/coding-sites-v-fitness-gradient-phase1-point.pdf", width=10, height=7)
+  ggsave("./imgs/coding-sites-v-fitness-gradient-phase1-hex.pdf", width=10, height=7)
+```
+
+```{r}
+ggplot(data_gradient_phase1,
+       aes(x=coding_sites, y=fitness)) +
+  geom_density_2d() +
+  stat_density_2d(aes(fill = ..level..), 
+                  geom = "polygon", 
+                  colour="white") +
+  geom_jitter(alpha=0.05) +
+  scale_fill_continuous(type = "viridis", 
+                        trans="log",
+                        name="Count") +
+  ylab("Fitness") +
+  theme(legend.position = "none")
+```
+
+```{r}
+ggplot(data_gradient_phase1,
+       aes(x=coding_sites, y=fitness)) +
+  geom_point(alpha=0.95) +
+  scale_x_continuous(name="Coding Sites",
+                     limits=c(0, 130),
+                     breaks=seq(0, 130, 20)) +
+  ylab("Fitness")
 ```
