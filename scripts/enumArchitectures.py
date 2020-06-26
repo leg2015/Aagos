@@ -74,16 +74,10 @@ def main():
     genome_length = args.genome_size
 
     output_as_genomes = args.output_as_genomes
-    output_as_gradient_targets = args.output_as_gradient_targets
+    # output_as_gradient_targets = args.output_as_gradient_targets
     single_file = args.single_file
 
-
     dump_dir = args.dump
-
-    # gene_bits = 4
-    # num_genes = 8
-    # genome_length = 32
-    # max_size = gene_bits * num_genes
 
     # Compute all starting positions for a non-circular genome.
     all_starts = { positions for positions in itertools.combinations_with_replacement(range(genome_length), num_genes) }
@@ -136,34 +130,6 @@ def main():
             out_path = os.path.join(dump_dir, f"architecture-{arch_i}.csv")
             with open(out_path, "w") as fp:
                 fp.write(lines[arch_i])
-
-
-
-
-
-    # print("===G1===")
-    # g1 = positions_to_graph((0, 0, 4), 4, 12)
-    # print("===G2===")
-    # g2 = positions_to_graph((0, 4, 4), 4, 12)
-
-
-    # is_iso = nx.is_isomorphic(g1, g2, edge_match=edge_match_fun)
-    # print("=======")
-    # print(f"G1: {g1.adj}")
-    # print(f"G2: {g2.adj}")
-    # print(f"is iso? {is_iso}")
-
-
-
-
-    # print(all_starts)
-    # print(len(all_starts))
-
-    # [positions for positions in  ]
-
-    # len({ tuple([v - i[0] for v in i ])  for i in itertools.combinations_with_replacement(range(16), 4) })
-
-
 
 if __name__ == "__main__":
     main()
