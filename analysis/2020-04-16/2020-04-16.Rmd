@@ -1,5 +1,5 @@
 ---
-title: "2020-04-16 Experiment Analysis"
+title: "2020-04-16 - Exploratory Experiments - Analysis"
 output:
   html_document:
     keep_md: no
@@ -40,242 +40,214 @@ data_path <- os$path$join(data_dir, "agg_data.csv")
 agg_data <- read.csv(data_path, na.strings="NONE")
 
 agg_data$BIT_FLIP_PROB <- as.factor(agg_data$BIT_FLIP_PROB)
+agg_data$DRIFT <- agg_data$TOURNAMENT_SIZE==1
 
-# Compute expected changes per generation
-exp_change <- function(mag, interval) {
-  if (interval == 0) { return(0) }
-  else { return(mag / interval) }
+# Label
+chg_rate_label <- function(mag, interval, drift) {
+  if (drift) { return("drift") }
+  else if (interval == 0) { return("0") }
+  else { return(paste(mag, interval, sep="/")) }
 }
-agg_data$EXP_CHANGE_PER_GEN <- as.factor(mapply(exp_change, 
-                                                agg_data$CHANGE_MAGNITUDE,
-                                                agg_data$CHANGE_FREQUENCY))
+
+agg_data$chg_rate_label <- factor(mapply(chg_rate_label, 
+                                            agg_data$CHANGE_MAGNITUDE,
+                                            agg_data$CHANGE_FREQUENCY,
+                                            agg_data$DRIFT),
+                                     levels=c("drift", "0", "1/256", "1/128",
+                                              "1/64", "1/32", "1/16", "1/8",
+                                              "1/4", "1/2", "1/1", "2/1", 
+                                              "4/1", "8/1", "16/1", "32/1",
+                                              "64/1", "128/1", "256/1", 
+                                              "512/1", "1024/1", "2048/1",
+                                              "4096/1"))
 
 theme_set(theme_cowplot())
+
+# Divide up the data into convenient partitions
+data_gradient_phase0 <- 
+  filter(agg_data,
+         GRADIENT_MODEL==1 & evo_phase == 0 & update == 50000)
+data_gradient_phase1 <-
+  filter(agg_data,
+         GRADIENT_MODEL==1 & evo_phase == 1 & update == 60000)
+data_nk_phase0 <-
+  filter(agg_data,
+         GRADIENT_MODEL==0 & evo_phase == 0 & update == 50000)
+data_nk_phase1 <-
+  filter(agg_data,
+         GRADIENT_MODEL==0 & evo_phase == 1 & update == 60000)
 ```
 
-## Analysis
+## Evolution Experiment
 
-### NK Fitness Model
+Evolved genomes for 50,000 generations.
 
-Coding sites of representative organism as a function of mutation rate and environment change rates
+### Coding Sites by Mutation Rate and Environmental Change Rate
+
+#### Gradient fitness model
+
+Facets on mutation rate.
 
 ```{r}
-# Look at phase 1 representative organism coding sites
-gradient_model <- 0
-phase <- 0
-gen <- 50000
-ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
-      aes(x=EXP_CHANGE_PER_GEN, y=coding_sites, color=EXP_CHANGE_PER_GEN)) +
+ggplot(data_gradient_phase0,
+      aes(x=chg_rate_label, y=coding_sites, color=chg_rate_label)) +
   geom_boxplot() +
   facet_wrap(~ BIT_FLIP_PROB) +
-  xlab("Env. bits flipped per generation") +
-  ylab("# coding sites in best organism") +
+  xlab("Environmental change rate") +
+  scale_y_continuous(name="# coding sites in best organism",
+                     limits=c(0, 130),
+                     breaks=seq(0, 130, 10)) +
   theme(legend.position="none",
-        axis.text.x = element_text(angle=90)) +
-  ggsave(paste("./imgs/coding-sites-x-chg_grad-model-", gradient_model, 
-               "_evo-phase-",phase, "_gen-", gen, 
-               ".pdf", sep=""), width=20, height=20)
+        axis.text.x = element_text(angle=90))
+```
 
-ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
+Facets on environmental change rate.
+
+```{r}
+ggplot(data_gradient_phase0,
       aes(x=BIT_FLIP_PROB, y=coding_sites, color=BIT_FLIP_PROB)) +
   geom_boxplot() +
-  facet_wrap(~ EXP_CHANGE_PER_GEN) +
-  xlab("Bit-flip rate") +
-  ylab("# coding sites in best organism") +
+  facet_wrap(~ chg_rate_label, ncol=3) +
+  xlab("Bit substitution rate") +
+  scale_y_continuous(name="# coding sites in best organism",
+                     limits=c(0, 130),
+                     breaks=seq(0, 130, 10)) +
   theme(legend.position="none",
-      axis.text.x = element_text(angle=90)) +
-  ggsave(paste("./imgs/coding-sites-x-mut_grad-model-", gradient_model, 
-               "_evo-phase-",phase, "_gen-", gen, 
-               ".pdf", sep=""), width=20, height=20)
+        axis.text.x = element_text(angle=90))
 ```
 
-Fitnesses after 50k generations (phase 1)
+#### NK fitness model
+
+Facets on mutation rate.
 
 ```{r}
-# Look at phase 1 representative organism coding sites
-gradient_model <- 0
-phase <- 0
-gen <- 50000
-ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
-      aes(x=EXP_CHANGE_PER_GEN, y=fitness, color=EXP_CHANGE_PER_GEN)) +
+ggplot(data_nk_phase0,
+      aes(x=chg_rate_label, y=coding_sites, color=chg_rate_label)) +
   geom_boxplot() +
   facet_wrap(~ BIT_FLIP_PROB) +
-  xlab("Environment bits flipped per generation") +
+  xlab("Environmental change rate") +
+  scale_y_continuous(name="# coding sites in best organism",
+                     limits=c(0, 130),
+                     breaks=seq(0, 130, 10)) +
   theme(legend.position="none",
-    axis.text.x = element_text(angle=90)) +
-  ggsave(paste("./imgs/fitness-x-chg_grad-model-", gradient_model, 
-               "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=20, height=20)
-
-ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
-      aes(x=BIT_FLIP_PROB, y=fitness, color=BIT_FLIP_PROB)) +
-  geom_boxplot() +
-  facet_wrap(~ EXP_CHANGE_PER_GEN) +
-  xlab("Bit-flip rate") +
-  theme(legend.position="none",
-    axis.text.x = element_text(angle=90)) +
-  ggsave(paste("./imgs/fitness-x-mut_grad-model-", gradient_model, 
-               "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=20, height=20)
+        axis.text.x = element_text(angle=90))
 ```
 
-Fitnesses after 60k generations (phase two - architecture lock-down)
+Facets on environmental change rate.
 
 ```{r}
-# Look at phase 1 representative organism coding sites
-gradient_model <- 0
-phase <- 1
-gen <- 60000
-ggplot(filter(agg_data, GRADIENT_MODEL==gradient_model & evo_phase==phase & update==gen),
-      aes(x=EXP_CHANGE_PER_GEN, y=fitness, color=EXP_CHANGE_PER_GEN)) +
-  geom_boxplot() +
-  facet_wrap(~ BIT_FLIP_PROB) +
-  xlab("Env. bits flipped per generation") +
-  theme(legend.position="none",
-    axis.text.x = element_text(angle=90)) +
-  ggsave(paste("./imgs/fitness-x-chg_grad-model-", gradient_model, 
-               "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=20, height=20)
-
-ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
-      aes(x=BIT_FLIP_PROB, y=fitness, color=BIT_FLIP_PROB)) +
-  geom_boxplot() +
-  facet_wrap(~ EXP_CHANGE_PER_GEN) +
-  xlab("Bit-flip rate") +
-  theme(legend.position="none",
-    axis.text.x = element_text(angle=90)) +
-  ggsave(paste("./imgs/fitness-x-mut_grad-model-", gradient_model, 
-               "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=20, height=20)
-```
-
-Fitness at 60K (phase two) vs coding sites
-
-```{r}
-# Look at phase 1 representative organism coding sites
-gradient_model <- 0
-phase <- 1
-gen <- 60000
-ggplot(filter(agg_data, 
-              GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
-      aes(x=coding_sites, y=fitness, color=EXP_CHANGE_PER_GEN)) +
-  geom_point() +
-  facet_wrap(~ BIT_FLIP_PROB) +
-  theme(legend.position="top") +
-  ggsave(paste("./imgs/fitness-x-coding_grad-model-", gradient_model, 
-               "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=20, height=20)
-```
-
-### Gradient Fitness Model
-
-Coding sites of representative organism as a function of mutation rate and environment change rates 
-
-```{r}
-# Look at phase 1 representative organism coding sites
-gradient_model <- 1
-phase <- 0
-gen <- 50000
-ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
-      aes(x=EXP_CHANGE_PER_GEN, y=coding_sites, color=EXP_CHANGE_PER_GEN)) +
-  geom_boxplot() +
-  facet_wrap(~ BIT_FLIP_PROB) +
-  xlab("Env bit flips per generation") +
-  ylab("# coding sites in best organism") +
-  theme(legend.position="none",
-        axis.text.x=element_text(angle=90)) +
-  ggsave(paste("./imgs/coding-sites-x-chg_grad-model-", gradient_model, 
-               "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=20, height=20)
-
-ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
+ggplot(data_nk_phase0,
       aes(x=BIT_FLIP_PROB, y=coding_sites, color=BIT_FLIP_PROB)) +
   geom_boxplot() +
-  facet_wrap(~ EXP_CHANGE_PER_GEN) +
-  xlab("Bit-flip rate") +
-  ylab("# coding sites in best organism") +
+  facet_wrap(~ chg_rate_label, ncol=3) +
+  xlab("Bit substitution rate") +
+  scale_y_continuous(name="# coding sites in best organism",
+                     limits=c(0, 130),
+                     breaks=seq(0, 130, 10)) +
   theme(legend.position="none",
-        axis.text.x=element_text(angle=90)) +
-  ggsave(paste("./imgs/coding-sites-x-mut_grad-model-", gradient_model, 
-               "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=20, height=20)
-
+        axis.text.x = element_text(angle=90))
 ```
 
-Fitness after 50K generations (phase 1 of evolution)
+### Fitness
+
+Note that in a changing environment, lineages have not necessarily had time to adapt to the environment they are measured against.
+
+#### Gradient fitness model
+
+Faceted by mutation rate.
 
 ```{r}
-# Look at phase 1 representative organism coding sites
-gradient_model <- 1
-phase <- 0
-gen <- 50000
-ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
-      aes(x=EXP_CHANGE_PER_GEN, y=fitness, color=EXP_CHANGE_PER_GEN)) +
+ggplot(data_gradient_phase0,
+      aes(x=chg_rate_label, y=fitness, color=chg_rate_label)) +
   geom_boxplot() +
   facet_wrap(~ BIT_FLIP_PROB) +
   xlab("Environment bits flipped per generation") +
   theme(legend.position="none",
-    axis.text.x = element_text(angle=90)) +
-  ggsave(paste("./imgs/fitness-x-chg_grad-model-", gradient_model, 
-               "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=20, height=20)
-
-ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
-      aes(x=BIT_FLIP_PROB, y=fitness, color=BIT_FLIP_PROB)) +
-  geom_boxplot() +
-  facet_wrap(~ EXP_CHANGE_PER_GEN) +
-  xlab("Bit-flip rate") +
-  theme(legend.position="none",
-    axis.text.x = element_text(angle=90)) +
-  ggsave(paste("./imgs/fitness-x-mut_grad-model-", gradient_model, 
-               "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=20, height=20)
+    axis.text.x = element_text(angle=90))
 ```
 
-Fitness after 60K generations (phase 2 of evolution)
+Faceted by change rate.
 
 ```{r}
-# Look at phase 1 representative organism coding sites
-gradient_model <- 1
-phase <- 1
-gen <- 60000
-ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
-      aes(x=EXP_CHANGE_PER_GEN, y=fitness, color=EXP_CHANGE_PER_GEN)) +
+ggplot(data_gradient_phase0,
+      aes(x=BIT_FLIP_PROB, y=fitness, color=BIT_FLIP_PROB)) +
+  geom_boxplot() +
+  facet_wrap(~ chg_rate_label) +
+  xlab("Bit substitution rate") +
+  theme(legend.position="none",
+    axis.text.x = element_text(angle=90))
+```
+
+#### NK fitness model
+
+Faceted by mutation rate.
+
+```{r}
+ggplot(data_nk_phase0,
+      aes(x=chg_rate_label, y=fitness, color=chg_rate_label)) +
   geom_boxplot() +
   facet_wrap(~ BIT_FLIP_PROB) +
   xlab("Environment bits flipped per generation") +
   theme(legend.position="none",
-    axis.text.x = element_text(angle=90)) +
-  ggsave(paste("./imgs/fitness-x-chg_grad-model-", gradient_model, 
-               "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=20, height=20)
-
-ggplot(filter(agg_data, GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
-      aes(x=BIT_FLIP_PROB, y=fitness, color=BIT_FLIP_PROB)) +
-  geom_boxplot() +
-  facet_wrap(~ EXP_CHANGE_PER_GEN) +
-  xlab("Bit-flip rate") +
-  theme(legend.position="none",
-    axis.text.x = element_text(angle=90)) +
-  ggsave(paste("./imgs/fitness-x-mut_grad-model-", gradient_model, 
-               "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=20, height=20)
+    axis.text.x = element_text(angle=90))
 ```
 
-Fitness at 60K (phase 2 of evolution) vs coding sites
+Faceted by change rate.
+
 ```{r}
-# Look at phase 1 representative organism coding sites
-gradient_model <- 1
-phase <- 1
-gen <- 60000
-ggplot(filter(agg_data, 
-              GRADIENT_MODEL == gradient_model & evo_phase == phase & update == gen),
-      aes(x=coding_sites, y=fitness, color=EXP_CHANGE_PER_GEN)) +
-  geom_point() +
+ggplot(data_nk_phase0,
+      aes(x=BIT_FLIP_PROB, y=fitness, color=BIT_FLIP_PROB)) +
+  geom_boxplot() +
+  facet_wrap(~ chg_rate_label) +
+  xlab("Bit substitution rate") +
+  theme(legend.position="none",
+    axis.text.x = element_text(angle=90))
+```
+
+## Transfer Experiment
+
+We transfer each population into a new (random) static environment to evolve for 10,000 generations. We disallow mutations that alter a genome's genetic architecture. 
+
+### Fitness
+
+#### Gradient fitness model
+
+```{r}
+ggplot(data_gradient_phase1,
+      aes(x=chg_rate_label, y=fitness, color=chg_rate_label)) +
+  geom_boxplot() +
   facet_wrap(~ BIT_FLIP_PROB) +
-  ylab("fitness") +
-  theme(legend.position="top") +
-  ggsave(paste("./imgs/fitness-x-coding_grad-model-", gradient_model, 
-               "_evo-phase-", phase, "_gen-", gen, 
-               ".pdf", sep=""), width=20, height=20)
+  theme(legend.position="none")
+```
+
+#### NK fitness model
+
+```{r}
+ggplot(data_nk_phase1,
+      aes(x=chg_rate_label, y=fitness, color=chg_rate_label)) +
+  geom_boxplot() +
+  facet_wrap(~ BIT_FLIP_PROB) +
+  theme(legend.position="none")
+```
+
+### Coding Sites by Fitness
+
+#### Gradient fitness model
+
+```{r}
+ggplot(data_gradient_phase1,
+      aes(x=coding_sites, y=fitness, color=chg_rate_label)) +
+  geom_point(alpha=0.1) +
+  facet_wrap(~ BIT_FLIP_PROB) +
+  theme(legend.position="bottom")
+```
+
+#### NK fitness model
+
+```{r}
+ggplot(data_nk_phase1,
+      aes(x=coding_sites, y=fitness, color=chg_rate_label)) +
+  geom_point(alpha=0.1) +
+  facet_wrap(~ BIT_FLIP_PROB) +
+  theme(legend.position="bottom")
 ```
