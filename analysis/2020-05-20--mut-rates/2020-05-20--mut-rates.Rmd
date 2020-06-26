@@ -71,7 +71,7 @@ data_gradient_phase1 <-
   filter(agg_data, GRADIENT_MODEL==1 & evo_phase == 1 & update==60000)
 ```
 
-## Experiment Phase 0 Analyses
+## Evolution Experiment
 
 ### Fitness
 
@@ -121,6 +121,31 @@ ggplot(data_gradient_phase0,
         axis.text.x=element_text(angle=90))
 ```
 
+```{r}
+chg_rates <- levels(data_gradient_phase0$chg_rate_label)
+mut_rates <- levels(data_gradient_phase0$BIT_FLIP_PROB)
+for (chg_rate in chg_rates) {
+  df <- filter(data_gradient_phase0, chg_rate_label==chg_rate)
+  if (length(df$update) == 0) { next(); }
+  print(paste("===== Change rate: ", chg_rate, " =====", sep=""))
+  for (mut_rate in mut_rates) {
+    mr <- filter(df, BIT_FLIP_PROB==mut_rate)
+    if (length(mr$update) == 0) { next(); }
+    med <- median(mr$coding_sites)
+    print(paste("Median for", mut_rate, ":", med))
+  }
+  kt <- kruskal.test(formula = coding_sites ~ BIT_FLIP_PROB, data=df)
+  print(kt)
+  if (kt$p.value <= 0.05) {
+    wt <- pairwise.wilcox.test(x=df$coding_sites,
+                             g=df$BIT_FLIP_PROB,
+                             exact=FALSE,
+                             p.adjust.method = "bonferroni")
+    print(wt)
+  }
+}
+```
+
 #### NK Fitness Model
 
 ```{r}
@@ -135,6 +160,31 @@ ggplot(data_nk_phase0,
   ggtitle("NK Fitness Model") +
   theme(legend.position="none",
         axis.text.x=element_text(angle=90))
+```
+
+```{r}
+chg_rates <- levels(data_nk_phase0$chg_rate_label)
+mut_rates <- levels(data_nk_phase0$BIT_FLIP_PROB)
+for (chg_rate in chg_rates) {
+  df <- filter(data_nk_phase0, chg_rate_label==chg_rate)
+  if (length(df$update) == 0) { next(); }
+  print(paste("===== Change rate: ", chg_rate, " =====", sep=""))
+  for (mut_rate in mut_rates) {
+    mr <- filter(df, BIT_FLIP_PROB==mut_rate)
+    if (length(mr$update) == 0) { next(); }
+    med <- median(mr$coding_sites)
+    print(paste("Median for", mut_rate, ":", med))
+  }
+  kt <- kruskal.test(formula = coding_sites ~ BIT_FLIP_PROB, data=df)
+  print(kt)
+  if (kt$p.value <= 0.05) {
+    wt <- pairwise.wilcox.test(x=df$coding_sites,
+                             g=df$BIT_FLIP_PROB,
+                             exact=FALSE,
+                             p.adjust.method = "bonferroni")
+    print(wt)
+  }
+}
 ```
 
 ### Genome Length
@@ -199,7 +249,7 @@ ggplot(data_nk_phase0,
         axis.text.x=element_text(angle=90))
 ```
 
-## Experiment Phase 1 Analyses
+## Transfer evolution experiment
 
 ### Fitness
 
@@ -242,10 +292,11 @@ ggplot(data_gradient_phase1,
   xlab("Coding Sites") +
   scale_y_continuous(name="Fitness") +
   facet_wrap(~ BIT_FLIP_PROB) +
-  ggtitle("Gradient Fitness Model") 
+  ggtitle("Gradient Fitness Model") +
+  theme(legend.position = "bottom")
 ```
 
-#### Gradient Fitness Model
+#### NK Fitness Model
 
 ```{r}
 ggplot(data_nk_phase1, 
@@ -254,7 +305,8 @@ ggplot(data_nk_phase1,
   xlab("Coding Sites") +
   scale_y_continuous(name="Fitness") +
   facet_wrap(~ BIT_FLIP_PROB) +
-  ggtitle("NK Fitness Model") 
+  ggtitle("NK Fitness Model") +
+  theme(legend.position = "bottom")
 ```
 
 ## Publication Figures
@@ -432,7 +484,7 @@ ggplot(filter(env_sim_data_selection_static, gene_pair_overlap>0),
 
 #### Changing Environment
 
-##### 1/128
+##### 1 change every 128 generations (1/128)
 
 ```{r}
 ggplot(filter(env_sim_data_selection, chg_rate_label=="1/128"), 
@@ -452,7 +504,7 @@ ggplot(filter(env_sim_data_selection, chg_rate_label=="1/128" & gene_pair_overla
   ggtitle("Changing Environment (1/128)")
 ```
 
-##### 1/4
+##### 1 change every 4 generations (1/4)
 
 ```{r}
 ggplot(filter(env_sim_data_selection, chg_rate_label=="1/4"), 
@@ -472,7 +524,7 @@ ggplot(filter(env_sim_data_selection, chg_rate_label=="1/4" & gene_pair_overlap 
   ggtitle("Changing Environment (1/4)")
 ```
 
-##### 4/1
+##### 4 changes every generation (4/1)
 
 ```{r}
 ggplot(filter(env_sim_data_selection, chg_rate_label=="4/1"), 
@@ -638,7 +690,7 @@ ggplot(overlap_proportions,
   xlab("Gene Target Similarity (best alignment)") +
   scale_fill_continuous(type ="viridis") +
   facet_grid(mutation_rate~chg_rate_label) + 
-  ggsave("gene_overlap_proportions.pdf", width=10, height=20)
+  ggsave("./imgs/gene_overlap_proportions.pdf", width=10, height=20)
 
 
 ggplot(overlap_proportions, 
@@ -649,7 +701,7 @@ ggplot(overlap_proportions,
   scale_fill_discrete(name="Gene Overlap Amount") +
   facet_grid(mutation_rate~chg_rate_label) + 
   theme(legend.position = "top") +
-  ggsave("gene_overlap_proportions_stackedbar.pdf", width=10, height=20)
+  ggsave("./imgs/gene_overlap_proportions_stackedbar.pdf", width=10, height=20)
 ```
 
 #### Proportion of non-zero overlap
@@ -700,7 +752,7 @@ ggplot(overlap_proportions_non0,
   xlab("Gene Target Similarity (best alignment)") +
   scale_fill_continuous(type ="viridis") +
   facet_grid(mutation_rate~chg_rate_label) + 
-  ggsave("gene_overlap_proportions_non0.pdf", width=10, height=20)
+  ggsave("./imgs/gene_overlap_proportions_non0.pdf", width=10, height=20)
 
 ggplot(overlap_proportions_non0, 
        aes(x=gene_target_sim_level, y=gene_overlap_prop, fill=gene_overlap_level)) +
@@ -708,8 +760,5 @@ ggplot(overlap_proportions_non0,
   xlab("Gene Target Similarity (best alignment)") +
   scale_fill_viridis(discrete = TRUE) +
   facet_grid(mutation_rate~chg_rate_label) +
-  ggsave("gene_overlap_proportions_stackedbar_non0.pdf", width=10, height=20)
-
-  
-
+  ggsave("./imgs/gene_overlap_proportions_stackedbar_non0.pdf", width=10, height=20)
 ```
