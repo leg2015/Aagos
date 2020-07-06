@@ -15,6 +15,7 @@ Functions:
 
 import random, statistics, math
 
+
 class GeneticArchitecture:
     def __init__(self,
                  genome_length,
@@ -56,9 +57,34 @@ class GeneticArchitecture:
         print(f"Expected optimal fitness: {self.ComputeExpectedOptimalFitness()}")
 
     def ComputeExpectedOptimalFitness(self):
-        max_possible = self.gene_count * self.gene_length
-        overlap_constraint = sum( 0.5 * (self.coding_site_occupant_cnt[site] - 1) for site in self.coding_sites)
-        return max_possible - overlap_constraint
+        return sum(self._computeExpectedSiteContribution(self.coding_site_occupant_cnt[site]) for site in self.coding_site_occupant_cnt)
+
+    def _computeExpectedSiteContribution(self, num_occupants):
+
+        if num_occupants==0: return 0.0   # If there are no occupants, it cannot contribute anything
+        if num_occupants==1: return 1.0   # If there's only one occupant, it will contribute the full 1.0
+
+        # There is more than one occupant at this site...
+        # first, compute the distribution of possible gene agreements
+        possible_configurations = 2**num_occupants     # this doesn't work for bigger alphabet sizes
+
+        worst_agreement = math.ceil(num_occupants/2.0) # worst agreement is half (rounded up) of bits agreeing
+
+        def num_agreements(shared):
+            return math.factorial(num_occupants) / float(math.factorial(shared) * math.factorial(num_occupants - shared))
+
+        # possible_agreements = {agreement:0 for agreement in range(worst_agreement, num_occupants+1)}
+        possible_agreements=None
+        if num_occupants & 1:
+            # odd-length bit string
+            possible_agreements={num_shared: 2*num_agreements(num_shared) for num_shared in range(worst_agreement, num_occupants+1)}
+        else:
+            # even-length bit string
+            possible_agreements={num_shared: (1 if num_shared == worst_agreement else 2) * num_agreements(num_shared) for num_shared in range(worst_agreement, num_occupants+1)}
+
+        return sum([possible_agreements[num_shared]*num_shared for num_shared in possible_agreements]) / possible_configurations
+
+
 
     def ComputeOptimalFitness(self, gene_targets):
         # gene_targets = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
@@ -100,37 +126,32 @@ class GeneticArchitecture:
 def main():
 
     genome_length = 16
-    gene_count=2
-    gene_length=8
-    # starts = [ [0,0,0,0], [0,0,0,1], [0,0,0,2], [0,0,2,2], [0,4,8,12], [0,1,5,7] ]
-    starts = [ [0,0], [0,2], [0,4], [0,5], [0,6], [0,7], [0,8] ]
+    gene_count=16
+    gene_length=4
     alphabet=[0,1]
+    # starts = [ [0,0,0,0], [0,0,0,1], [0,0,0,2], [0,0,2,2], [0,4,8,12], [0,1,5,7] ]
+    # starts = [ [0,0], [0,2], [0,4], [0,5], [0,6], [0,7], [0,8] ]
+    starts = [ [random.randint(0,genome_length) for g in range(gene_count)] for _ in range(50)]
 
-    num_envs = 10000
+    num_envs = 1000
 
     architectures = [GeneticArchitecture(genome_length,gene_count,gene_length,start) for start in starts]
 
     # random gene targets
     gene_targets = [[[random.choice(alphabet) for _ in range(gene_length)] for _ in range(gene_count)] for i in range(num_envs)]
     for architecture in architectures:
+        print(f"===== architecture: {architecture.gene_starts} =====")
         # Compute expected fitness for achitecture
         expected_optimal_fitness = architecture.ComputeExpectedOptimalFitness()
+        # architecture.Print()
         # Compute optimal on set of randomly generated gene targets
         fitness_distribution = [architecture.ComputeOptimalFitness(gene_targets[i])["optimal_fitness"] for i in range(num_envs)]
         mean = statistics.mean(fitness_distribution)
-        median = statistics.median(fitness_distribution)
+        # median = statistics.median(fitness_distribution)
         # mode = statistics.mode(fitness_distribution)
-
-        print(f"===== architecture: {architecture.gene_starts} =====")
+        conf = 1.96 * ( statistics.stdev(fitness_distribution) / math.sqrt(num_envs) )
         print(f"Expected={expected_optimal_fitness}")
-        print(f"mean    ={mean}")
-        print(f"median  ={median}")
-        # print(f"mode={mode}")
-
-
-
-
-
+        print(f"mean    ={mean}  [{mean-conf}:{mean+conf}]")
 
 
 if __name__ == "__main__":
