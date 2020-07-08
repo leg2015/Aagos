@@ -310,11 +310,11 @@ public:
 
     // resize new genome
     emp_assert(new_size <= new_genome.bits.size());
-    for (size_t i = 0; i < new_genome.gene_starts.size(); ++i) {
-      const size_t new_pos = new_genome.gene_starts[i];
-      const size_t old_pos = genome.gene_starts[i];
-      emp_assert(new_pos < new_size, genome_size, old_pos, num_insertions, num_deletions, new_pos, new_size);
-    }
+    // for (size_t i = 0; i < new_genome.gene_starts.size(); ++i) {
+    //   const size_t new_pos = new_genome.gene_starts[i];
+    //   const size_t old_pos = genome.gene_starts[i];
+    //   emp_assert(new_pos < new_size, genome_size, old_pos, num_insertions, num_deletions, new_pos, new_size);
+    // }
     new_genome.bits.Resize(new_size);
 
     // update organism genome with new genome w/insertions and deletions
