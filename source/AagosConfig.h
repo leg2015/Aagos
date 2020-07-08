@@ -37,6 +37,7 @@ EMP_BUILD_CONFIG(AagosConfig,
     VALUE(MIN_SIZE, size_t, 8, "minimum size of a genome"),
 
   GROUP(MUTATIONS, "Various mutation rates for Aagos"),
+    VALUE(APPLY_BIT_MUTS_PER_GENE, bool, false, "Control. apply bit mutations to coding sites at a per-gene-per-site rate instead of just per-site"),
     VALUE(GENE_MOVE_PROB, double, 0.01, "Probability of each gene moving each generation"),
     VALUE(BIT_FLIP_PROB, double, 0.01, "Probability of each bit toggling"),
     VALUE(BIT_INS_PROB, double, 0.01, "Probability of a single bit being inserted."),
