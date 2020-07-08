@@ -174,7 +174,8 @@ def main():
             seed = seed_offset + (condition_id * num_replicates) + i
             # Generate run parameters, use to name run.
             run_params = condition_params + f" -SEED {seed}"
-            run_name = ("RUN " + run_params).replace("-", "_").replace(" ", "_")
+            # run_name = ("RUN " + run_params).replace("-", "_").replace(" ", "_")
+            run_name = f"SEED_{seed}"
             run_dir = os.path.join(data_dir, run_name)
             # (1) Does the run directory exist?
             print(f"  {run_params}")
