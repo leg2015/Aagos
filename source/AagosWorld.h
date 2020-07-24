@@ -927,8 +927,8 @@ void AagosWorld::InitPopLoad() {
       genome_t genome(bits.GetSize(), config.NUM_GENES(), config.GENE_SIZE());
       genome.bits = bits;
       genome.gene_starts = gene_starts;
+      genome.ancestral_id = ancestor_genomes.size();
       ancestor_genomes.emplace_back(genome);
-
     }
   }
 
@@ -1216,6 +1216,13 @@ void AagosWorld::SetupRepresentativeFile() {
   };
   representative_org_file->AddFun(fitness_fun, "fitness", "Organism fitness (at this update)");
 
+  // Ancestral ID
+  std::function<size_t()> genome_ancestral_id_fun = [this]() {
+    const org_t & org = GetOrg(most_fit_id);
+    return org.GetGenome().GetAncestralID();
+  };
+  representative_org_file->AddFun(genome_ancestral_id_fun, "ancestral_id", "Which ancestral genome does this genome descend from?");
+
   // Genome length
   std::function<size_t()> genome_length_fun = [this]() {
     const org_t & org = GetOrg(most_fit_id);
@@ -1439,6 +1446,13 @@ void AagosWorld::DoPopulationSnapshot() {
     return CalcFitnessID(cur_org_id);
   };
   snapshot_file.AddFun(fitness_fun, "fitness", "Organism fitness (at this update)");
+
+  // Genome ancestral id
+  std::function<size_t()> genome_ancestral_id_fun = [this, &cur_org_id]() {
+    const org_t & org = GetOrg(cur_org_id);
+    return org.GetGenome().GetAncestralID();
+  };
+  snapshot_file.AddFun(genome_ancestral_id_fun, "ancestral_id", "Which ancestral genome does this genome descend from?");
 
   // Genome length
   std::function<size_t()> genome_length_fun = [this, &cur_org_id]() {

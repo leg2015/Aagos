@@ -14,6 +14,7 @@ public:
 
   /// AagosOrg genomes comprise a bitsequence and the starting positions of each gene in the bitsequence.
   struct Genome {
+    size_t ancestral_id=0; ///< Only used for loaded genomes. Used to identify which loaded genome this genome descends from (when phylo tracking is off).
     size_t gene_size; ///< size of each gene in the genome
     size_t num_genes; ///< number of genes in the genome
     emp::BitVector bits;              ///< Bit sequence
@@ -26,8 +27,8 @@ public:
     Genome(Genome &&) = default;
 
     bool operator==(const Genome & other) const {
-      return std::tie(gene_size, num_genes, bits, gene_starts)
-              == std::tie(other.gene_size, other.num_genes, other.bits, other.gene_starts);
+      return std::tie(gene_size, num_genes, bits, gene_starts, ancestral_id)
+              == std::tie(other.gene_size, other.num_genes, other.bits, other.gene_starts, other.ancestral_id);
     }
 
     bool operator!=(const Genome & other) const {
@@ -35,8 +36,8 @@ public:
     }
 
     bool operator<(const Genome & other) const {
-      return std::tie(gene_size, num_genes, bits, gene_starts)
-              < std::tie(other.gene_size, other.num_genes, other.bits, other.gene_starts);
+      return std::tie(gene_size, num_genes, bits, gene_starts, ancestral_id)
+              < std::tie(other.gene_size, other.num_genes, other.bits, other.gene_starts, other.ancestral_id);
     }
 
     // Randomize genome and gene starts
@@ -48,6 +49,7 @@ public:
     size_t GetNumBits() const { return bits.size(); }
     size_t GetGeneSize() const { return gene_size; }
     size_t GetNumGenes() const { return num_genes; }
+    size_t GetAncestralID() const { return ancestral_id; }
 
   };
 
