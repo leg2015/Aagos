@@ -35,7 +35,7 @@ def main():
     gene_table_size = 2**gene_bits
     nk_environments = set()
     while len(nk_environments) < num_envs:
-        nk_environments.add("[ " + " ".join([ "[ " + " ".join([str(random.random()) for _ in range(gene_table_size)]) + " ]" for gene in range(num_genes)]) + " ]")
+        nk_environments.add("[ " + " ".join([ "[ " + " ".join([f"{random.random():.6f}" for _ in range(gene_table_size)]) + " ]" for gene in range(num_genes)]) + " ]")
     nk_environments = list(nk_environments)
 
     # Output nk environments
