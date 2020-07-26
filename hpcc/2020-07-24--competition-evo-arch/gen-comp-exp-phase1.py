@@ -202,7 +202,7 @@ def main():
                 exit(-1)
 
             # Generate run parameters, use to name run.
-            run_params = condition_params + f" -SEED {seed} -ENV_LOAD_FILE {env}"
+            run_params = condition_params + f" -SEED {seed} -LOAD_ENV_FILE {env}"
 
             # (1) Does the run directory exist?
             print(f"  {run_params}")
