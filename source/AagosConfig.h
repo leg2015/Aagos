@@ -15,6 +15,8 @@ EMP_BUILD_CONFIG(AagosConfig,
     VALUE(LOAD_ANCESTOR, bool, false, "Should we initialize population with ancestor genotype from file?"),
     VALUE(LOAD_ANCESTOR_FILE, std::string, "ancestor.csv", "File to load ancestor genotype from"),
     VALUE(RANDOMIZE_LOAD_ANCESTOR_BITS, bool, false, "Should we randomize the bit values for loaded ancestor?"),
+    VALUE(LOAD_ENV_FROM_FILE, bool, false, "Should we load the environment from a file?"),
+    VALUE(LOAD_ENV_FILE, std::string, "environment.env", "File to load environment from (if configured to load)"),
 
   GROUP(RUN_SECOND_PHASE, "Will run have a second phase with new configuration parameters? (limited set of things can change)"),
     VALUE(PHASE_2_ACTIVE, bool, false, "Should run continue to a second phase with new parameters?"),

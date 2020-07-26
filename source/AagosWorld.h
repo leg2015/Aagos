@@ -1076,6 +1076,12 @@ void AagosWorld::InitEnvironment() {
       return fitness_model_nk->LoadLandscape(path);
     };
   }
+
+  // Should we load the environment from file?
+  if (config.LOAD_ENV_FROM_FILE()) {
+    std::cout << "Loading environment from file..." << std::endl;
+    load_environment_from_file(config.LOAD_ENV_FILE());
+  }
 }
 
 void AagosWorld::InitDataTracking() {
