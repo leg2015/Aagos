@@ -130,7 +130,7 @@ def main():
     # - LOAD_ANCESTOR_FILE
     # - LOAD_ENV_FILE
     # (for each seed, save out ancestor ids)
-    ancestor_id_lu_keys = ["seed", "ancestor_condition", "ancestral_genome_id"]
+    ancestor_id_lu_keys = ["seeds", "ancestor_condition", "ancestral_genome_id"]
     ancestor_id_lu = [",".join(ancestor_id_lu_keys)]
     seed_cnt = 0
     run_subs = []
