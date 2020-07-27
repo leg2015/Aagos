@@ -192,8 +192,8 @@ def main():
 
         # Write ancestor files out
         # - Two identical files - one for high mut and one for low mut (just to make things easier)
-        low_mut_ancestor_fpath = os.path.join(dump_dir, f"SEED_{low_mut_transfer_seed}.csv")
-        high_mut_ancestor_fpath = os.path.join(dump_dir, f"SEED_{high_mut_transfer_seed}.csv")
+        low_mut_ancestor_fpath = os.path.join(config_dir, dump_dir, f"SEED_{low_mut_transfer_seed}.csv")
+        high_mut_ancestor_fpath = os.path.join(config_dir, dump_dir, f"SEED_{high_mut_transfer_seed}.csv")
         with open(low_mut_ancestor_fpath, "w") as fp:
             fp.write("\n".join(ancestors))
         with open(high_mut_ancestor_fpath, "w") as fp:
