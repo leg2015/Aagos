@@ -135,6 +135,7 @@ def main():
     seed_cnt = 0
     run_subs = []
     for pairing_i in range(len(run_pairings)):
+        print(f"Processing pairing {pairing_i}")
         # Get 0's population (LOW MUTATION RATE)
         low_mut_src_dir = run_pairings[pairing_i]["run_dir_0"]
         low_mut_pop_path = os.path.join(low_mut_src_dir, "output", f"pop_{update}.csv")
@@ -161,7 +162,7 @@ def main():
         if len(low_mut_ancestors) != len(high_mut_ancestors):
             print("# low mut ancestors =/= # high mut ancestors")
             exit(-1)
-        print(f"Number low mut ancestors: {len(low_mut_ancestors)}; Number high mut ancestors: {len(high_mut_ancestors)}")
+        print(f"  Number low mut ancestors: {len(low_mut_ancestors)}; Number high mut ancestors: {len(high_mut_ancestors)}")
         ancestors = []
         ancestral_genome_id = 0
         low_mut_transfer_seed = seed_offset + seed_cnt
@@ -185,7 +186,7 @@ def main():
                 "ancestor_condition": "HIGH_MUT",
                 "ancestral_genome_id": str(ancestral_genome_id)
             }
-            ancestor_id_lu.append([",".join([ancestral_id_lu_info[key] for key in ancestor_id_lu_keys])])
+            ancestor_id_lu.append(",".join([ancestral_id_lu_info[key] for key in ancestor_id_lu_keys]))
             ancestors.append(f"{high_mut_ancestors[i]['gene_starts']},{high_mut_ancestors[i]['bits']}" )
             ancestral_genome_id += 1
 
