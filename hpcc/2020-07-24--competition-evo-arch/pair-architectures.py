@@ -201,9 +201,10 @@ def main():
 
         # Compose run information for low and high mutation rate treatments
         load_env_file = run_pairings[pairing_i]["env"]
+        gradient_model = run_pairings[pairing_i]["gradient_model"]
 
         # -- low mut --
-        low_mut_params = f"{run_params} {low_mut_run_params} -SEED {low_mut_transfer_seed} -LOAD_ENV_FILE {load_env_file} -LOAD_ANCESTOR_FILE {low_mut_ancestor_fpath}"
+        low_mut_params = f"{run_params} {low_mut_run_params} -SEED {low_mut_transfer_seed} -LOAD_ENV_FILE {load_env_file} -LOAD_ANCESTOR_FILE {low_mut_ancestor_fpath} -GRADIENT_MODEL {gradient_model}"
         low_mut_run_dir = os.path.join(hpcc_run_dir, f"SEED_{low_mut_transfer_seed}")
         run_subs.append({
             "run_params": low_mut_params,
@@ -211,7 +212,7 @@ def main():
         })
 
         # -- high mut --
-        high_mut_params = f"{run_params} {high_mut_run_params} -SEED {high_mut_transfer_seed} -LOAD_ENV_FILE {load_env_file} -LOAD_ANCESTOR_FILE {high_mut_ancestor_fpath}"
+        high_mut_params = f"{run_params} {high_mut_run_params} -SEED {high_mut_transfer_seed} -LOAD_ENV_FILE {load_env_file} -LOAD_ANCESTOR_FILE {high_mut_ancestor_fpath} -GRADIENT_MODEL {gradient_model}"
         high_mut_run_dir = os.path.join(hpcc_run_dir, f"SEED_{high_mut_transfer_seed}")
         run_subs.append({
             "run_params": high_mut_params,
