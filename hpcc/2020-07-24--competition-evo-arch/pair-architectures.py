@@ -175,7 +175,7 @@ def main():
                 "ancestor_condition": "LOW_MUT",
                 "ancestral_genome_id": str(ancestral_genome_id)
             }
-            ancestor_id_lu.append([",".join([ancestral_id_lu_info[key] for key in ancestor_id_lu_keys])])
+            ancestor_id_lu.append(",".join([ancestral_id_lu_info[key] for key in ancestor_id_lu_keys]))
             ancestors.append(f"{low_mut_ancestors[i]['gene_starts']},{low_mut_ancestors[i]['bits']}" )
             ancestral_genome_id += 1
 
