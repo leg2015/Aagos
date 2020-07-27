@@ -14,7 +14,7 @@ Config info: [collect all]
 '''
 import argparse, os, sys, errno, csv
 
-run_dir_identifier = "__SEED_" # All legit run directories will have this substring in their name.
+run_dir_identifier = "SEED_" # All legit run directories will have this substring in their name.
 
 config_exclude = {"LOAD_ANCESTOR_FILE", "PHASE_2_ENV_FILE", "DATA_FILEPATH", "SNAPSHOT_INTERVAL", "PRINT_INTERVAL", "SUMMARY_INTERVAL"}
 gene_stats_exclude = {}
