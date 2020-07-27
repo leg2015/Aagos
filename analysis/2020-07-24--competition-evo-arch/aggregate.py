@@ -123,13 +123,13 @@ def main():
         snapshot_content = snapshot_content[1:]
         pop = [{snapshot_header[i]: l[i] for i in range(0, len(l))} for l in csv.reader(snapshot_content, quotechar='"', delimiter=',', quoting=csv.QUOTE_ALL, skipinitialspace=True)]
 
-        high_mut_arch_cnt = 0
         low_mut_arch_cnt = 0
+        high_mut_arch_cnt = 0
 
         for org in pop:
             org_arch = ancestor_genome_lu[run_seed][org["ancestral_id"]]
-            high_mut_arch_cnt += int(org_arch == "LOW_MUT")
-            low_mut_arch_cnt += int(org_arch == "HIGH_MUT")
+            low_mut_arch_cnt += int(org_arch == "LOW_MUT")
+            high_mut_arch_cnt += int(org_arch == "HIGH_MUT")
 
         print(f"High mut arch cnt: {high_mut_arch_cnt}")
         print(f"Low mut arch cnt: {low_mut_arch_cnt}")
