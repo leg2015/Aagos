@@ -14,6 +14,23 @@
       padding: 6px;
       font-size: 12px;
     }
+
+    .carousel .carousel-indicators li {
+      background-color: #fff;
+      background-color: rgba(70, 70, 70, 0.25);
+    }
+
+    .carousel .carousel-indicators .active {
+      background-color: #444;
+    }
+
+    .carousel-control-prev-icon {
+      background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23000' viewBox='0 0 8 8'%3E%3Cpath d='M5.25 0l-4 4 4 4 1.5-1.5-2.5-2.5 2.5-2.5-1.5-1.5z'/%3E%3C/svg%3E");
+    }
+
+    .carousel-control-next-icon {
+      background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23000' viewBox='0 0 8 8'%3E%3Cpath d='M2.75 0l-1.5 1.5 2.5 2.5-2.5 2.5 1.5 1.5 4-4-4-4z'/%3E%3C/svg%3E");
+    }
   </style>
 
   <title>A.A.G.O.S. (Auto-Adaptive Genetic Organization System)</title>
@@ -50,7 +67,87 @@
           <!-- Card body -->
           <div id="abstract-card" class="collapse" aria-labelledby="abstract-card-header">
             <div class="card-body">
-              <p><i class="fal fa-sparkles"></i> under construction <i class="fal fa-sparkles"></i></p>
+
+              <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel" data-interval="false">
+                <ol class="carousel-indicators">
+                  <li data-target="#carouselExampleIndicators" data-slide-to="0" class="active"></li>
+                  <li data-target="#carouselExampleIndicators" data-slide-to="1"></li>
+                  <li data-target="#carouselExampleIndicators" data-slide-to="2"></li>
+                </ol>
+
+                <div class="row">
+
+                  <div class="col-1">
+                    <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
+                      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                      <span class="sr-only">Previous</span>
+                    </a>
+                  </div>
+
+                  <div class="col">
+                    <div class="carousel-inner">
+                      <div class="carousel-item active">
+                        <div class="row">
+                          <div class="col-12 px-4">
+                            <h4>Overview</h4>
+                            <b>This is an evolution experiment where a population of bit string genomes are evolving!</b>
+                            <br/>
+                            <p>overview overview overview</p>
+                          </div>
+                        </div>
+                        <div class="row">
+                          <div class="col-12" style="height: 60px;"> </div>
+                        </div>
+                      </div>
+                      <div class="carousel-item">
+                        <div class="row">
+                          <div class="col-12 px-4">
+                            <h4>But what am I actually looking at?</h4>
+
+                            <h5>Genomes</h5>
+                            <p>genomes look like</p>
+                            <p>mess with params to change</p>
+
+                            <h5>What determines reproductive success?</h5>
+                            <p>Each gene</p>
+
+                            <h5>How does environmental change work?</h5>
+                            <p> environmental change </p>
+
+                          </div>
+                          <div class="col-12" style="height: 60px;"> </div>
+                        </div>
+                      </div>
+                      <div class="carousel-item">
+                        <div class="row">
+                          <div class="col-12 px-4">
+                            <h4>Try it out!</h4>
+
+                            <h5>How does environmental change affect overlap?</h5>
+
+                            <h5>How does mutation rate affect overlap?</h5>
+
+                          </div>
+                          <div class="col-12" style="height: 60px;"> </div>
+                        </div>
+                      </div>
+                    </div> <!-- end inner carousel items -->
+                  </div>
+
+                  <div class="col-1">
+                    <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
+                      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                      <span class="sr-only">Next</span>
+                    </a>
+                  </div>
+
+
+                </div>
+
+              </div> <!-- End carousel -->
+
+
+              <!-- <p><i class="fal fa-sparkles"></i> under construction <i class="fal fa-sparkles"></i></p>
               <h3>abstract (draft)</h3>
               <p>Overlapping genes are common in nature, especially in viral genomes, yet most species have more segregated genes than would be expected by chance(??).
                 Such modularity has been shown to facilitate adaptive evolution (i.e., increase evolvability), but how does it come to exist?
@@ -63,7 +160,7 @@
                 We use computational models to verify predictions for how environmental change and mutation rate shape the evolution of gene segregation.
                 We observe that changing environments promote gene segregation, and we confirm that these more modular genetic architectures more easily adapt to novel environments.
                 We also observe that high mutation rate alone is sufficient to promote the evolution of gene overlap.
-              </p>
+              </p> -->
             </div> <!-- End card body -->
           </div> <!-- End collapse-able -->
         </div> <!-- End card -->
