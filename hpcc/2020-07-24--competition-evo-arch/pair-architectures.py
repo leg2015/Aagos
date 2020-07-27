@@ -175,7 +175,7 @@ def main():
                 "ancestral_genome_id": str(ancestral_genome_id)
             }
             ancestor_id_lu.append([",".join([ancestral_id_lu_info[key] for key in ancestor_id_lu_keys])])
-            ancestors.append(f"{low_mut_ancestors[i]['gene_starts']},{low_mut_ancestors[i]['genome_bitstring']}" )
+            ancestors.append(f"{low_mut_ancestors[i]['gene_starts']},{low_mut_ancestors[i]['bits']}" )
             ancestral_genome_id += 1
 
         for i in range(len(high_mut_ancestors)):
@@ -186,7 +186,7 @@ def main():
                 "ancestral_genome_id": str(ancestral_genome_id)
             }
             ancestor_id_lu.append([",".join([ancestral_id_lu_info[key] for key in ancestor_id_lu_keys])])
-            ancestors.append(f"{high_mut_ancestors[i]['gene_starts']},{high_mut_ancestors[i]['genome_bitstring']}" )
+            ancestors.append(f"{high_mut_ancestors[i]['gene_starts']},{high_mut_ancestors[i]['bits']}" )
             ancestral_genome_id += 1
 
         # Write ancestor files out
