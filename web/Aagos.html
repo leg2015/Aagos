@@ -92,7 +92,14 @@
                             <h4>Overview</h4>
                             <b>This is an evolution experiment where a population of bit string genomes are evolving!</b>
                             <br/>
-                            <p>overview overview overview</p>
+                            <p>
+                              Overlapping genes are featured in genetic architectures across the tree of life, yet the prevalence of gene overlap can vary dramatically across species.
+                              There seems to be an evolutionary trade-off in how genetic information is organized: gene overlap allows for more compact information storage and enables tight physical coupling between genes, whereas more modular, non-overlapping arrangements allow constituent genes to be modified independently.
+                              <br/><br/>
+                              What environmental characteristics shift selection to favor more compact genetic architectures versus more modular alternatives where genes do not overlap?
+                              We use a computational model (that you can play with in your browser!) to explore this evolutionary trade-off.
+                              Specifically, we investigate the role of environmental change and mutation rate in the evolution of gene overlap.
+                            </p>
                           </div>
                         </div>
                         <div class="row">
@@ -103,18 +110,74 @@
                         <div class="row">
                           <div class="col-12 px-4">
                             <h4>But what am I actually looking at?</h4>
-
+                            <p>
+                              We evolved populations of bit string genomes (sequences of 0s and 1s) to investigate the role of environmental change and mutation rate in the evolution of gene overlap.
+                            </p>
                             <h5>Genomes</h5>
-                            <p>genomes look like</p>
-                            <p>mess with params to change</p>
+                            <p>
+                              Digital genomes are variable-length bit sequences that encode N K-bit genes.
+                              The number and size of genes can be adjusted for a given experiment (see the
+                              <a href="#genetic-architecture-config-card-header">genetic architecture configuration settings</a>).
+                              Genomes  are  circular:  genes  that would overlap the end of the genome wrap around to the beginning.
+                              <br/><br/>
+                              Genes  may  be  located  anywhere  along  the  genome.
+                              A genome's genetic architecture is subject to evolution: i.e., the size of a genome and its gene locations can mutate and evolve (see mutation configuration settings).
+                              Below is an example of how this web application renders genomes.
+                            </p>
+
+                            <div class="card">
+                              <object class="card-img-top" data="imgs/example_genome.svg" type="image/svg+xml"></object>
+                              <div class="card-body p-2">
+                                <p class="text-secondary mb-1"><small>
+                                  Example genome with four eight-bit genes. Each gene is indicated via a different color.
+                                  Gene 0 overlaps with no other genes; whereas, genes 1, 2, and 3 each overlap with one another
+                                  to varying extents.
+                                  </small>
+                                </p>
+                              </div>
+                            </div>
+
+                            <br/>
 
                             <h5>What determines reproductive success?</h5>
-                            <p>Each gene</p>
+                            <p>
+                              Each gene's fitness contribution is equal to how well it matches a target bit sequence.
+                              A genome's overall fitness equals the sum of each of its gene's fitness contributions.
+                              <br/><br/>
+                              The fitness landscape for an isolated gene is a smooth gradient;
+                              however, gene overlap can result in epistasis, complicating the fitness landscape.
+                              <br/><br/>
+                              Below, we give an example set of gene target sequences.
+                            </p>
+
+                            <div class="card">
+                              <object class="card-img-top" data="imgs/example_gene_targets.svg" type="image/svg+xml"></object>
+                              <div class="card-body p-2">
+                                <p class="text-secondary mb-1"><small>
+                                  Example set of gene targets.
+                                  </small>
+                                </p>
+                              </div>
+                            </div>
+                            <br/>
+                            <p>
+                              In the above example gene targets and example genome, gene 0 perfectly matches its target, giving it a fitness contribution of 1.0 (8/8).
+                              Gene 1 is off by two bits (i.e., two bits are mismatched between the gene and the target), giving it a fitness contribution of 6/8.
+                              Gene 2 is off by one bit, giving it a fitness contribution of 7/8.
+                              Gene 3 is off by one bit, giving it a fitness contribution of 7/8.
+                              The gene contributions result in a total of 3.5 (out of a maximum of 4).
+                            </p>
 
                             <h5>How does environmental change work?</h5>
-                            <p> environmental change </p>
+                            <p>
+                              We subject populations to environmental change by perturbing the gene target bit sequences over time.
+                              We control the rate of change by varying the magnitude and per-generation frequency of these perturbations:
+                              we control both the number of generations between perturbations and and the number of bits toggled for each perturbation.
+                              Manipulate how often and by how much the environment (i.e., gene targets) changes under the general configuration settings (specifically, 'CHANGE_MAGNITUDE' and 'CHANGE_FREQUENCY').
+                            </p>
 
                           </div>
+
                           <div class="col-12" style="height: 60px;"> </div>
                         </div>
                       </div>
@@ -125,7 +188,22 @@
 
                             <h5>How does environmental change affect overlap?</h5>
 
+                            <p>
+                              What sorts of genome architectures typically evolve if the environment is static (set CHANGE_MAGNITUDE or CHANGE_FREQUENCY to 0)?
+                              What architectures typically evolve if the environment changes over time?
+                              <br/><br/>
+                              Particular configurations of environmental change will be more or less
+                              extreme depending on how many and the size of genes are when you configure your experiment.
+                              For reference, we found that one change every generation is somewhat extreme for sixteen eight-bit genes (the setting we use for most of our experiments);
+                              at that configuration, one change every four generations is a relatively high, but reasonable environmental change rate.
+                            </p>
+
                             <h5>How does mutation rate affect overlap?</h5>
+
+                            <p>
+                              Try out different bit substitution mutation rates (BIT_FLIP_PROB parameter).
+                              How does increasing mutation rate affect genetic architecture?
+                            </p>
 
                           </div>
                           <div class="col-12" style="height: 60px;"> </div>
