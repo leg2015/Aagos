@@ -22,6 +22,37 @@
 
 namespace UI = emp::web;
 
+std::unordered_map<std::string, std::string> config_tooltips = {
+  {"CHANGE_MAGNITUDE", "When the environment changes, how many bits are flipped across all gene targets? (0 for no change)"},
+  {"CHANGE_FREQUENCY", "How many generations elapse between environmental changes? (0 for no change)"},
+  {"POP_SIZE", "How many digital genomes are in the population?"},
+  {"MAX_GENS", "How many generations should we evolve the population? Generations are synchronous. All genomes are evaluated and selected for asexual reproduction."},
+  {"TOURNAMENT_SIZE", "We use tournament selection to determine which genomes reproduce. Tournament size controls the strength of selection (higher is stronger, lower is weaker; 1 results in pure genetic drift)"},
+  {"SEED", "Random number generator seed."},
+
+  {"NUM_GENES", "How many genes does each genome have?"},
+  {"GENE_SIZE", "Gene size (in bits)"},
+  {"MIN_SIZE", "Minimum genome size (in bits)"},
+  {"MAX_SIZE", "Maximum genome size (in bits)"},
+  {"NUM_BITS", "Starting genome size (in bits)"},
+
+  {"GENE_MOVE_PROB", "Per-gene probability of mutating gene location"},
+  {"BIT_FLIP_PROB", "Per-bit probability of bit substitutions"},
+  {"BIT_INS_PROB", "Per-bit probability of a single bit insertion"},
+  {"BIT_DEL_PROB", "Per-bit probability of a single bit deletion"},
+  {"APPLY_BIT_MUTS_PER_GENE", "Apply bit mutations to coding sites at a per-gene-per-site rate instead of just per-site (overlapping genes no longer reduce mutational load on coding region)."},
+
+  {"PHASE_2_ACTIVE", "After MAX_GENS number of generations have elapsed, should run continue to a second phase with new parameters (below)?"},
+  {"PHASE_2_CHANGE_MAGNITUDE", "Phase 2 - When the environment changes, how many bits are flipped across all gene targets? (0 for no change)"},
+  {"PHASE_2_CHANGE_FREQUENCY", "Phase 2 - How many generations elapse between environmental changes? (0 for no change)"},
+  {"PHASE_2_MAX_GENS", "Phase 2 - How many generations should we evolve the population? Generations are synchronous. All genomes are evaluated and selected for asexual reproduction."},
+  {"PHASE_2_TOURNAMENT_SIZE", "Phase 2 - We use tournament selection to determine which genomes reproduce. Tournament size controls the strength of selection (higher is stronger, lower is weaker; 1 results in pure genetic drift)"},
+  {"PHASE_2_GENE_MOVE_PROB", "Per-gene probability of mutating gene location"},
+  {"PHASE_2_BIT_FLIP_PROB", "Per-bit probability of bit substitutions"},
+  {"PHASE_2_BIT_INS_PROB", "Per-bit probability of a single bit insertion"},
+  {"PHASE_2_BIT_DEL_PROB", "Per-bit probability of a single bit deletion"}
+};
+
 double GetHTMLElementWidthByID(const std::string & id) {
   return EM_ASM_DOUBLE({
       var id = UTF8ToString($0);
@@ -600,7 +631,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val        =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val       =*/ "1",
                 /* init_val       =*/ emp::to_string(GetConfig().CHANGE_MAGNITUDE()),
-                /* config_tooltip =*/ GetConfig()["CHANGE_MAGNITUDE"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["CHANGE_MAGNITUDE"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["CHANGE_MAGNITUDE"]);
 
   // CHANGE_FREQUENCY
   config_general_div.Find("general-config-ul")
@@ -616,7 +648,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().CHANGE_FREQUENCY()),
-                /* config_tooltip =*/ GetConfig()["CHANGE_FREQUENCY"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["CHANGE_FREQUENCY"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["CHANGE_FREQUENCY"]);
 
   // POP_SIZE
   config_general_div.Find("general-config-ul")
@@ -632,7 +665,9 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().POP_SIZE()),
-                /* config_tooltip =*/ GetConfig()["POP_SIZE"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["POP_SIZE"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["POP_SIZE"]);
+
 
   // MAX_GENS
   config_general_div.Find("general-config-ul")
@@ -648,7 +683,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().MAX_GENS()),
-                /* config_tooltip =*/ GetConfig()["MAX_GENS"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["MAX_GENS"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["MAX_GENS"]);
 
   // TOURNAMENT_SIZE
   config_general_div.Find("general-config-ul")
@@ -664,7 +700,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().TOURNAMENT_SIZE()),
-                /* config_tooltip =*/ GetConfig()["TOURNAMENT_SIZE"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["TOURNAMENT_SIZE"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["TOURNAMENT_SIZE"]);
 
   // SEED
   config_general_div.Find("general-config-ul")
@@ -680,7 +717,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().SEED()),
-                /* config_tooltip =*/ GetConfig()["SEED"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["SEED"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["SEED"]);
 
 
   // -- genetic architecture --
@@ -703,7 +741,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().NUM_GENES()),
-                /* config_tooltip =*/ GetConfig()["NUM_GENES"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["NUM_GENES"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["NUM_GENES"]);
 
   // GENE_SIZE
   config_genetic_arch_div.Find("genetic-arch-config-ul")
@@ -719,7 +758,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().GENE_SIZE()),
-                /* config_tooltip =*/ GetConfig()["GENE_SIZE"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["GENE_SIZE"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["GENE_SIZE"]);
 
   // MIN_SIZE
   config_genetic_arch_div.Find("genetic-arch-config-ul")
@@ -735,7 +775,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().MIN_SIZE()),
-                /* config_tooltip =*/ GetConfig()["MIN_SIZE"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["MIN_SIZE"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["MIN_SIZE"]);
 
   // MAX_SIZE
   config_genetic_arch_div.Find("genetic-arch-config-ul")
@@ -751,7 +792,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().MAX_SIZE()),
-                /* config_tooltip =*/ GetConfig()["MAX_SIZE"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["MAX_SIZE"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["MAX_SIZE"]);
 
   // NUM_BITS
   config_genetic_arch_div.Find("genetic-arch-config-ul")
@@ -767,7 +809,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().NUM_BITS()),
-                /* config_tooltip =*/ GetConfig()["NUM_BITS"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["NUM_BITS"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["NUM_BITS"]);
 
   // -- Mutations --
   config_mutation_div
@@ -789,7 +832,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ "1.0",
                 /* step_val     =*/ "any",
                 /* init_val     =*/ emp::to_string(GetConfig().GENE_MOVE_PROB()),
-                /* config_tooltip =*/ GetConfig()["GENE_MOVE_PROB"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["GENE_MOVE_PROB"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["GENE_MOVE_PROB"]);
 
   // BIT_FLIP_PROB
   config_mutation_div.Find("mutation-config-ul")
@@ -805,7 +849,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ "1.0",
                 /* step_val     =*/ "any",
                 /* init_val     =*/ emp::to_string(GetConfig().BIT_FLIP_PROB()),
-                /* config_tooltip =*/ GetConfig()["BIT_FLIP_PROB"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["BIT_FLIP_PROB"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["BIT_FLIP_PROB"]);
 
   // BIT_INS_PROB
   config_mutation_div.Find("mutation-config-ul")
@@ -821,7 +866,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ "1.0",
                 /* step_val     =*/ "any",
                 /* init_val     =*/ emp::to_string(GetConfig().BIT_INS_PROB()),
-                /* config_tooltip =*/ GetConfig()["BIT_INS_PROB"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["BIT_INS_PROB"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["BIT_INS_PROB"]);
 
   // BIT_DEL_PROB
   config_mutation_div.Find("mutation-config-ul")
@@ -837,7 +883,23 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ "1.0",
                 /* step_val     =*/ "any",
                 /* init_val     =*/ emp::to_string(GetConfig().BIT_DEL_PROB()),
-                /* config_tooltip =*/ GetConfig()["BIT_DEL_PROB"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["BIT_DEL_PROB"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["BIT_DEL_PROB"]);
+
+  // APPLY_BIT_MUTS_PER_GENE
+  config_mutation_div.Find("mutation-config-ul")
+    << UI::Element("li", "APPLY_BIT_MUTS_PER_GENE-config-li")
+        .SetAttr("class", "list-group-item p-0 mt-1 border-0");
+  AddConfigInput(config_mutation_div,
+                /* append_to_id =*/ "APPLY_BIT_MUTS_PER_GENE-config-li",
+                /* config_name  =*/ "APPLY_BIT_MUTS_PER_GENE",
+                /* type         =*/ "number",
+                /* checker      =*/ [this](std::string in) { return CheckInput01(in); },
+                /* min_val      =*/ "0",
+                /* max_val      =*/ "1",
+                /* step_val     =*/ "1",
+                /* init_val     =*/ emp::to_string(GetConfig().APPLY_BIT_MUTS_PER_GENE()),
+                /* config_tooltip =*/ config_tooltips["APPLY_BIT_MUTS_PER_GENE"]);
 
   // -- phase 2 --
   config_phase_2_evo_div
@@ -859,7 +921,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ "1",
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_ACTIVE()),
-                /* config_tooltip =*/ GetConfig()["PHASE_2_ACTIVE"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["PHASE_2_ACTIVE"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["PHASE_2_ACTIVE"]);
 
   // PHASE_2_CHANGE_MAGNITUDE
   config_phase_2_evo_div.Find("phase-2-config-ul")
@@ -875,7 +938,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_CHANGE_MAGNITUDE()),
-                /* config_tooltip =*/ GetConfig()["PHASE_2_CHANGE_MAGNITUDE"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["PHASE_2_CHANGE_MAGNITUDE"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["PHASE_2_CHANGE_MAGNITUDE"]);
 
   // PHASE_2_CHANGE_FREQUENCY
   config_phase_2_evo_div.Find("phase-2-config-ul")
@@ -891,7 +955,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_CHANGE_FREQUENCY()),
-                /* config_tooltip =*/ GetConfig()["PHASE_2_CHANGE_FREQUENCY"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["PHASE_2_CHANGE_FREQUENCY"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["PHASE_2_CHANGE_FREQUENCY"]);
 
   // PHASE_2_MAX_GENS
   config_phase_2_evo_div.Find("phase-2-config-ul")
@@ -907,7 +972,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_MAX_GENS()),
-                /* config_tooltip =*/ GetConfig()["PHASE_2_MAX_GENS"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["PHASE_2_MAX_GENS"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["PHASE_2_MAX_GENS"]);
 
   // PHASE_2_TOURNAMENT_SIZE
   config_phase_2_evo_div.Find("phase-2-config-ul")
@@ -923,7 +989,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ emp::to_string(std::numeric_limits<size_t>::max()),
                 /* step_val     =*/ "1",
                 /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_TOURNAMENT_SIZE()),
-                /* config_tooltip =*/ GetConfig()["PHASE_2_TOURNAMENT_SIZE"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["PHASE_2_TOURNAMENT_SIZE"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["PHASE_2_TOURNAMENT_SIZE"]);
 
   // PHASE_2_GENE_MOVE_PROB
   config_phase_2_evo_div.Find("phase-2-config-ul")
@@ -939,7 +1006,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ "1.0",
                 /* step_val     =*/ "any",
                 /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_GENE_MOVE_PROB()),
-                /* config_tooltip =*/ GetConfig()["PHASE_2_GENE_MOVE_PROB"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["PHASE_2_GENE_MOVE_PROB"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["PHASE_2_GENE_MOVE_PROB"]);
 
   // PHASE_2_BIT_FLIP_PROB
   config_phase_2_evo_div.Find("phase-2-config-ul")
@@ -955,7 +1023,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ "1.0",
                 /* step_val     =*/ "any",
                 /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_BIT_FLIP_PROB()),
-                /* config_tooltip =*/ GetConfig()["PHASE_2_BIT_FLIP_PROB"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["PHASE_2_BIT_FLIP_PROB"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["PHASE_2_BIT_FLIP_PROB"]);
 
   // PHASE_2_BIT_INS_PROB
   config_phase_2_evo_div.Find("phase-2-config-ul")
@@ -971,7 +1040,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ "1.0",
                 /* step_val     =*/ "any",
                 /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_BIT_INS_PROB()),
-                /* config_tooltip =*/ GetConfig()["PHASE_2_BIT_INS_PROB"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["PHASE_2_BIT_INS_PROB"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["PHASE_2_BIT_INS_PROB"]);
 
   // PHASE_2_BIT_DEL_PROB
   config_phase_2_evo_div.Find("phase-2-config-ul")
@@ -987,7 +1057,8 @@ void AagosWebInterface::SetupConfigInterface() {
                 /* max_val      =*/ "1.0",
                 /* step_val     =*/ "any",
                 /* init_val     =*/ emp::to_string(GetConfig().PHASE_2_BIT_DEL_PROB()),
-                /* config_tooltip =*/ GetConfig()["PHASE_2_BIT_DEL_PROB"]->GetDescription());
+                // /* config_tooltip =*/ GetConfig()["PHASE_2_BIT_DEL_PROB"]->GetDescription());
+                /* config_tooltip =*/ config_tooltips["PHASE_2_BIT_DEL_PROB"]);
 
     config_mode=false;
     DisableConfigInputs();
