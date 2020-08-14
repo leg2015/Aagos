@@ -20,7 +20,7 @@ struct AagosWebWrapper {
     cfg.GRADIENT_MODEL(true);
     cfg.CHANGE_MAGNITUDE(1);
     cfg.CHANGE_FREQUENCY(8);
-    cfg.NUM_BITS(64);         // original: 32
+    cfg.NUM_BITS(32);         // original: 32
     cfg.NUM_GENES(8);         // original: 4
     cfg.GENE_SIZE(8);
     cfg.MIN_SIZE(8);
