@@ -27,8 +27,8 @@ struct AagosWebWrapper {
     cfg.MAX_SIZE(512);        // original: 128
     cfg.GENE_MOVE_PROB(0.001); // original: 0.003
     cfg.BIT_FLIP_PROB(0.001);  // original: 0.003
-    cfg.BIT_INS_PROB(0.001);
-    cfg.BIT_DEL_PROB(0.001);
+    cfg.BIT_INS_PROB(0.002);
+    cfg.BIT_DEL_PROB(0.002);
     cfg.PHASE_2_ACTIVE(false);
     cfg.PHASE_2_LOAD_ENV_FROM_FILE(false);
     cfg.PHASE_2_CHANGE_MAGNITUDE(0);
