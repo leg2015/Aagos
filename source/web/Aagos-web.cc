@@ -15,7 +15,7 @@ struct AagosWebWrapper {
     // Configure aagos
     cfg.POP_SIZE(500);  // original: 100
     cfg.MAX_GENS(1000); // original: 1000
-    cfg.SEED(32);
+    cfg.SEED(8);
     cfg.TOURNAMENT_SIZE(8);
     cfg.GRADIENT_MODEL(true);
     cfg.CHANGE_MAGNITUDE(1);
