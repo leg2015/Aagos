@@ -3,11 +3,11 @@
 
 #include <algorithm>
 #include <unordered_map>
-#include "tools/BitVector.h"
-#include "tools/Random.h"
-#include "tools/random_utils.h"
-#include "tools/string_utils.h"
-#include "data/DataNode.h"
+#include "emp/bits/BitVector.hpp"
+#include "emp/math/Random.hpp"
+#include "emp/math/random_utils.hpp"
+#include "emp/tools/string_utils.hpp"
+#include "emp/data/DataNode.hpp"
 
 class AagosOrg {
 public:

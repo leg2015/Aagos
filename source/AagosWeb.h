@@ -7,10 +7,10 @@
 */
 
 
-#include "web/web.h"
-#include "web/Input.h"
-#include "web/Element.h"
-#include "tools/string_utils.h"
+#include "emp/web/web.hpp"
+#include "emp/web/Input.hpp"
+#include "emp/web/Element.hpp"
+#include "emp/tools/string_utils.hpp"
 
 #include <unordered_map>
 #include <sstream>

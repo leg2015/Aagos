@@ -3,14 +3,14 @@
 #ifndef AAGOS_WORLD_H
 #define AAGOS_WORLD_H
 
-#include "Evolve/NK.h"
-#include "Evolve/World.h"
-#include "tools/Distribution.h"
-#include "tools/math.h"
-#include "tools/Range.h"
-#include "tools/stats.h"
-#include "tools/string_utils.h"
-#include "control/Signal.h"
+#include "emp/Evolve/NK.hpp"
+#include "emp/Evolve/World.hpp"
+#include "emp/math/Distribution.hpp"
+#include "emp/math/math.hpp"
+#include "emp/math/Range.hpp"
+#include "emp/math/stats.hpp"
+#include "emp/tools/string_utils.hpp"
+#include "emp/control/Signal.hpp"
 
 #include <sstream>
 #include <iostream>

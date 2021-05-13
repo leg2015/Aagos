@@ -1,8 +1,8 @@
 #include <iostream>
 
-#include "base/vector.h"
-#include "config/ArgManager.h"
-#include "config/command_line.h"
+#include "emp/base/vector.hpp"
+#include "emp/config/ArgManager.hpp"
+#include "emp/config/command_line.hpp"
 
 #include "../AagosConfig.h"
 #include "../AagosOrg.h"

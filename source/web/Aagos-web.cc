@@ -2,7 +2,7 @@
 //  Copyright (C) Michigan State University, 2017.
 //  Released under the MIT Software license; see doc/LICENSE
 
-#include "web/web.h"
+#include "emp/web/web.hpp"
 #include "../AagosConfig.h"
 #include "../AagosWeb.h"
 // #include "Evolve/NK.h"

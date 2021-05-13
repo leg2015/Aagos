@@ -1,7 +1,7 @@
 #ifndef AAGOS_WEB_POP_VIS_H
 #define AAGOS_WEB_POP_VIS_H
 
-#include "web/web.h"
+#include "emp/web/web.hpp"
 
 #include "AagosWorld.h"
 #include "AagosConfig.h"

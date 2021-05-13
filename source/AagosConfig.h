@@ -1,7 +1,7 @@
 #ifndef AAGOS_CONFIG_H
 #define AAGOS_CONFIG_H
 
-#include "config/config.h"
+#include "emp/config/config.hpp"
 
 EMP_BUILD_CONFIG(AagosConfig,
   GROUP(WORLD_STRUCTURE, "How should each organism's genome be setup?"),
