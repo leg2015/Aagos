@@ -1,0 +1,191 @@
+---
+title: "2020-05-22 - Architecture Enumeration - Experiment Analysis"
+output:
+  html_document:
+    keep_md: no
+    toc: true
+    toc_float: true
+    toc_depth: 4
+    collapsed: false
+    theme: default
+    code_folding: hide
+  pdf_document:
+    toc: true
+    toc_depth: 4
+---
+
+## Analysis Dependencies
+
+```{r, message=FALSE}
+library(ggplot2)  # (Wickham, 2016)
+library(tidyr)    # (Wickham and Henry, 2020)
+library(dplyr)    # (Wickham et al., 2020)
+library(reshape2) # (Wickham, 2007)
+library(cowplot)  # (Wilke, 2019)
+```
+
+We conducted these analyses using the following computing environment:
+
+```{r}
+print(version)
+```
+
+```{r}
+data_path <- "./data/agg_data.csv"
+agg_data <- read.csv(data_path, na.strings="NONE")
+
+agg_data$BIT_FLIP_PROB <- as.factor(agg_data$BIT_FLIP_PROB)
+agg_data$DRIFT <- agg_data$TOURNAMENT_SIZE==1
+agg_data$gene_starts <- as.factor(agg_data$gene_starts)
+
+# Label
+chg_rate_label <- function(mag, interval, drift) {
+  if (drift) { return("drift") }
+  else if (interval == 0) { return("0") }
+  else { return(paste(mag, interval, sep="/")) }
+}
+
+agg_data$chg_rate_label <- factor(mapply(chg_rate_label, 
+                                            agg_data$CHANGE_MAGNITUDE,
+                                            agg_data$CHANGE_FREQUENCY,
+                                            agg_data$DRIFT),
+                                     levels=c("drift", "0", "1/256", "1/128",
+                                              "1/64", "1/32", "1/16", "1/8",
+                                              "1/4", "1/2", "1/1", "2/1", 
+                                              "4/1", "8/1", "16/1", "32/1",
+                                              "64/1", "128/1", "256/1", 
+                                              "512/1", "1024/1", "2048/1",
+                                              "4096/1"))
+theme_set(theme_cowplot())
+
+agg_data$coding_sites_factor <- as.factor(agg_data$coding_sites)
+agg_data$neutral_sites_factor <- as.factor(agg_data$neutral_sites)
+
+data_gradient <- filter(agg_data, GRADIENT_MODEL==1)
+data_nk <- filter(agg_data, GRADIENT_MODEL==0)
+```
+
+## Gradient model
+
+### Architectures
+
+Distributions of coding sites among all architectures. Architectures are identical across mutation rates, so each mutation rate histogram should be identical.
+
+```{r}
+ggplot(data_gradient, aes(x=coding_sites_factor)) +
+  geom_histogram(stat="count") +
+  facet_wrap(~BIT_FLIP_PROB) +
+  ggtitle("Distribution of coding sites\nGradient fitness model")
+```
+
+Distributions of neutral sits among all architectures.
+
+```{r}
+ggplot(data_gradient, aes(x=neutral_sites_factor)) +
+  geom_histogram(stat="count") +
+  facet_wrap(~BIT_FLIP_PROB) +
+  ggtitle("Distribution of neutral sites\nGradient fitness model")
+```
+
+### Fitness
+
+```{r}
+ggplot(data_gradient, aes(x=gene_starts, y=fitness, fill=coding_sites_factor)) +
+  geom_boxplot() +
+  ggtitle("Gradient fitness model") +
+  theme(legend.position="bottom",
+        axis.text.x = element_text(angle=90)) +
+  facet_wrap(~BIT_FLIP_PROB, ncol=1) +
+  ggsave("imgs/fitness_x_arch_gradient.pdf", width=30, height=30, limitsize=FALSE)
+```
+
+### Fitness by number of coding sites
+
+```{r}
+ggplot(data_gradient, aes(x=coding_sites_factor, y=fitness, color=coding_sites_factor)) +
+  geom_jitter(alpha=0.7) +
+  geom_boxplot(alpha=0.7, color="black", aes(fill=coding_sites_factor)) +
+  facet_wrap(~BIT_FLIP_PROB) +
+  theme(legend.position = "none") +
+  ggtitle("Gradient model") +
+  ggsave("imgs/fitness_x_coding_gradient.pdf", width=15, height=10)
+```
+
+```{r}
+ggplot(data_gradient,
+       aes(x=coding_sites, y=fitness)) +
+  geom_jitter(alpha=0.95) +
+  scale_fill_continuous(type = "viridis", 
+                        trans="log",
+                        name="Count",
+                        breaks=c(1, 10, 100)) +
+  scale_x_continuous(name="Coding Sites",
+                     limits=c(0, 17),
+                     breaks=seq(0,16,1)) +
+  ylab("Fitness") +
+  facet_wrap(~BIT_FLIP_PROB)
+```
+
+```{r}
+data_gradient_bf3 <- filter(data_gradient, BIT_FLIP_PROB==0.3)
+data_gradient_bf03 <- filter(data_gradient, BIT_FLIP_PROB==0.03)
+data_gradient_bf003 <- filter(data_gradient, BIT_FLIP_PROB==0.003)
+cor.test(x=data_gradient_bf003$coding_sites, 
+         y=data_gradient_bf003$fitness,
+         method="spearman",
+         exact=FALSE)
+cor.test(x=data_gradient_bf03$coding_sites, 
+         y=data_gradient_bf03$fitness,
+         method="spearman",
+         exact=FALSE)
+cor.test(x=data_gradient_bf3$coding_sites, 
+         y=data_gradient_bf3$fitness,
+         method="spearman",
+         exact=FALSE)
+```
+
+## NK model
+
+### Architectures
+
+Distributions of coding sites among all architectures. Architectures are identical across mutation rates, so each mutation rate histogram should be identical. These should also be identical to gradient model (the same architectures were used).
+
+```{r}
+ggplot(data_nk, aes(x=coding_sites_factor)) +
+  geom_histogram(stat="count") +
+  facet_wrap(~BIT_FLIP_PROB) +
+  ggtitle("Distribution of coding sites\nGradient fitness model")
+```
+
+Distributions of neutral sits among all architectures.
+
+```{r}
+ggplot(data_nk, aes(x=neutral_sites_factor)) +
+  geom_histogram(stat="count") +
+  facet_wrap(~BIT_FLIP_PROB) +
+  ggtitle("Distribution of neutral sites\nGradient fitness model")
+```
+
+### Fitness
+
+```{r}
+ggplot(data_nk, aes(x=gene_starts, y=fitness, fill=coding_sites_factor)) +
+  geom_boxplot() +
+  ggtitle("NK fitness model") +
+  theme(legend.position="bottom",
+        axis.text.x = element_text(angle=90)) +
+  facet_wrap(~BIT_FLIP_PROB, ncol=1) +
+  ggsave("imgs/fitness_x_arch_nk.pdf", width=30, height=30, limitsize=FALSE)
+```
+
+### Fitness by number of coding sites
+
+```{r}
+ggplot(data_nk, aes(x=coding_sites_factor, y=fitness, color=coding_sites_factor)) +
+  geom_jitter(alpha=0.7) +
+  geom_boxplot(alpha=0.7, color="black", aes(fill=coding_sites_factor)) +
+  facet_wrap(~BIT_FLIP_PROB) +
+  theme(legend.position = "none") +
+  ggtitle("NK model") +
+  ggsave("imgs/fitness_x_coding_nk.pdf", width=15, height=10)
+```

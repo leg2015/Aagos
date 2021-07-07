@@ -1,13 +1,432 @@
 <!doctype html>
-<html>
+<html lang="en">
+
 <head>
-<meta charset="utf-8">
-<title>A.A.G.O.S. (Auto-Adaptive Genetic Organization System)</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <!-- font awesome icons! -->
+  <script src="https://kit.fontawesome.com/bc4a49fbdb.js" crossorigin="anonymous"></script>
+
+  <style>
+    .d3-tip {
+      line-height: 1;
+      padding: 6px;
+      font-size: 12px;
+    }
+
+    .carousel .carousel-indicators li {
+      background-color: #fff;
+      background-color: rgba(70, 70, 70, 0.25);
+    }
+
+    .carousel .carousel-indicators .active {
+      background-color: #444;
+    }
+
+    .carousel-control-prev-icon {
+      background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23000' viewBox='0 0 8 8'%3E%3Cpath d='M5.25 0l-4 4 4 4 1.5-1.5-2.5-2.5 2.5-2.5-1.5-1.5z'/%3E%3C/svg%3E");
+    }
+
+    .carousel-control-next-icon {
+      background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23000' viewBox='0 0 8 8'%3E%3Cpath d='M2.75 0l-1.5 1.5 2.5 2.5-2.5 2.5 1.5 1.5 4-4-4-4z'/%3E%3C/svg%3E");
+    }
+  </style>
+
+  <title>A.A.G.O.S. (Auto-Adaptive Genetic Organization System)</title>
 </head>
+
 <body>
-<div id="emp_base"></div>
-<script src="jquery-1.11.2.min.js"></script>
-<script type="text/javascript" src="Aagos.js"></script>
+
+  <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
+    <a href="https://github.com/amlalejini/Aagos" class="github-corner" aria-label="View source on Github">
+        <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+        <path style="fill:white;" d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+        <path style="fill:white;" d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" class="octo-body"></path>
+    </a>
+  </svg>
+
+  <div class="jumbotron pb-1 pt-4 rounded-0">
+    <h1 class="display-4"> A.A.G.O.S. </h1>
+    <p class="lead">Auto-Adaptive Genetic Organization System</p>
+  </div>
+
+  <div class="container-fluid">
+    <div class="row mb-2">
+
+      <div class="col">
+        <div class="card">
+          <!-- Card heading -->
+          <div class="card-header" id="abstract-card-header">
+            <button class="btn btn-lg btn-block" type="button" data-toggle="collapse" data-target="#abstract-card" aria-expanded="true" aria-controls="abstract-card">
+              <h3 class="mb-0 text-left">
+                <i class="fal fa-sparkles"></i> What am I looking at?
+              </h3>
+            </button>
+          </div>
+          <!-- Card body -->
+          <div id="abstract-card" class="collapse" aria-labelledby="abstract-card-header">
+            <div class="card-body">
+
+              <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel" data-interval="false">
+                <ol class="carousel-indicators">
+                  <li data-target="#carouselExampleIndicators" data-slide-to="0" class="active"></li>
+                  <li data-target="#carouselExampleIndicators" data-slide-to="1"></li>
+                  <li data-target="#carouselExampleIndicators" data-slide-to="2"></li>
+                </ol>
+
+                <div class="row">
+
+                  <div class="col-1">
+                    <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
+                      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                      <span class="sr-only">Previous</span>
+                    </a>
+                  </div>
+
+                  <div class="col">
+                    <div class="carousel-inner">
+                      <div class="carousel-item active">
+                        <div class="row">
+                          <div class="col-12 px-4">
+                            <h4>Overview</h4>
+                            <b>This is an evolution experiment where a population of bit string genomes are evolving!</b>
+                            <br/>
+                            <p>
+                              Overlapping genes are featured in genetic architectures across the tree of life, yet the prevalence of gene overlap can vary dramatically across species.
+                              There seems to be an evolutionary trade-off in how genetic information is organized: gene overlap allows for more compact information storage and enables tight physical coupling between genes, whereas more modular, non-overlapping arrangements allow constituent genes to be modified independently.
+                              <br/><br/>
+                              What environmental characteristics shift selection to favor more compact genetic architectures versus more modular alternatives where genes do not overlap?
+                              We use a computational model (that you can play with in your browser!) to explore this evolutionary trade-off.
+                              Specifically, we investigate the role of environmental change and mutation rate in the evolution of gene overlap.
+                            </p>
+                          </div>
+                        </div>
+                        <div class="row">
+                          <div class="col-12" style="height: 60px;"> </div>
+                        </div>
+                      </div>
+                      <div class="carousel-item">
+                        <div class="row">
+                          <div class="col-12 px-4">
+                            <h4>But what am I actually looking at?</h4>
+                            <p>
+                              We evolved populations of bit string genomes (sequences of 0s and 1s) to investigate the role of environmental change and mutation rate in the evolution of gene overlap.
+                            </p>
+                            <h5>Genomes</h5>
+                            <p>
+                              Digital genomes are variable-length bit sequences that encode N K-bit genes.
+                              The number and size of genes can be adjusted for a given experiment (see the
+                              <a href="#genetic-architecture-config-card-header">genetic architecture configuration settings</a>).
+                              Genomes  are  circular:  genes  that would overlap the end of the genome wrap around to the beginning.
+                              <br/><br/>
+                              Genes  may  be  located  anywhere  along  the  genome.
+                              A genome's genetic architecture is subject to evolution: i.e., the size of a genome and its gene locations can mutate and evolve (see mutation configuration settings).
+                              Below is an example of how this web application renders genomes.
+                            </p>
+
+                            <div class="card">
+                              <object class="card-img-top" data="imgs/example_genome.svg" type="image/svg+xml"></object>
+                              <div class="card-body p-2">
+                                <p class="text-secondary mb-1"><small>
+                                  Example genome with four eight-bit genes. Each gene is indicated via a different color.
+                                  Gene 0 overlaps with no other genes; whereas, genes 1, 2, and 3 each overlap with one another
+                                  to varying extents.
+                                  </small>
+                                </p>
+                              </div>
+                            </div>
+
+                            <br/>
+
+                            <h5>What determines reproductive success?</h5>
+                            <p>
+                              Each gene's fitness contribution is equal to how well it matches a target bit sequence.
+                              A genome's overall fitness equals the sum of each of its gene's fitness contributions.
+                              <br/><br/>
+                              The fitness landscape for an isolated gene is a smooth gradient;
+                              however, gene overlap can result in epistasis, complicating the fitness landscape.
+                              <br/><br/>
+                              Below, we give an example set of gene target sequences.
+                            </p>
+
+                            <div class="card">
+                              <object class="card-img-top" data="imgs/example_gene_targets.svg" type="image/svg+xml"></object>
+                              <div class="card-body p-2">
+                                <p class="text-secondary mb-1"><small>
+                                  Example set of gene targets.
+                                  </small>
+                                </p>
+                              </div>
+                            </div>
+
+                            <br/>
+                            <p>
+                              In the above example gene targets and example genome, gene 0 perfectly matches its target, giving it a fitness contribution of 1.0 (8/8).
+                              Gene 1 is off by two bits (i.e., two bits are mismatched between the gene and the target), giving it a fitness contribution of 6/8.
+                              Gene 2 is off by one bit, giving it a fitness contribution of 7/8.
+                              Gene 3 is off by one bit, giving it a fitness contribution of 7/8.
+                              The gene contributions result in a total of 3.5 (out of a maximum of 4).
+                            </p>
+
+                            <div class="card">
+                              <object class="card-img-top" data="imgs/example_fitness.svg" type="image/svg+xml"></object>
+                              <div class="card-body p-2">
+                                <p class="text-secondary mb-1"><small>
+                                  Example gene value contribution.
+                                  </small>
+                                </p>
+                              </div>
+                            </div>
+                            <br/>
+
+                            <h5>How does environmental change work?</h5>
+                            <p>
+                              We subject populations to environmental change by perturbing the gene target bit sequences over time.
+                              We control the rate of change by varying the magnitude and per-generation frequency of these perturbations:
+                              we control both the number of generations between perturbations and and the number of bits toggled for each perturbation.
+                              Manipulate how often and by how much the environment (i.e., gene targets) changes under the general configuration settings (specifically, 'CHANGE_MAGNITUDE' and 'CHANGE_FREQUENCY').
+                            </p>
+
+                          </div>
+
+                          <div class="col-12" style="height: 60px;"> </div>
+                        </div>
+                      </div>
+                      <div class="carousel-item">
+                        <div class="row">
+                          <div class="col-12 px-4">
+                            <h4>Try it out!</h4>
+
+                            <h5>How does environmental change affect overlap?</h5>
+
+                            <p>
+                              What sorts of genome architectures typically evolve if the environment is static (set CHANGE_MAGNITUDE or CHANGE_FREQUENCY to 0)?
+                              What architectures typically evolve if the environment changes over time?
+                              <br/><br/>
+                              Particular configurations of environmental change will be more or less
+                              extreme depending on how many and the size of genes are when you configure your experiment.
+                              For reference, we found that one change every generation is somewhat extreme for sixteen eight-bit genes (the setting we use for most of our experiments);
+                              at that configuration, one change every four generations is a relatively high, but reasonable environmental change rate.
+                            </p>
+
+                            <h5>How does mutation rate affect overlap?</h5>
+
+                            <p>
+                              Try out different bit substitution mutation rates (BIT_FLIP_PROB parameter).
+                              How does increasing mutation rate affect genetic architecture?
+                            </p>
+
+                          </div>
+                          <div class="col-12" style="height: 60px;"> </div>
+                        </div>
+                      </div>
+                    </div> <!-- end inner carousel items -->
+                  </div>
+
+                  <div class="col-1">
+                    <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
+                      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                      <span class="sr-only">Next</span>
+                    </a>
+                  </div>
+
+
+                </div>
+
+              </div> <!-- End carousel -->
+
+
+              <!-- <p><i class="fal fa-sparkles"></i> under construction <i class="fal fa-sparkles"></i></p>
+              <h3>abstract (draft)</h3>
+              <p>Overlapping genes are common in nature, especially in viral genomes, yet most species have more segregated genes than would be expected by chance(??).
+                Such modularity has been shown to facilitate adaptive evolution (i.e., increase evolvability), but how does it come to exist?
+                The selective advantage of evolvability manifests only in the long term, thus providing a weak driver for gene segregation.
+                Rapid environmental change has been proposed as a mechanism to heighten the selective importance of evolvability.
+                Furthermore, specific types of changing environments have been shown to promote the evolution of functional modularity.
+                Here, we expand this theoretical framework to predict that in any rapidly changing environment, genetic architectures will be selected that allow independent evolution of organismal traits that respond to independently varying environmental features.
+                However, gene segregation produces longer genomes that are larger mutational targets.
+                As such, high mutation rates can produce a countermanding pressure for more compact genetic architectures.
+                We use computational models to verify predictions for how environmental change and mutation rate shape the evolution of gene segregation.
+                We observe that changing environments promote gene segregation, and we confirm that these more modular genetic architectures more easily adapt to novel environments.
+                We also observe that high mutation rate alone is sufficient to promote the evolution of gene overlap.
+              </p> -->
+            </div> <!-- End card body -->
+          </div> <!-- End collapse-able -->
+        </div> <!-- End card -->
+      </div> <!-- End col -->
+    </div> <!-- End row -->
+
+    <div class="row mb-2">
+      <div class="col-lg-8">
+
+        <!-- old controls location -->
+        <div class="row mb-2">
+          <div class="col">
+              <div class="card">
+                <div class="card-body">
+                  <h4 class="card-title"><i class="fad fa-joystick"></i> Controls</h4>
+                    <div id="emp_controls_view"></div>
+                </div>
+              </div>
+          </div>
+        </div>
+
+
+        <div class="row mb-2">
+          <div class="col">
+            <div class="card">
+              <div class="card-header">
+                <h3> <i class="fad fa-flask"></i> Experiment Viewer </h3>
+              </div> <!-- End card-header -->
+              <div class="card-body pt-1">
+                <div id="emp_world_view"></div>
+                <div class="row">
+                  <div class="col">
+                    <div id="emp_pop_vis_view"></div>
+                  </div>
+                </div>
+              </div> <!-- End card-body -->
+            </div> <!-- End card -->
+          </div>
+        </div> <!-- End row -->
+
+      </div> <!-- End col -->
+
+      <div class="col-lg-4">
+
+        <div class="row mb-2">
+          <div class="col">
+            <div class="card">
+              <div class="card-header" id="stats-card-header">
+                <button class="btn btn-lg btn-block" type="button" data-toggle="collapse" data-target="#stats-card" aria-expanded="true" aria-controls="stats-card">
+                  <h3 class="mb-0 text-left"> <i class="fad fa-abacus"></i> Statistics </h3>
+                </button>
+              </div>
+              <div id="stats-card" class="collapse" aria-labelledby="stats-card-header">
+                <div class="card-body">
+                  <div id="emp_world_stats_view"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+
+        <div class="row mb-2">
+          <div class="col">
+            <div class="card">
+              <div class="card-header" id="config-card-header">
+                <button class="btn btn-lg btn-block" type="button" data-toggle="collapse" data-target="#config-card" aria-expanded="true" aria-controls="config-card">
+                  <h3 class="mb-0 text-left"> <i class="fad fa-cogs"></i> Configuration </h3>
+                </button>
+              </div> <!-- End card-header -->
+              <div id="config-card" class="collapse show" aria-labelledby="config-card-header">
+                <div class="card-body px-0 py-0" style="overflow-y:scroll; max-height:600px;">
+
+                  <div class="card border-0">
+                    <div class="card-header bg-light rounded-0 border-top" id="config-general-card-header">
+                      <button class="btn btn-lg btn-block bg-dark text-light" type="button" data-toggle="collapse" data-target="#config-general-card" aria-expanded="true" aria-controls="config-general-card">
+                        <h5 class="mb-0"> General </h5>
+                      </button>
+                    </div>
+                    <div id="config-general-card" class="collapse show" aria-labelledby="config-general-card-header">
+                      <div class="card-body px-0 pt-0 pb-1">
+                        <div id="emp_view_config_general"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="card border-0">
+                    <div class="card-header rounded-0 border-top"  id="genetic-architecture-config-card-header">
+                      <button class="btn btn-lg bg-dark text-light btn-block" type="button" data-toggle="collapse" data-target="#genetic-architecture-config-card" aria-expanded="true" aria-controls="genetic-architecture-config-card">
+                        <h5 class="mb-0"> Genetic Architecture </h5>
+                      </button>
+                    </div>
+                    <div id="genetic-architecture-config-card" class="collapse show" aria-labelledby="genetic-architecture-config-card-header">
+                      <div class="card-body px-0 pt-0 pb-1">
+                        <div id="emp_view_config_genetic_architecture"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="card border-0">
+                    <div class="card-header rounded-0 border-top" id="mutation-config-card-header">
+                      <button class="btn btn-lg bg-dark text-light btn-block" type="button" data-toggle="collapse" data-target="#mutation-config-card" aria-expanded="true" aria-controls="mutation-config-card">
+                        <h5 class="mb-0"> Mutation </h5>
+                      </button>
+                    </div>
+                    <div id="mutation-config-card" class="collapse show" aria-labelledby="mutation-config-card-header">
+                      <div class="card-body px-0 pt-0 pb-1">
+                        <div id="emp_view_config_mutation"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="card border-0">
+                    <div class="card-header rounded-0 border-top" id="phase-2-config-card-header">
+                      <button class="btn btn-lg btn-block bg-dark text-light " type="button" data-toggle="collapse" data-target="#phase-2-config-card" aria-expanded="true" aria-controls="phase-2-config-card">
+                        <h5 class="mb-0"> Phase 2 </h5>
+                      </button>
+                    </div>
+                    <div id="phase-2-config-card" class="collapse show" aria-labelledby="phase-2-config-card-header">
+                      <div class="card-body px-0 pt-0 pb-1">
+                        <div id="emp_view_config_phase_2_evolution"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div> <!-- End card-body -->
+              </div>
+            </div> <!-- End card -->
+          </div>
+        </div> <!-- End row -->
+
+      </div> <!-- End col -->
+
+    </div> <!-- End row -->
+
+    <!-- Modal -->
+    <div class="modal fade" id="config-exp-modal" tabindex="-1" role="dialog" aria-labelledby="config-exp-model-label" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="config-exp-model-label">Configure experiment confirmation</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            Re-configuring the experiment will lose all current experiment progress, resetting the run.
+            Are you sure?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <div id="emp_config_exp_confirmation"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+
+  <!-- <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script> -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="//d3js.org/d3-scale-chromatic.v0.3.min.js"></script>
+  <script src="d3-tip.js"></script>
+  <script type="text/javascript" src="Aagos.js"></script>
+
+  <style>
+    .tooltip {
+      pointer-events: none;
+    }
+  </style>
 
 </body>
+
 </html>

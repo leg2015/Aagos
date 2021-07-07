@@ -1,0 +1,22 @@
+#!/bin/bash
+########## Define Resources Needed with SBATCH Lines ##########
+
+#SBATCH --time=12:00:00          # limit of wall clock time - how long the job will run (same as -t)
+#SBATCH --array=1-196
+#SBATCH --mem=8G                 # memory required per node - amount of memory (in bytes)
+#SBATCH --job-name aagos          # you can give your job a name for easier identification (same as -J)
+#SBATCH --account=devolab
+
+########## Command Lines to Run ##########
+
+EXP_ID=2020-04-16
+DATA_DIR=/mnt/scratch/lalejini/data/aagos/${EXP_ID}
+CONFIG_DIR=/mnt/home/lalejini/devo_ws/Aagos/hpcc/${EXP_ID}
+
+module load GCC/7.3.0-2.30
+module load OpenMPI/3.1.1
+module load Python/3.7.0
+
+cd ${CONFIG_DIR}
+
+python3 run.py --data_dir ${DATA_DIR} --config_dir ${CONFIG_DIR} --array_id ${SLURM_ARRAY_TASK_ID} > log_${SLURM_ARRAY_TASK_ID}.txt
